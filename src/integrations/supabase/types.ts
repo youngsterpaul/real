@@ -14,7 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      adventure_places: {
+        Row: {
+          country: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          location?: string
+          name?: string
+          place?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          country: string
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+          price: number
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+          price: number
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          location?: string
+          name?: string
+          place?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      hotels: {
+        Row: {
+          country: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          location?: string
+          name?: string
+          place?: string
+        }
+        Relationships: []
+      }
+      saved_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          country: string
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+          price: number
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          image_url: string
+          location: string
+          name: string
+          place: string
+          price: number
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          location?: string
+          name?: string
+          place?: string
+          price?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
