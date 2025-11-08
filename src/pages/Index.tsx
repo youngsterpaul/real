@@ -205,7 +205,6 @@ const Index = () => {
 
         {/* Events */}
         <section>
-          <h2 className="text-2xl font-bold mb-6">Upcoming Events</h2>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {loading || events.length === 0 ? (
               <>
@@ -243,7 +242,6 @@ const Index = () => {
 
         {/* Hotels */}
         <section>
-          <h2 className="text-2xl font-bold mb-6">Amazing Hotels</h2>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {loading || hotels.length === 0 ? (
               <>
@@ -278,7 +276,6 @@ const Index = () => {
 
         {/* Adventure Places */}
         <section>
-          <h2 className="text-2xl font-bold mb-6">Adventure Awaits</h2>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {loading || adventurePlaces.length === 0 ? (
               <>
