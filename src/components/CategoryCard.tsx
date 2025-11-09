@@ -25,7 +25,7 @@ export const CategoryCard = ({
         className
       )}
     >
-      {/* Reduced padding on all screens: from p-3/p-6 to p-2/p-3 */}
+      {/* Reduced padding on all screen: from p-3/p-6 to p-2/p-3 */}
       <div className="p-2 md:p-3 flex flex-col items-center text-center gap-1 md:gap-2">
         {/* Reduced icon container size: from h-10/w-10 to h-8/w-8 AND md:h-16/md:w-16 to md:h-10/md:w-10 */}
         <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground group-hover:scale-110 transition-transform duration-300">
