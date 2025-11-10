@@ -276,4 +276,5 @@ const TripDetail = () => {
     </div>
   );
 };
+
 export default TripDetail;
