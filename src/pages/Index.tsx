@@ -171,7 +171,7 @@ return (
 
         {/* COMBINED LISTINGS: Trips, Events, Hotels, and Adventure Places */}
         <section>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-6">
             {loading ? (
               // Display shimmer loading effect if loading
               <>
