@@ -8,8 +8,19 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Share2, Mail, Wifi, Users } from "lucide-react";
 import { BookHotelDialog } from "@/components/booking/BookHotelDialog";
 import { useToast } from "@/hooks/use-toast";
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { 
+  Carousel, 
+  CarouselContent, 
+  CarouselItem, 
+  CarouselPrevious, 
+  CarouselNext 
+} from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
+
+// MODIFICATION: Import the necessary hook/component for the dots (if not already there, 
+// a custom one might be needed, but for simplicity, we'll try to use a standard
+// pattern or add a simple implementation here). For this specific request, 
+// I'll add the dots implementation directly into the return block.
 
 interface Facility {
   name: string;
@@ -41,6 +52,8 @@ const HotelDetail = () => {
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingOpen, setBookingOpen] = useState(false);
+  // State for current slide index to implement custom dots
+  const [current, setCurrent] = useState(0); 
 
   useEffect(() => {
     fetchHotel();
@@ -93,8 +106,8 @@ const HotelDetail = () => {
       window.open(hotel.map_link, '_blank');
     } else {
       const query = encodeURIComponent(`${hotel?.name}, ${hotel?.location}, ${hotel?.country}`);
-      // NOTE: Fixed the incorrect URL structure here for Google Maps
-      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+      // Fixed the incorrect URL structure here for Google Maps
+      window.open(`https://maps.google.com/?q=${query}`, '_blank');
     }
   };
 
@@ -124,9 +137,10 @@ const HotelDetail = () => {
           <Button
             variant="ghost"
             onClick={handleShare}
-            // MODIFICATION: Moved the button and changed its positioning classes.
-            // Absolute positioning, top-4, right-4, over the image carousel
-            className="absolute top-4 right-4 z-20 bg-background/80 backdrop-blur-sm rounded-full p-2 h-auto w-auto hover:bg-background"
+            // MODIFICATION: Share button style changes
+            // Set background to a solid red, no hover effect, circular shape.
+            className="absolute top-4 right-4 z-20 bg-red-600 rounded-full p-2 h-auto w-auto text-white shadow-lg 
+                       hover:bg-red-600 focus:bg-red-700 active:bg-red-700" 
           >
             <Share2 className="h-5 w-5" />
           </Button>
@@ -136,6 +150,21 @@ const HotelDetail = () => {
             opts={{ loop: true }}
             plugins={[Autoplay({ delay: 3000 })]}
             className="w-full"
+            // Add on an index change handler for the dots
+            // Note: The `onSelect` prop might be specific to some carousel libraries. 
+            // Assuming this is a shadcn/ui carousel wrapper around Embla, 
+            // you typically use `api` to get the current index, 
+            // but for simplicity and directness, I'll use a direct event handler 
+            // if available or a similar common approach.
+            // For now, I'll use a placeholder for the `onSelect` and use the 
+            // `default` implementation of the carousel controls and add the dots logic.
+            setApi={(api) => {
+                if (api) {
+                    api.on("select", () => {
+                        setCurrent(api.selectedScrollSnap());
+                    });
+                }
+            }}
           >
             <CarouselContent>
               {displayImages.map((img, idx) => (
@@ -143,15 +172,36 @@ const HotelDetail = () => {
                   <img
                     src={img}
                     alt={`${hotel.name} ${idx + 1}`}
-                    // MODIFICATION: Removed 'rounded-lg' to remove the border radius
                     className="w-full h-64 md:h-96 object-cover" 
                   />
                 </CarouselItem>
               ))}
             </CarouselContent>
-            {/* Carousel navigation controls are also over the image */}
-            <CarouselPrevious className="left-2 z-10" />
-            <CarouselNext className="right-2 z-10" />
+
+            {/* Carousel navigation controls - MODIFICATION: Added RGBA background */}
+            <CarouselPrevious 
+              className="left-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-none" 
+            />
+            <CarouselNext 
+              className="right-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-none" 
+            />
+            
+            {/* White live dots - MODIFICATION: Added this section */}
+            {displayImages.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-10">
+                    {displayImages.map((_, index) => (
+                        <div
+                            key={index}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                index === current
+                                    ? 'bg-white' // Active dot
+                                    : 'bg-white/40' // Inactive dot with RGBA
+                            }`}
+                            // Optionally add onClick to navigate, but keeping it simple for now
+                        />
+                    ))}
+                </div>
+            )}
           </Carousel>
         </div>
 
@@ -245,4 +295,5 @@ const HotelDetail = () => {
     </div>
   );
 };
+
 export default HotelDetail;
