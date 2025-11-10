@@ -91,19 +91,22 @@ export const ListingCard = ({
           <p className="text-sm line-clamp-1">{location}, {country}</p>
         </div>
 
-        {/* Save Button - no background, red heart when saved */}
+        {/* Save Button - no background, red heart when saved/not saved */}
         <Button
           variant="ghost"
           size="icon"
           onClick={handleSave}
           className={cn(
             "absolute top-3 right-3 h-9 w-9 rounded-full transition-all z-10",
+            // Removed any explicit background or hover styles from the button itself
           )}
         >
           <Heart
             className={cn(
               "h-5 w-5 transition-all",
-              saved ? "fill-red-500 text-red-500" : "text-white"
+              // Filled red when saved
+              saved ? "fill-red-500 text-red-500" : "text-red-300" 
+              // Outline is red-300 when not saved, as requested.
             )}
           />
         </Button>
@@ -111,7 +114,7 @@ export const ListingCard = ({
         {/* Bottom Overlay for Price, Date, and Category Badge */}
         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-end">
             
-            {/* Price and Date on the left (combined for space) */}
+            {/* Price and Date on the left */}
             <div className="flex flex-col items-start space-y-1">
                 {price !== undefined && (
                 <p className="font-bold text-xl text-white">
@@ -125,14 +128,14 @@ export const ListingCard = ({
                 )}
             </div>
 
-            {/* Category Badge - now at bottom-right with red background */}
+            {/* Category Badge - bottom-right with red background */}
             <Badge className="bg-red-600 text-white backdrop-blur">
                 {type}
             </Badge>
         </div>
       </div>
-    
-      {/* Removed the entire section below the image as requested */}
+      
+      {/* Removed the section below the image */}
     </Card>
   );
 };
