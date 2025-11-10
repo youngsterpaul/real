@@ -295,5 +295,4 @@ const CarouselDots = ({ totalSlides }: { totalSlides: number }) => {
     </div>
   );
 };
-
 export default HotelDetail;
