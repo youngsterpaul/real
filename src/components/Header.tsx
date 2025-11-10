@@ -137,7 +137,7 @@ export const Header = () => {
 <DropdownMenuContent 
             align="end" 
             // MODIFIED: Changed width to 50vw and added rounded-none to remove the border radius
-            className="w-[50vw] rounded-none bg-popover"
+            className="w-[20vw] rounded-none bg-popover"
           >
             {user ? (
               <>
