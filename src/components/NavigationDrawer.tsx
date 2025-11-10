@@ -27,25 +27,25 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
   ];
 
   return (
+    // Base drawer styling kept the same, relying on header/footer styles for color
     <div className="flex flex-col h-full bg-gradient-to-b from-background to-muted/20">
-<div className="p-6 border-b bg-orange-500"> {/* Added bg-orange-500 */}
+      {/* Changed background to bg-blue-900 (Deep Navy) */}
+      <div className="p-6 border-b bg-blue-900"> 
 
         <div className="flex items-center gap-3">
 
-          {/* Changed logo background to white, text to orange */}
-          <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center text-orange-500 font-bold text-xl">
+          {/* Changed logo background to white, text to blue-900 (Navy) */}
+          <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center text-blue-900 font-bold text-xl">
             T
           </div>
 
           <div>
-            {/* Changed site name to white, removed gradient text */}
+            {/* Site name remains white */}
             <h2 className="font-bold text-lg text-white">
-
               TripTrac
-
             </h2>
-            {/* Changed tagline text to a lighter orange/white */}
-            <p className="text-xs text-orange-100">Explore the world</p>
+            {/* Changed tagline text to text-blue-200 (Lighter blue for contrast) */}
+            <p className="text-xs text-blue-200">Explore the world</p>
 
           </div>
 
@@ -102,6 +102,7 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
               <Link
                 to="/profile/edit"
                 onClick={onClose}
+                // Link styling remains dark-theme-friendly (hover:bg-primary/10)
                 className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-primary/10 transition-all duration-200 group"
               >
                 <Edit className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -117,6 +118,7 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
               <Link
                 to={item.path}
                 onClick={onClose}
+                // Link styling remains dark-theme-friendly (hover:bg-primary/10)
                 className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-primary/10 transition-all duration-200 group"
               >
                 <item.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -141,8 +143,10 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
           )}
         </ul>
       </nav>
-<div className="p-6 border-t border-orange-400 bg-orange-500"> {/* Changed background to orange-500 and added a lighter orange border */}
-        <p className="text-xs text-orange-100 text-center"> {/* Changed text color for contrast */}
+      {/* Changed background to bg-blue-900 and border to border-blue-600 */}
+      <div className="p-6 border-t border-blue-600 bg-blue-900"> 
+        {/* Changed text color to text-blue-200 */}
+        <p className="text-xs text-blue-200 text-center"> 
           © 2025 TripTrac. All rights reserved.
         </p>
       </div>
