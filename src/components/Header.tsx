@@ -68,7 +68,7 @@ export const Header = () => {
   }, [user]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-blue-900 text-white">
+    <header className="sticky top-0 z-50 w-full border-b bg-blue-950 text-white">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -77,18 +77,21 @@ export const Header = () => {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
+            <SheetContent side="left" className="w-72 p-0 max-h-[90vh]">
               <NavigationDrawer onClose={() => setIsDrawerOpen(false)} />
             </SheetContent>
           </Sheet>
           
-          <Link to="/" className="flex items-center gap-2 lg:hidden">
+          <Link to="/" className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-blue-900 font-bold text-lg">
               T
             </div>
-            <span className="font-bold text-base md:text-lg text-white">
-              TripTrac
-            </span>
+            <div>
+              <span className="font-bold text-base md:text-lg text-white block">
+                TripTrac
+              </span>
+              <p className="text-xs text-blue-200 hidden lg:block">Explore the world</p>
+            </div>
           </Link>
         </div>
 

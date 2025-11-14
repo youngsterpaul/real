@@ -3,8 +3,7 @@ import { Compass } from "lucide-react";
 
 export const Footer = () => {
   return (
-    // Changed background color class to bg-blue-900 (Deep Navy)
-    <footer className="bg-blue-900 border-t mt-12 text-white"> 
+    <footer className="bg-blue-950 border-t mt-12 text-white">
       <div className="container px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">

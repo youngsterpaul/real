@@ -34,7 +34,7 @@ export const DesktopSidebar = () => {
   ];
 
   return (
-    <aside className="hidden lg:flex lg:flex-col fixed left-0 top-16 bottom-0 w-72 bg-blue-950 border-r border-blue-800 z-40">
+    <aside className="hidden lg:flex lg:flex-col fixed left-0 top-16 w-72 bg-blue-950 border-r border-blue-800 z-40" style={{ height: 'calc(90vh - 4rem)' }}>
       {/* Navigation content - no header, positioned below main header */}
       <nav className="flex-1 p-4 pt-6 overflow-y-auto">
         <ul className="space-y-2">
