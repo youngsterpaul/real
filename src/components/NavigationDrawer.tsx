@@ -140,7 +140,6 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
               </Link>
             </li>
           ))}
-
           {/* MY CONTENT LINKS - Visible to all, protected */}
           <li className="mb-4 border-t border-gray-200 pt-2">
             <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">My Content</p>
