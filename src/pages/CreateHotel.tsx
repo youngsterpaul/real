@@ -522,5 +522,4 @@ const CreateHotel = () => {
     </div>
   );
 };
-
 export default CreateHotel;
