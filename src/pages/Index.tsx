@@ -166,9 +166,6 @@ const Index = () => {
         <div className="px-4">
           <hr className="border-t border-gray-200 my-8" />
           <section>
-            <div className="bg-blue-950 text-white w-full py-3 mb-6 px-4">
-              <h2 className="font-bold text-xl lg:text-2xl">Popular Picks and Recent Finds</h2>
-            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {loading ? (
                 [...Array(10)].map((_, i) => (
