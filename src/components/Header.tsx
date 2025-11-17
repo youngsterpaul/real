@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Menu, Heart, Ticket, Shield, Home, FolderOpen, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// Avatar components are removed as per request to remove profile photo
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,14 +23,15 @@ export const Header = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { user, signOut } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  // profilePicture state removed as per request to remove profile photo
+  // const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     const checkRole = async () => {
       if (!user) {
         setUserRole(null);
-        setProfilePicture(null);
+        // setProfilePicture(null); // Removed
         setUserName("");
         return;
       }
@@ -45,31 +47,31 @@ export const Header = () => {
         else setUserRole("user");
       }
 
-      // Fetch profile picture and name
+      // Fetch profile name (profile picture fetching removed)
       const { data: profile } = await supabase
         .from("profiles")
-        .select("profile_picture_url, name")
+        .select("name")
         .eq("id", user.id)
         .single();
 
-      if (profile) {
-        if (profile.profile_picture_url) {
-          setProfilePicture(profile.profile_picture_url);
-        }
-        if (profile.name) {
-          // Extract first name (text before first space)
-          const firstName = profile.name.split(" ")[0];
-          setUserName(firstName);
-        }
+      if (profile && profile.name) {
+        // Extract first name (text before first space)
+        const firstName = profile.name.split(" ")[0];
+        setUserName(firstName);
       }
     };
 
     checkRole();
   }, [user]);
 
+  // Determine the correct link for the account icon
+  const accountLink = user ? "/profile/edit" : "/auth";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-blue-950 text-white h-16">
       <div className="container flex h-full items-center justify-between px-4">
+        
+        {/* Logo and Drawer Trigger (Left Side) */}
         <div className="flex items-center gap-3">
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
@@ -95,77 +97,91 @@ export const Header = () => {
           </Link>
         </div>
 
-        <nav className="hidden lg:flex items-center gap-6 ml-auto">
+        {/* Desktop Navigation (Centered) */}
+        {/* Removed ml-auto and justify-center to center the nav relative to the container space */}
+        <nav className="hidden lg:flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
             <Home className="h-4 w-4" />
-            <span className="hidden xl:inline">Home</span>
+            {/* Name is now visible */}
+            <span>Home</span>
           </Link>
           <Link to="/my-listing" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
             <FolderOpen className="h-4 w-4" />
-            <span className="hidden xl:inline">My Listing</span>
+            {/* Name is now visible */}
+            <span>My Listing</span>
           </Link>
           <Link to="/bookings" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
             <Ticket className="h-4 w-4" />
-            <span className="hidden xl:inline">My Bookings</span>
+            {/* Name is now visible */}
+            <span>My Bookings</span>
           </Link>
           <Link to="/saved" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
             <Heart className="h-4 w-4" />
-            <span className="hidden xl:inline">Saved</span>
+            {/* Name is now visible */}
+            <span>Saved</span>
           </Link>
         </nav>
 
-        {/* Desktop Dropdown */}
-        <div className="hidden lg:block">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              {user ? (
-                <Button variant="ghost" className="flex items-center gap-2 text-white hover:bg-blue-800">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={profilePicture || undefined} />
-                    <AvatarFallback className="bg-blue-700 text-white text-sm">
-                      {userName ? userName.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-bold">
-                    {userName || user.email?.split("@")[0] || "User"}
-                  </span>
-                </Button>
-              ) : (
-                <Button variant="ghost" className="text-white hover:bg-blue-800">
-                  Login
-                </Button>
-              )}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {user ? (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile/edit" className="cursor-pointer">
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  {userRole === "admin" && (
+        {/* Account Controls (Right Side) */}
+        <div className="flex items-center gap-2">
+            
+            {/* Mobile Account Icon (Visible on small screens) */}
+            <Link to={accountLink} className="lg:hidden">
+              <Button variant="ghost" size="icon" className="text-white hover:bg-blue-800">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            {/* Desktop Dropdown (Visible on large screens) */}
+            <div className="hidden lg:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  {user ? (
+                    // Replaced Avatar/Name button with a simple User icon button
+                    <Button variant="ghost" className="flex items-center gap-2 text-white hover:bg-blue-800">
+                      <User className="h-6 w-6" /> {/* Account Icon */}
+                      <span className="text-sm font-bold">
+                        {userName || user.email?.split("@")[0] || "Account"}
+                      </span>
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" className="text-white hover:bg-blue-800">
+                      Login
+                    </Button>
+                  )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {user ? (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile/edit" className="cursor-pointer">
+                          Profile Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      {userRole === "admin" && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/dashboard" className="cursor-pointer">
+                            <Shield className="mr-2 h-4 w-4" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+                        Sign Out
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/dashboard" className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Admin Dashboard
+                      <Link to="/auth" className="cursor-pointer">
+                        Login / Sign Up
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={signOut} className="cursor-pointer">
-                    Sign Out
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <DropdownMenuItem asChild>
-                  <Link to="/auth" className="cursor-pointer">
-                    Login / Sign Up
-                  </Link>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
         </div>
+
       </div>
     </header>
   );
