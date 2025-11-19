@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { MapPin, Mail, Phone, DollarSign, Navigation } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { accessPinSchema, registrationNumberSchema, adminEmailsSchema } from "@/lib/validation";
+import { registrationNumberSchema, adminEmailsSchema, descriptionSchema } from "@/lib/validation";
 
 const CreateAdventure = () => {
   const navigate = useNavigate();
@@ -110,19 +110,6 @@ const CreateAdventure = () => {
       });
       navigate("/auth");
       return;
-    }
-
-    // Validate access PIN if provided
-    if (formData.accessPin.trim()) {
-      const pinValidation = accessPinSchema.safeParse(formData.accessPin);
-      if (!pinValidation.success) {
-        toast({
-          title: "Invalid Access PIN",
-          description: pinValidation.error.issues[0].message,
-          variant: "destructive"
-        });
-        return;
-      }
     }
 
     // Validate registration number if provided

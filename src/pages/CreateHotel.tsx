@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { MapPin, Mail, Phone, Navigation } from "lucide-react";
-import { accessPinSchema, registrationNumberSchema, adminEmailsSchema } from "@/lib/validation";
+import { registrationNumberSchema, adminEmailsSchema, descriptionSchema } from "@/lib/validation";
 
 const CreateHotel = () => {
   const navigate = useNavigate();
@@ -105,26 +105,7 @@ const CreateHotel = () => {
       return;
     }
 
-    // Validate PIN confirmation
-    if (formData.accessPin !== formData.confirmAccessPin) {
-      toast({
-        title: "PINs Don't Match",
-        description: "Access PIN and Confirm Access PIN must match.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate access PIN
-    const pinValidation = accessPinSchema.safeParse(formData.accessPin);
-    if (!pinValidation.success) {
-      toast({
-        title: "Invalid Access PIN",
-        description: pinValidation.error.issues[0].message,
-        variant: "destructive"
-      });
-      return;
-    }
+    // Validate registration number
 
     // Validate registration number
     const regValidation = registrationNumberSchema.safeParse(formData.registrationNumber);
