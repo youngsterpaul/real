@@ -91,20 +91,20 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
   return (
     <header className="md:sticky top-0 z-50 w-full border-b border-border bg-blue-900 text-white h-16 dark:bg-blue-900 dark:text-white">
       <div className="container flex h-full items-center justify-between px-4">
-        
-        {/* Logo and Drawer Trigger (Left Side) */}
-        <div className="flex items-center gap-3">
+        
+        {/* Logo and Drawer Trigger (Left Side) */}
+        <div className="flex items-center gap-3">
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
               <button className="inline-flex items-center justify-center h-10 w-10 rounded-md text-white hover:bg-blue-800 transition-colors">
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 h-screen">
-              <NavigationDrawer onClose={() => setIsDrawerOpen(false)} />
-            </SheetContent>
-          </Sheet>
-          
+            <SheetContent side="left" className="w-72 p-0 h-screen">
+              <NavigationDrawer onClose={() => setIsDrawerOpen(false)} />
+            </SheetContent>
+          </Sheet>
+          
           <Link to="/" className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center text-primary font-bold text-lg">
               T
@@ -116,9 +116,9 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
               <p className="text-xs text-muted-foreground block">Explore the world</p>
             </div>
           </Link>
-        </div>
+        </div>
 
-        {/* Desktop Navigation (Centered) */}
+        {/* Desktop Navigation (Centered) */}
         <nav className="hidden lg:flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 font-bold hover:text-muted-foreground transition-colors">
             <Home className="h-4 w-4" />
@@ -192,7 +192,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             )}
           </div>
 
-          {/* Desktop Auth Actions (Right Side) */}
+          {/* Desktop Auth Actions (Right Side) - Keep this one */}
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
             {user ? (
@@ -227,42 +227,6 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
               </Button>
             )}
           </div>
-        </div>
-
-        {/* Desktop Auth Actions (Right Side) */}
-        <div className="hidden md:flex items-center gap-2">
-          <ThemeToggle />
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 transition-colors text-white">
-                  <User className="h-5 w-5" />
-                  <span className="font-medium">{getDisplayName()}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-background border-border">
-                <DropdownMenuItem asChild>
-                  <Link to="/profile/edit" className="text-foreground hover:bg-accent cursor-pointer">Profile</Link>
-                </DropdownMenuItem>
-                {userRole === "admin" && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin/dashboard" className="text-foreground hover:bg-accent cursor-pointer">Admin Dashboard</Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={signOut} className="text-foreground hover:bg-accent cursor-pointer">
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button 
-              onClick={() => navigate('/auth')}
-              variant="outline" 
-              className="bg-white text-blue-900 hover:bg-white/90 border-white font-medium"
-            >
-              Login / Sign Up
-            </Button>
-          )}
         </div>
       </div>
     </header>
