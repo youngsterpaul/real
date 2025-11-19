@@ -111,6 +111,7 @@ const Index = () => {
       ...(hotelsData.data || []).map(item => ({ ...item, table: "hotels", category: "Hotel" }))
     ];
 
+    // Note: The limit of 10 applied here is to the combined 'nearby' list, not the column count.
     const nearby = combined.slice(0, 10);
     setNearbyPlacesHotels(nearby);
     
@@ -124,6 +125,7 @@ const Index = () => {
     setLoading(true);
 
     const fetchTable = async (table: "trips" | "events" | "hotels" | "adventure_places", type: string) => {
+      // Note: No hard limit applied here, so all items will be fetched
       let dbQuery = supabase.from(table).select("*").eq("approval_status", "approved").eq("is_hidden", false);
       if (query) {
         dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,country.ilike.%${query}%`);
@@ -226,6 +228,12 @@ const Index = () => {
     { icon: Mountain, title: "Adventure", path: "/category/adventure", bgImage: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800" },
   ];
 
+  // Logic to split listings into two rows
+  const halfLength = Math.ceil(listings.length / 2);
+  const firstRowListings = listings.slice(0, halfLength);
+  const secondRowListings = listings.slice(halfLength);
+
+
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header onSearchClick={handleSearchIconClick} showSearchIcon={showSearchIcon} />
@@ -241,13 +249,12 @@ const Index = () => {
       </div>
       <main className="container px-0 md:px-4 py-0 md:py-8">
         <section className="flex flex-col lg:flex-row gap-4 md:gap-6">
-          <div className="w-full lg:w-1/3 order-2 lg:order-1 flex"> {/* Added flex to make the categories container stretch */}
-            <div className="grid grid-cols-2 gap-2 md:gap-0 lg:gap-4 w-full px-2 md:px-0"> {/* Added lg:gap-4 for column/row gap, and w-full */}
+          <div className="w-full lg:w-1/3 order-2 lg:order-1 flex">
+            <div className="grid grid-cols-2 gap-2 md:gap-0 lg:gap-4 w-full px-2 md:px-0">
               {categories.map((cat) => (
                 <div
                   key={cat.title}
                   onClick={() => navigate(cat.path)}
-                  // Adjusted class to make boxes bigger on lg, remove fixed h-24 on lg, and enforce aspect-square
                   className="relative h-24 lg:h-full lg:aspect-square cursor-pointer overflow-hidden group"
                   style={{ backgroundImage: `url(${cat.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                 >
@@ -263,38 +270,81 @@ const Index = () => {
             <ImageSlideshow />
           </div>
         </section>
+        
         <div className="px-4">
-          {/* Main Listings - First */}
+          {/* Main Listings - Two Horizontal Scroll Rows */}
           <section className="mb-8">
-            <div className="mt-4" /> {/* Replaced h2 with a small spacing div */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {loading ? (
-                [...Array(10)].map((_, i) => (
-                  <div key={i} className="rounded-lg overflow-hidden shadow-lg">
-                    <div className="aspect-[4/3] bg-muted animate-pulse" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+            <h2 className="text-2xl font-bold mb-4">Explore Top Destinations</h2>
+            
+            {loading ? (
+                // Loading state for two horizontal rows
+                <>
+                    {/* First Loading Row */}
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide mb-4">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={`loading-row1-${i}`} className="flex-shrink-0 w-64 md:w-72 lg:w-80">
+                                <div className="aspect-[4/3] bg-muted animate-pulse rounded-lg" />
+                                <div className="p-4 space-y-2">
+                                    <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                  </div>
-                ))
-              ) : (
-                listings.map((item) => (
-                  <ListingCard
-                    key={item.id}
-                    id={item.id}
-                    type={item.type}
-                    name={item.name}
-                    imageUrl={item.image_url}
-                    location={item.location}
-                    country={item.country}
-                    price={item.price || item.entry_fee || 0}
-                    date={item.date}
-                    onSave={handleSave}
-                    isSaved={savedItems.has(item.id)}
-                  />
-                ))
-              )}
-            </div>
+                    {/* Second Loading Row */}
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={`loading-row2-${i}`} className="flex-shrink-0 w-64 md:w-72 lg:w-80">
+                                <div className="aspect-[4/3] bg-muted animate-pulse rounded-lg" />
+                                <div className="p-4 space-y-2">
+                                    <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            ) : (
+                <>
+                    {/* First Horizontal Scroll Row */}
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide mb-4">
+                        {firstRowListings.map((item) => (
+                            <div key={item.id} className="flex-shrink-0 w-64 md:w-72 lg:w-80">
+                                <ListingCard
+                                    id={item.id}
+                                    type={item.type}
+                                    name={item.name}
+                                    imageUrl={item.image_url}
+                                    location={item.location}
+                                    country={item.country}
+                                    price={item.price || item.entry_fee || 0}
+                                    date={item.date}
+                                    onSave={handleSave}
+                                    isSaved={savedItems.has(item.id)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Second Horizontal Scroll Row */}
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                        {secondRowListings.map((item) => (
+                            <div key={item.id} className="flex-shrink-0 w-64 md:w-72 lg:w-80">
+                                <ListingCard
+                                    id={item.id}
+                                    type={item.type}
+                                    name={item.name}
+                                    imageUrl={item.image_url}
+                                    location={item.location}
+                                    country={item.country}
+                                    price={item.price || item.entry_fee || 0}
+                                    date={item.date}
+                                    onSave={handleSave}
+                                    isSaved={savedItems.has(item.id)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
           </section>
 
 
