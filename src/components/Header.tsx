@@ -193,8 +193,10 @@ export const Header = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-white hover:bg-blue-800 gap-2">
-                  <User className="h-5 w-5" />
-                  <span>{getDisplayName()}</span>
+                  <>
+                    <User className="h-5 w-5" />
+                    <span>{getDisplayName()}</span>
+                  </>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
