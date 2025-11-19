@@ -109,12 +109,11 @@ export const ListingCard = ({
           />
         </Button>
 
-        {/* Price Overlay - Bottom-Right of Image */}
+        {/* Price Overlay - Bottom-Right of Image (Original location was bottom of image, adjusted Price to be on the right side of the bottom image overlay) */}
         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex justify-end items-end">
           {/* Price - Right Side of Image Overlay */}
           {price !== undefined && (
-            // **UPDATED:** Use text-base for small screens, text-lg for medium screens and up
-            <p className="font-bold **text-base sm:text-lg** text-white"> 
+            <p className="font-bold text-lg text-white"> 
               ${price}
             </p>
           )}
@@ -123,8 +122,7 @@ export const ListingCard = ({
       
       {/* Name, Location, and Date Details - Below the image */}
       <div className="p-4 pt-3 flex flex-col space-y-1">
-        {/* **UPDATED:** Use text-base for small screens, text-lg for medium screens and up */}
-        <h3 className="font-bold **text-base sm:text-lg** line-clamp-1">{name}</h3> 
+        <h3 className="font-bold text-lg line-clamp-1">{name}</h3> 
 
         {/* LOCATION - Left below title name with icon */}
         <div className="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
