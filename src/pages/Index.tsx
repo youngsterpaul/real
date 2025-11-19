@@ -65,7 +65,7 @@ const Index = () => {
 const navigate = useNavigate();
 const [searchQuery, setSearchQuery] = useState("");
 const [listings, setListings] = useState<any[]>([]);
-const [savedItems, setSavedItems] = new Set();
+const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
 const [loading, setLoading] = useState(true);
 const [userId, setUserId] = useState<string | null>(null);
 const { toast } = useToast();
@@ -261,23 +261,35 @@ style={{ backgroundImage: `url(${cat.bgImage})`, backgroundSize: 'cover', backgr
 </div>
 </section>
 <div className="px-4">
-{/* Main Listings - First - MODIFIED TO BE A SCROLLING GAP */}
+{/* Main Listings - First - MODIFIED: Removed h2 and replaced with spacing */}
 <section className="mb-8">
-<h2 className="text-2xl font-bold mb-4">All Listings (Removed for spacing)</h2>
+<div className="mt-6" /> {/* This replaces the h2 with a vertical space gap */}
 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-{/*
-The contents of this section are removed to act as a space gap.
-We will render empty divs with the same width to maintain the visual structure.
-*/}
-{/* Gap Placeholder when loading */}
 {loading ? (
 [...Array(10)].map((_, i) => (
-<div key={i} className="flex-shrink-0 w-64 h-48 bg-gray-100 rounded-lg animate-pulse" /> // Render empty placeholder
+<div key={i} className="flex-shrink-0 w-64 rounded-lg overflow-hidden shadow-lg">
+<div className="aspect-[4/3] bg-muted animate-pulse" />
+<div className="p-4 space-y-2">
+<div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+</div>
+</div>
 ))
 ) : (
-/* Gap Placeholder when loaded (based on listings count) */
 listings.map((item) => (
-<div key={item.id} className="flex-shrink-0 w-64 h-48" /> // Render empty space/gap
+<div key={item.id} className="flex-shrink-0 w-64">
+<ListingCard
+id={item.id}
+type={item.type}
+name={item.name}
+imageUrl={item.image_url}
+location={item.location}
+country={item.country}
+price={item.price || item.entry_fee || 0}
+date={item.date}
+onSave={handleSave}
+isSaved={savedItems.has(item.id)}
+/>
+</div>
 ))
 )}
 </div>
@@ -314,7 +326,7 @@ nearbyPlacesHotels.filter((item) => item.table === "adventure_places").slice(0, 
 
 {/* Featured Hotels */}
 <section className="mb-8">
-<h2 className="text-2xl font-bold mb-4">Featured Hotels</h2>
+<h2 className="text-2xl font-bold mb-4">Featured Hotels & Accommodations</h2>
 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
 {loadingScrollable ? (
 [...Array(5)].map((_, i) => (
