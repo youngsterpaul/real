@@ -80,18 +80,19 @@ const Index = () => {
 
   const fetchScrollableRows = async () => {
     setLoadingScrollable(true);
-    const hotelsData = await supabase.from("hotels").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(10);
+    const [tripsData, eventsData, hotelsData] = await Promise.all([
+      supabase.from("trips").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(10),
+      supabase.from("events").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(10),
+      supabase.from("hotels").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(10)
+    ]);
 
     setScrollableRows({
-      trips: [],
-      events: [],
+      trips: tripsData.data || [],
+      events: eventsData.data || [],
       hotels: hotelsData.data || []
     });
     
-    // Only set loading to false if we have data
-    if (hotelsData.data && hotelsData.data.length > 0) {
-      setLoadingScrollable(false);
-    }
+    setLoadingScrollable(false);
   };
 
   const fetchNearbyPlacesAndHotels = async () => {
@@ -299,6 +300,64 @@ const Index = () => {
 
 
           <hr className="border-t border-gray-200 my-8" />
+
+          {/* Featured Trips Row */}
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Featured Trips</h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {loadingScrollable ? (
+                [...Array(5)].map((_, i) => (
+                  <div key={i} className="flex-shrink-0 w-64">
+                    <div className="aspect-[4/3] bg-muted animate-pulse rounded-lg" />
+                    <div className="h-4 bg-muted animate-pulse rounded mt-2 w-3/4" />
+                    <div className="h-3 bg-muted animate-pulse rounded mt-1 w-1/2" />
+                  </div>
+                ))
+              ) : scrollableRows.trips.length > 0 ? (
+                scrollableRows.trips.map((trip) => (
+                  <div key={trip.id} className="flex-shrink-0 w-64 cursor-pointer" onClick={() => navigate(`/trip/${trip.id}`)}>
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
+                      <img src={trip.image_url} alt={trip.name} className="w-full h-full object-cover" />
+                    </div>
+                    <h3 className="font-semibold mt-2">{trip.name}</h3>
+                    <p className="text-sm text-muted-foreground">{trip.location}</p>
+                    <p className="text-sm font-semibold text-primary">${trip.price}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No trips available</p>
+              )}
+            </div>
+          </section>
+
+          {/* Featured Events Row */}
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Featured Events</h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {loadingScrollable ? (
+                [...Array(5)].map((_, i) => (
+                  <div key={i} className="flex-shrink-0 w-64">
+                    <div className="aspect-[4/3] bg-muted animate-pulse rounded-lg" />
+                    <div className="h-4 bg-muted animate-pulse rounded mt-2 w-3/4" />
+                    <div className="h-3 bg-muted animate-pulse rounded mt-1 w-1/2" />
+                  </div>
+                ))
+              ) : scrollableRows.events.length > 0 ? (
+                scrollableRows.events.map((event) => (
+                  <div key={event.id} className="flex-shrink-0 w-64 cursor-pointer" onClick={() => navigate(`/event/${event.id}`)}>
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
+                      <img src={event.image_url} alt={event.name} className="w-full h-full object-cover" />
+                    </div>
+                    <h3 className="font-semibold mt-2">{event.name}</h3>
+                    <p className="text-sm text-muted-foreground">{event.location}</p>
+                    <p className="text-sm font-semibold text-primary">${event.price}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No events available</p>
+              )}
+            </div>
+          </section>
 
           {/* Featured Places */}
           <section className="mb-8">
