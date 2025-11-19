@@ -100,14 +100,14 @@ export const Header = () => {
   };
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b bg-blue-950 text-white h-16 transition-transform duration-300 ${!isVisible ? '-translate-y-full' : 'translate-y-0'}`}>
+    <header className={`sticky top-0 z-50 w-full border-b border-border bg-header text-header-foreground h-16 transition-transform duration-300 ${!isVisible ? '-translate-y-full' : 'translate-y-0'}`}>
       <div className="container flex h-full items-center justify-between px-4">
         
         {/* Logo and Drawer Trigger (Left Side) */}
         <div className="flex items-center gap-3">
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white hover:bg-blue-800">
+              <Button variant="ghost" size="icon" className="text-header-foreground hover:bg-header-hover">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -116,39 +116,38 @@ export const Header = () => {
             </SheetContent>
           </Sheet>
           
-          <Link to="/" className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-blue-900 font-bold text-lg">
-              T
-            </div>
-            <div>
-              <span className="font-bold text-base md:text-lg text-white block">
-                TripTrac
-              </span>
-              {/* The description is now visible on small screens (removed 'hidden lg:block') */}
-              <p className="text-xs text-blue-200 block">Explore the world</p>
-            </div>
-          </Link>
+          <Link to="/" className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center text-primary font-bold text-lg">
+              T
+            </div>
+            <div>
+              <span className="font-bold text-base md:text-lg text-header-foreground block">
+                TripTrac
+              </span>
+              <p className="text-xs text-muted-foreground block">Explore the world</p>
+            </div>
+          </Link>
         </div>
 
         {/* Desktop Navigation (Centered) */}
-        <nav className="hidden lg:flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
-            <Home className="h-4 w-4" />
-            <span>Home</span>
-          </Link>
-          <Link to="/bookings" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
-            <Ticket className="h-4 w-4" />
-            <span>My Bookings</span>
-          </Link>
-          <Link to="/saved" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
-            <Heart className="h-4 w-4" />
-            <span>Wishlist</span>
-          </Link>
-                    <Link to="/my-listing" className="flex items-center gap-2 font-bold hover:text-blue-200 transition-colors">
-            <FolderOpen className="h-4 w-4" />
-            <span>Become a Host</span>
-          </Link>
-        </nav>
+        <nav className="hidden lg:flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-2 font-bold hover:text-muted-foreground transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+          <Link to="/bookings" className="flex items-center gap-2 font-bold hover:text-muted-foreground transition-colors">
+            <Ticket className="h-4 w-4" />
+            <span>My Bookings</span>
+          </Link>
+          <Link to="/saved" className="flex items-center gap-2 font-bold hover:text-muted-foreground transition-colors">
+            <Heart className="h-4 w-4" />
+            <span>Wishlist</span>
+          </Link>
+          <Link to="/my-listing" className="flex items-center gap-2 font-bold hover:text-muted-foreground transition-colors">
+            <FolderOpen className="h-4 w-4" />
+            <span>Become a Host</span>
+          </Link>
+        </nav>
 
         {/* Account Controls (Right Side) */}
         <div className="flex items-center gap-2">
@@ -157,7 +156,7 @@ export const Header = () => {
         <div className="md:hidden flex items-center gap-2 relative">
           <button 
             onClick={handleMobileAccountTap}
-            className="flex items-center gap-2 text-white hover:text-blue-200"
+            className="flex items-center gap-2 text-header-foreground hover:text-muted-foreground transition-colors"
           >
             <User className="h-5 w-5" />
             <span className="text-sm font-medium">{getDisplayName()}</span>
@@ -192,7 +191,7 @@ export const Header = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-3 py-2 rounded-md text-white hover:bg-blue-800 transition-colors">
+                <button className="flex items-center gap-2 px-3 py-2 rounded-md text-header-foreground hover:bg-header-hover transition-colors">
                   <User className="h-5 w-5" />
                   <span>{getDisplayName()}</span>
                 </button>
@@ -213,7 +212,7 @@ export const Header = () => {
             </DropdownMenu>
           ) : (
             <Link to="/auth">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 Login / Sign Up
               </Button>
             </Link>
