@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { MapPin, Mail, Phone, Navigation } from "lucide-react";
 import { registrationNumberSchema, adminEmailsSchema, descriptionSchema } from "@/lib/validation";
+import { getCountryPhoneCode } from "@/lib/countryHelpers";
+import { CountrySelector } from "@/components/creation/CountrySelector";
 
 const CreateHotel = () => {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const CreateHotel = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [phonePrefix, setPhonePrefix] = useState("+254");
   
   const [formData, setFormData] = useState({
     name: "",
@@ -39,6 +42,41 @@ const CreateHotel = () => {
     {name: "", price: "", capacity: ""}
   ]);
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
+
+  // Fetch user profile and set country/phone prefix
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('country')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile?.country) {
+          const prefix = getCountryPhoneCode(profile.country);
+          setFormData(prev => ({ ...prev, country: profile.country }));
+          setPhonePrefix(prefix);
+        }
+      }
+    };
+    
+    fetchUserProfile();
+  }, [user]);
+
+  // Auto-fill location with geolocation
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          setFormData(prev => ({ ...prev, map_link: mapUrl }));
+        },
+        () => {} // Silent fail
+      );
+    }
+  }, []);
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files) return;
@@ -231,12 +269,13 @@ const CreateHotel = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="country">Country *</Label>
-                <Input
-                  id="country"
-                  required
+                <CountrySelector
                   value={formData.country}
-                  onChange={(e) => setFormData({...formData, country: e.target.value})}
-                  placeholder="Enter country"
+                  onChange={(value) => {
+                    const prefix = getCountryPhoneCode(value);
+                    setPhonePrefix(prefix);
+                    setFormData({...formData, country: value});
+                  }}
                 />
               </div>
 
@@ -316,7 +355,7 @@ const CreateHotel = () => {
                     className="pl-10"
                     value={formData.phone_numbers}
                     onChange={(e) => setFormData({...formData, phone_numbers: e.target.value})}
-                    placeholder="+123456789, +987654321"
+                    placeholder={`${phonePrefix}...`}
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">Separate multiple numbers with commas</p>
