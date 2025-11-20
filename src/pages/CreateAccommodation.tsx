@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Navigation } from "lucide-react";
 import { CountrySelector } from "@/components/creation/CountrySelector";
+import { getCountryPhoneCode } from "@/lib/countryHelpers";
 
 const ACCOMMODATION_TYPES = [
   "Tent",
@@ -29,6 +30,7 @@ const CreateAccommodation = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [phonePrefix, setPhonePrefix] = useState("+254");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -48,6 +50,42 @@ const CreateAccommodation = () => {
 
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  // Fetch user profile and set country/phone prefix
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('country')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile?.country) {
+          const prefix = getCountryPhoneCode(profile.country);
+          setFormData(prev => ({ ...prev, country: profile.country }));
+          setPhonePrefix(prefix);
+        }
+      }
+    };
+    
+    fetchUserProfile();
+  }, []);
+
+  // Auto-fill location with geolocation
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          setFormData(prev => ({ ...prev, mapLink: mapUrl }));
+        },
+        () => {} // Silent fail
+      );
+    }
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -76,6 +114,12 @@ const CreateAccommodation = () => {
     const newPhoneNumbers = [...formData.phoneNumbers];
     newPhoneNumbers[index] = value;
     setFormData({ ...formData, phoneNumbers: newPhoneNumbers });
+  };
+
+  const handleCountryChange = (country: string) => {
+    const prefix = getCountryPhoneCode(country);
+    setPhonePrefix(prefix);
+    setFormData({ ...formData, country });
   };
 
   const addPhoneNumber = () => {
@@ -271,7 +315,7 @@ const CreateAccommodation = () => {
                 <Label htmlFor="country">Country *</Label>
                 <CountrySelector
                   value={formData.country}
-                  onChange={(value) => setFormData({ ...formData, country: value })}
+                  onChange={handleCountryChange}
                 />
               </div>
 
@@ -324,7 +368,7 @@ const CreateAccommodation = () => {
                   <Input
                     value={phone}
                     onChange={(e) => handlePhoneNumberChange(index, e.target.value)}
-                    placeholder="+254..."
+                    placeholder={`${phonePrefix}...`}
                   />
                   {formData.phoneNumbers.length > 1 && (
                     <Button
@@ -345,12 +389,43 @@ const CreateAccommodation = () => {
 
             <div>
               <Label htmlFor="mapLink">Map Link (Google Maps)</Label>
-              <Input
-                id="mapLink"
-                value={formData.mapLink}
-                onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
-                placeholder="https://maps.google.com/..."
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="mapLink"
+                  value={formData.mapLink}
+                  onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })}
+                  placeholder="https://maps.google.com/..."
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    if ("geolocation" in navigator) {
+                      navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                          const { latitude, longitude } = position.coords;
+                          const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                          setFormData({ ...formData, mapLink: mapUrl });
+                          toast({
+                            title: "Location Added",
+                            description: "Your current location has been added.",
+                          });
+                        },
+                        () => {
+                          toast({
+                            title: "Location Error",
+                            description: "Unable to get your location.",
+                            variant: "destructive"
+                          });
+                        }
+                      );
+                    }
+                  }}
+                >
+                  <Navigation className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div>
