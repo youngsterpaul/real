@@ -37,8 +37,19 @@ const HostVerification = () => {
       return;
     }
 
-    // Check if user already has a verification
-    const checkVerification = async () => {
+    const fetchData = async () => {
+      // Fetch user profile to auto-populate name
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      if (profileData?.name) {
+        setLegalName(profileData.name);
+      }
+
+      // Check if user already has a verification
       const { data, error } = await supabase
         .from("host_verifications")
         .select("*")
@@ -55,7 +66,7 @@ const HostVerification = () => {
       }
     };
 
-    checkVerification();
+    fetchData();
   }, [user, navigate]);
 
   const uploadFile = async (file: File, path: string) => {
@@ -118,6 +129,20 @@ const HostVerification = () => {
         ? await uploadFile(documentBack, `${user!.id}/document_back_${Date.now()}`)
         : null;
       const selfieUrl = await uploadFile(selfie, `${user!.id}/selfie_${Date.now()}`);
+
+      // Update profile name if it was edited during verification
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", user!.id)
+        .single();
+
+      if (currentProfile && currentProfile.name !== legalName) {
+        await supabase
+          .from("profiles")
+          .update({ name: legalName })
+          .eq("id", user!.id);
+      }
 
       // Insert or update verification
       const verificationData = {
@@ -245,15 +270,19 @@ const HostVerification = () => {
                     placeholder="Enter your full legal name"
                     required
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Auto-filled from your profile. You can edit it to match your ID - this will update your profile name.
+                  </p>
                 </div>
                 <div>
-                  <Label htmlFor="address">Current Residential Address *</Label>
+                  <Label htmlFor="address">Current Residential Address (Street, City, Postal Code) *</Label>
                   <Textarea
                     id="address"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Enter your full residential address"
+                    placeholder="Enter your complete residential address including street, city, and postal code"
                     required
+                    rows={3}
                   />
                 </div>
                 <div>
