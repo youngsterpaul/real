@@ -87,6 +87,15 @@ const Index = () => {
             supabase.from("adventure_places").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(10)
         ]);
 
+        console.log("Fetched scrollable data:", {
+            hotels: hotelsData.data?.length,
+            hotelsError: hotelsData.error,
+            attractions: attractionsData.data?.length,
+            attractionsError: attractionsData.error,
+            campsites: campsitesData.data?.length,
+            campsitesError: campsitesData.error
+        });
+
         setScrollableRows({
             trips: [],
             hotels: hotelsData.data || [],
