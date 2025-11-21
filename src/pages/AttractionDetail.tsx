@@ -281,22 +281,20 @@ export default function AttractionDetail() {
             <LiveViewerCount itemId={attraction.id} itemType="attraction" />
           </div>
           <div className="flex gap-2">
-            {(attraction.location_link) && (
+            {attraction.location_link && (
               <Button
-                variant="outline"
                 onClick={() => window.open(attraction.location_link!, '_blank')}
-                className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600 text-xs md:text-sm"
+                className="gap-2"
               >
-                <MapPin className="mr-2 h-3 w-3 md:h-4 md:w-4" />
-                View on Map
+                <Navigation className="h-4 w-4" />
+                Location
               </Button>
             )}
             <Button
               variant="outline"
               onClick={handleShare}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+              <Share2 className="h-4 w-4" />
             </Button>
           </div>
         </div>

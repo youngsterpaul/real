@@ -14,7 +14,8 @@ interface SearchResult {
   id: string;
   name: string;
   image_url: string;
-  type: "trip" | "hotel" | "adventure";
+  type: "trip" | "hotel" | "adventure" | "attraction";
+  location_name?: string;
 }
 
 export const SearchBarWithSuggestions = ({ value, onChange, onSubmit }: SearchBarProps) => {
@@ -46,8 +47,8 @@ export const SearchBarWithSuggestions = ({ value, onChange, onSubmit }: SearchBa
       `name.ilike.${query}`;
 
     try {
-      // Fetch concurrently from three tables
-      const [trips, hotels, places] = await Promise.all([
+      // Fetch concurrently from four tables
+      const [trips, hotels, places, attractions] = await Promise.all([
         supabase
           .from("trips")
           .select("id, name, image_url")
@@ -66,6 +67,12 @@ export const SearchBarWithSuggestions = ({ value, onChange, onSubmit }: SearchBa
           .eq("approval_status", "approved")
           .or(orCondition)
           .limit(isFullQuery ? 3 : 2),
+        supabase
+          .from("attractions")
+          .select("id, location_name, photo_urls")
+          .eq("approval_status", "approved")
+          .or(orCondition.replace(/name\./g, "location_name."))
+          .limit(isFullQuery ? 3 : 2),
       ]);
 
       // Consolidate results and assign type
@@ -77,6 +84,14 @@ export const SearchBarWithSuggestions = ({ value, onChange, onSubmit }: SearchBa
       }
       if (places.data) {
         results.push(...places.data.map((item) => ({ ...item, type: "adventure" as const })));
+      }
+      if (attractions.data) {
+        results.push(...attractions.data.map((item) => ({ 
+          ...item, 
+          name: item.location_name,
+          image_url: item.photo_urls?.[0] || '',
+          type: "attraction" as const 
+        })));
       }
 
       setSuggestions(results.slice(0, 10)); // Max 10 combined suggestions
@@ -106,6 +121,8 @@ export const SearchBarWithSuggestions = ({ value, onChange, onSubmit }: SearchBa
         return "Hotel";
       case "adventure":
         return "Adventure Place";
+      case "attraction":
+        return "Attraction";
       default:
         return type;
     }
