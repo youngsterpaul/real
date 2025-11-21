@@ -34,6 +34,8 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import HostVerification from "./pages/HostVerification";
+import CreateAttraction from "./pages/CreateAttraction";
+import AttractionDetail from "./pages/AttractionDetail";
 import VerificationStatus from "./pages/VerificationStatus";
 import AdminVerification from "./pages/AdminVerification";
 
@@ -77,6 +79,8 @@ const App = () => (
               <Route path="/host-verification" element={<HostVerification />} />
               <Route path="/verification-status" element={<VerificationStatus />} />
               <Route path="/admin/verification" element={<AdminVerification />} />
+              <Route path="/create-attraction" element={<CreateAttraction />} />
+              <Route path="/attraction/:id" element={<AttractionDetail />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
