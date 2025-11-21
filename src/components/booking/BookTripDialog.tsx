@@ -16,6 +16,10 @@ interface Activity {
   price: number;
 }
 
+interface SelectedActivity extends Activity {
+  numberOfPeople: number;
+}
+
 interface Trip {
   id: string;
   name: string;
@@ -39,7 +43,7 @@ export const BookTripDialog = ({ open, onOpenChange, trip }: Props) => {
   const [step, setStep] = useState(1);
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-  const [selectedActivities, setSelectedActivities] = useState<Activity[]>([]);
+  const [selectedActivities, setSelectedActivities] = useState<SelectedActivity[]>([]);
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -50,14 +54,20 @@ export const BookTripDialog = ({ open, onOpenChange, trip }: Props) => {
 
   const toggleActivity = (activity: Activity, checked: boolean) => {
     if (checked) {
-      setSelectedActivities([...selectedActivities, activity]);
+      setSelectedActivities([...selectedActivities, { ...activity, numberOfPeople: 1 }]);
     } else {
       setSelectedActivities(selectedActivities.filter(a => a.name !== activity.name));
     }
   };
 
+  const updateActivityPeople = (name: string, count: number) => {
+    setSelectedActivities(selectedActivities.map(a => 
+      a.name === name ? { ...a, numberOfPeople: Math.max(1, count) } : a
+    ));
+  };
+
   const totalPeople = adults + children;
-  const totalAmount = (adults * trip.price) + (children * (trip.price_child || 0)) + selectedActivities.reduce((sum, a) => sum + a.price, 0);
+  const totalAmount = (adults * trip.price) + (children * (trip.price_child || 0)) + selectedActivities.reduce((sum, a) => sum + (a.price * a.numberOfPeople), 0);
 
   const handleStepOne = () => {
     const tripDate = new Date(trip.date);
@@ -222,21 +232,36 @@ export const BookTripDialog = ({ open, onOpenChange, trip }: Props) => {
 
             {trip.activities && trip.activities.length > 0 && (
               <div>
-                <Label>Select Activities</Label>
-                <div className="space-y-2 mt-2">
+                <Label>Select Activities (Optional)</Label>
+                <div className="space-y-3 mt-2">
                   {trip.activities.map((activity) => (
-                    <div key={activity.name} className="flex items-center justify-between border rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`activity-${activity.name}`}
-                          checked={selectedActivities.some(a => a.name === activity.name)}
-                          onCheckedChange={(checked) => toggleActivity(activity, checked as boolean)}
-                        />
-                        <label htmlFor={`activity-${activity.name}`} className="cursor-pointer">
-                          {activity.name}
-                        </label>
+                    <div key={activity.name} className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`activity-${activity.name}`}
+                            checked={selectedActivities.some(a => a.name === activity.name)}
+                            onCheckedChange={(checked) => toggleActivity(activity, checked as boolean)}
+                          />
+                          <label htmlFor={`activity-${activity.name}`} className="cursor-pointer">
+                            {activity.name}
+                          </label>
+                        </div>
+                        <span className="text-sm font-semibold">${activity.price}/person</span>
                       </div>
-                      <span className="text-sm font-semibold">${activity.price}</span>
+                      
+                      {selectedActivities.some(a => a.name === activity.name) && (
+                        <div className="mt-2 pl-6">
+                          <Label className="text-xs">Number of People</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={selectedActivities.find(a => a.name === activity.name)?.numberOfPeople || 1}
+                            onChange={(e) => updateActivityPeople(activity.name, parseInt(e.target.value) || 1)}
+                            className="w-24"
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Clock, DollarSign, Phone, Mail, Share2, Calendar, Users } from "lucide-react";
+import { MapPin, Clock, DollarSign, Phone, Mail, Share2, Calendar, Users, ArrowLeft, Loader2 } from "lucide-react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Attraction {
@@ -177,16 +179,26 @@ export default function AttractionDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+        <Footer />
+        <MobileBottomBar />
       </div>
     );
   }
 
   if (!attraction) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <p>Attraction not found</p>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <p>Attraction not found</p>
+        </div>
+        <Footer />
+        <MobileBottomBar />
       </div>
     );
   }
@@ -194,7 +206,19 @@ export default function AttractionDetail() {
   const images = attraction.gallery_images?.length > 0 ? attraction.gallery_images : attraction.photo_urls;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <Header />
+      
+      <main className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
       {/* Image Gallery */}
       <Carousel className="w-full max-w-4xl mx-auto mb-8">
         <CarouselContent>
@@ -432,6 +456,10 @@ export default function AttractionDetail() {
           </div>
         </DialogContent>
       </Dialog>
+      </main>
+      
+      <Footer />
+      <MobileBottomBar />
     </div>
   );
 }

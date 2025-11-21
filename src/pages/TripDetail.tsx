@@ -5,7 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Share2, Calendar, Mail } from "lucide-react";
+import { MapPin, Phone, Share2, Calendar, Mail, ArrowLeft } from "lucide-react";
 import { BookTripDialog } from "@/components/booking/BookTripDialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -125,6 +125,16 @@ const TripDetail = () => {
       <Header />
       
       <main className="container px-4 py-6 max-w-6xl mx-auto">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        
         {/* Image Gallery Carousel */}
         <div className="w-full mb-6">
           <Carousel

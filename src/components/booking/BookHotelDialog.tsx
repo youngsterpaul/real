@@ -39,6 +39,7 @@ interface SelectedFacility extends Facility {
 interface SelectedActivity {
   name: string;
   price: number;
+  numberOfPeople: number;
 }
 
 interface Props {
@@ -69,10 +70,16 @@ export const BookHotelDialog = ({ open, onOpenChange, hotel }: Props) => {
 
   const toggleActivity = (activity: Activity, checked: boolean) => {
     if (checked) {
-      setSelectedActivities([...selectedActivities, activity]);
+      setSelectedActivities([...selectedActivities, { ...activity, numberOfPeople: 1 }]);
     } else {
       setSelectedActivities(selectedActivities.filter(a => a.name !== activity.name));
     }
+  };
+
+  const updateActivityPeople = (name: string, count: number) => {
+    setSelectedActivities(selectedActivities.map(a => 
+      a.name === name ? { ...a, numberOfPeople: Math.max(1, count) } : a
+    ));
   };
 
   const toggleFacility = (facility: Facility, checked: boolean) => {
@@ -105,7 +112,7 @@ export const BookHotelDialog = ({ open, onOpenChange, hotel }: Props) => {
     }, 0);
     
     // Activities
-    total += selectedActivities.reduce((sum, activity) => sum + activity.price, 0);
+    total += selectedActivities.reduce((sum, activity) => sum + (activity.price * activity.numberOfPeople), 0);
     
     return total;
   };
@@ -261,21 +268,36 @@ export const BookHotelDialog = ({ open, onOpenChange, hotel }: Props) => {
 
             {hotel.activities && hotel.activities.length > 0 && (
               <div>
-                <Label>Select Activities</Label>
-                <div className="space-y-2 mt-2">
+                <Label>Select Activities (Optional)</Label>
+                <div className="space-y-3 mt-2">
                   {hotel.activities.map((activity) => (
-                    <div key={activity.name} className="flex items-center justify-between border rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`activity-${activity.name}`}
-                          checked={selectedActivities.some(a => a.name === activity.name)}
-                          onCheckedChange={(checked) => toggleActivity(activity, checked as boolean)}
-                        />
-                        <label htmlFor={`activity-${activity.name}`} className="cursor-pointer">
-                          {activity.name}
-                        </label>
+                    <div key={activity.name} className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`activity-${activity.name}`}
+                            checked={selectedActivities.some(a => a.name === activity.name)}
+                            onCheckedChange={(checked) => toggleActivity(activity, checked as boolean)}
+                          />
+                          <label htmlFor={`activity-${activity.name}`} className="cursor-pointer">
+                            {activity.name}
+                          </label>
+                        </div>
+                        <span className="text-sm font-semibold">${activity.price}/person</span>
                       </div>
-                      <span className="text-sm font-semibold">${activity.price}</span>
+                      
+                      {selectedActivities.some(a => a.name === activity.name) && (
+                        <div className="mt-2 pl-6">
+                          <Label className="text-xs">Number of People</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={selectedActivities.find(a => a.name === activity.name)?.numberOfPeople || 1}
+                            onChange={(e) => updateActivityPeople(activity.name, parseInt(e.target.value) || 1)}
+                            className="w-24"
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
