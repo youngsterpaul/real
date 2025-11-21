@@ -94,17 +94,18 @@ const MyListing = () => {
           <Card key={item.id} className="p-4 hover:shadow-md transition-shadow border-0">
             <div className="flex gap-4">
               <img
-                src={item.image_url}
-                alt={item.name}
+                src={item.image_url || item.photo_urls?.[0] || ''}
+                alt={item.name || item.local_name || item.location_name}
                 className="w-32 h-32 object-cover rounded-lg"
               />
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold text-lg">{item.name}</h3>
-                    <p className="text-sm text-muted-foreground">{item.location}, {item.country}</p>
+                    <h3 className="font-bold text-lg">{item.name || item.local_name || item.location_name}</h3>
+                    <p className="text-sm text-muted-foreground">{item.location || item.location_name}, {item.country}</p>
                     {item.date && <p className="text-sm text-muted-foreground">Date: {new Date(item.date).toLocaleDateString()}</p>}
                     {item.price && <p className="text-sm font-semibold mt-1">${item.price}</p>}
+                    {(item.price_adult || item.entry_fee) && <p className="text-sm font-semibold mt-1">${item.price_adult || item.entry_fee}</p>}
                   </div>
                   <Badge variant={item.approval_status === 'approved' ? 'default' : item.approval_status === 'pending' ? 'secondary' : 'destructive'}>
                     {item.approval_status}
