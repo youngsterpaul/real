@@ -10,13 +10,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, Edit2, Save, Calendar, MapPin, Phone, Mail, DollarSign, Users, Clock, CheckCircle, XCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Facility {
   name: string;
   price: number;
   capacity?: number;
 }
+
+interface Activity {
+  name: string;
+  price: number;
+}
+
+interface Booking {
+  id: string;
+  guest_name_masked: string;
+  guest_email_limited: string;
+  guest_phone_limited: string;
+  booking_type: string;
+  total_amount: number;
+  slots_booked: number;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  booking_details: any;
+}
+
+const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const EditListing = () => {
   const { type, id } = useParams<{ type: string; id: string }>();
@@ -25,22 +51,34 @@ const EditListing = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   
+  // Edit states
+  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  
+  // Common fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [location, setLocation] = useState("");
+  const [mapLink, setMapLink] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [openingHours, setOpeningHours] = useState("");
+  const [closingHours, setClosingHours] = useState("");
+  const [daysOpened, setDaysOpened] = useState<string[]>([]);
   
-  // Fields for trips/events
+  // Type-specific fields
   const [date, setDate] = useState("");
   const [availableSlots, setAvailableSlots] = useState(0);
-  const [priceChild, setPriceChild] = useState(0);
-  
-  // Fields for accommodations
   const [price, setPrice] = useState(0);
-  const [numberOfRooms, setNumberOfRooms] = useState(1);
-  const [capacity, setCapacity] = useState(2);
+  const [priceChild, setPriceChild] = useState(0);
+  const [entranceFeeType, setEntranceFeeType] = useState("free");
+  const [entranceFee, setEntranceFee] = useState(0);
+  const [amenities, setAmenities] = useState<string[]>([]);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
     if (!user || !id || !type) {
@@ -48,14 +86,31 @@ const EditListing = () => {
       return;
     }
     fetchListing();
+    fetchBookings();
   }, [user, id, type]);
+
+  const fetchBookings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("creator_booking_summary")
+        .select("*")
+        .eq("item_id", id!)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setBookings(data || []);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    }
+  };
 
   const fetchListing = async () => {
     try {
-      let table: "hotels" | "adventure_places" | "trips" = "hotels";
+      let table: "hotels" | "adventure_places" | "trips" | "attractions" = "hotels";
       if (type === "hotel") table = "hotels";
       else if (type === "adventure") table = "adventure_places";
       else if (type === "trip") table = "trips";
+      else if (type === "attraction") table = "attractions";
 
       const { data, error } = await supabase
         .from(table)
@@ -66,20 +121,67 @@ const EditListing = () => {
 
       if (error) throw error;
 
-      setName(data.name as string);
-      setDescription((data.description as string) || "");
-      // Only hotels and adventure places have facilities - safely access with type guard
-      if ('facilities' in data && data.facilities) {
-        setFacilities((data.facilities as any) || []);
-      }
-      setExistingImages((data.gallery_images as string[]) || []);
+      // Common fields
+      setName((data as any).name as string);
+      setDescription(((data as any).description as string) || "");
       
-      // Load trip specific fields
+      // Location handling - attractions use location_name
+      if (type === "attraction") {
+        setLocation(((data as any).location_name as string) || "");
+      } else {
+        setLocation(((data as any).location as string) || "");
+      }
+      
+      setMapLink(((data as any).map_link || (data as any).location_link as string) || "");
+      setEmail(((data as any).email as string) || "");
+      
+      // Images handling
+      if (type === "attraction") {
+        setExistingImages(((data as any).photo_urls as string[]) || []);
+      } else {
+        setExistingImages(((data as any).gallery_images as string[]) || ((data as any).images as string[]) || []);
+      }
+      
+      setOpeningHours(((data as any).opening_hours as string) || "");
+      setClosingHours(((data as any).closing_hours as string) || "");
+      setDaysOpened(((data as any).days_opened as string[]) || []);
+      
+      // Phone numbers
+      if (type === "trip") {
+        setPhoneNumbers([((data as any).phone_number as string)].filter(Boolean));
+      } else if (type === "attraction") {
+        setPhoneNumbers([((data as any).phone_number as string)].filter(Boolean));
+      } else {
+        setPhoneNumbers(((data as any).phone_numbers as string[]) || []);
+      }
+
+      // Type-specific fields
       if (type === 'trip') {
         setDate((data as any).date || '');
         setAvailableSlots((data as any).available_tickets || 0);
+        setPrice((data as any).price || 0);
         setPriceChild((data as any).price_child || 0);
       }
+
+      if (type === 'hotel' || type === 'adventure') {
+        setFacilities((data as any).facilities || []);
+        setActivities((data as any).activities || []);
+      }
+
+      if (type === 'hotel') {
+        setAmenities(((data as any).amenities as string[]) || []);
+      }
+
+      if (type === 'adventure') {
+        setEntranceFeeType((data as any).entry_fee_type || "free");
+        setEntranceFee((data as any).entry_fee || 0);
+      }
+      
+      if (type === 'attraction') {
+        setEntranceFeeType((data as any).entrance_type || "free");
+        setEntranceFee((data as any).price_adult || 0);
+      }
+      
     } catch (error) {
       console.error("Error fetching listing:", error);
       toast({
@@ -87,19 +189,23 @@ const EditListing = () => {
         description: "Failed to load listing",
         variant: "destructive",
       });
-      navigate("/my-content");
+      navigate("/become-host");
     } finally {
       setLoading(false);
     }
   };
 
+  const toggleEditMode = (field: string) => {
+    setEditMode({ ...editMode, [field]: !editMode[field] });
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      if (existingImages.length + newImages.length + files.length > 5) {
+      if (existingImages.length + newImages.length + files.length > 10) {
         toast({
           title: "Too many images",
-          description: "You can upload a maximum of 5 images",
+          description: "You can upload a maximum of 10 images",
           variant: "destructive",
         });
         return;
@@ -116,85 +222,32 @@ const EditListing = () => {
     setNewImages(newImages.filter((_, i) => i !== index));
   };
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a name",
-        variant: "destructive",
-      });
-      return;
-    }
+  const addPhoneNumber = () => {
+    setPhoneNumbers([...phoneNumbers, ""]);
+  };
 
-    setSaving(true);
-    try {
-      let uploadedImageUrls: string[] = [];
+  const updatePhoneNumber = (index: number, value: string) => {
+    const updated = [...phoneNumbers];
+    updated[index] = value;
+    setPhoneNumbers(updated);
+  };
 
-      // Upload new images
-      for (const file of newImages) {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${user?.id}-${Date.now()}-${Math.random()}.${fileExt}`;
-        const { error: uploadError, data } = await supabase.storage
-          .from("listing-images")
-          .upload(fileName, file);
+  const removePhoneNumber = (index: number) => {
+    setPhoneNumbers(phoneNumbers.filter((_, i) => i !== index));
+  };
 
-        if (uploadError) throw uploadError;
+  const addAmenity = () => {
+    setAmenities([...amenities, ""]);
+  };
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("listing-images")
-          .getPublicUrl(fileName);
+  const updateAmenity = (index: number, value: string) => {
+    const updated = [...amenities];
+    updated[index] = value;
+    setAmenities(updated);
+  };
 
-        uploadedImageUrls.push(publicUrl);
-      }
-
-      const allImages = [...existingImages, ...uploadedImageUrls];
-
-      let table: "hotels" | "adventure_places" | "trips" = "hotels";
-      if (type === "hotel") table = "hotels";
-      else if (type === "adventure") table = "adventure_places";
-      else if (type === "trip") table = "trips";
-
-      const updateData: any = {
-        name,
-        description,
-        gallery_images: allImages,
-        image_url: allImages[0] || existingImages[0],
-      };
-
-      if (type === 'hotel' || type === 'adventure') {
-        updateData.facilities = facilities;
-      }
-      
-      if (type === 'trip') {
-        updateData.date = date;
-        updateData.available_tickets = availableSlots;
-        updateData.price_child = priceChild;
-      }
-
-      const { error } = await supabase
-        .from(table)
-        .update(updateData)
-        .eq("id", id!)
-        .eq("created_by", user?.id!);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Listing updated successfully",
-      });
-
-      navigate("/my-content");
-    } catch (error) {
-      console.error("Error saving listing:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update listing",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
+  const removeAmenity = (index: number) => {
+    setAmenities(amenities.filter((_, i) => i !== index));
   };
 
   const addFacility = () => {
@@ -211,6 +264,215 @@ const EditListing = () => {
     setFacilities(facilities.filter((_, i) => i !== index));
   };
 
+  const addActivity = () => {
+    setActivities([...activities, { name: "", price: 0 }]);
+  };
+
+  const updateActivity = (index: number, field: keyof Activity, value: string | number) => {
+    const updated = [...activities];
+    updated[index] = { ...updated[index], [field]: value };
+    setActivities(updated);
+  };
+
+  const removeActivity = (index: number) => {
+    setActivities(activities.filter((_, i) => i !== index));
+  };
+
+  const toggleDay = (day: string) => {
+    if (daysOpened.includes(day)) {
+      setDaysOpened(daysOpened.filter(d => d !== day));
+    } else {
+      setDaysOpened([...daysOpened, day]);
+    }
+  };
+
+  const handleSaveField = async (field: string) => {
+    setSaving(true);
+    try {
+      let table: "hotels" | "adventure_places" | "trips" | "attractions" = "hotels";
+      if (type === "hotel") table = "hotels";
+      else if (type === "adventure") table = "adventure_places";
+      else if (type === "trip") table = "trips";
+      else if (type === "attraction") table = "attractions";
+
+      let updateData: any = {};
+
+      // Map field to update data
+      switch (field) {
+        case "description":
+          updateData.description = description;
+          break;
+        case "location":
+          updateData.location = location;
+          break;
+        case "mapLink":
+          updateData.map_link = mapLink;
+          break;
+        case "email":
+          updateData.email = email;
+          break;
+        case "phone":
+          if (type === "trip") {
+            updateData.phone_number = phoneNumbers[0] || "";
+          } else {
+            updateData.phone_numbers = phoneNumbers.filter(Boolean);
+          }
+          break;
+        case "hours":
+          updateData.opening_hours = openingHours;
+          updateData.closing_hours = closingHours;
+          updateData.days_opened = daysOpened;
+          break;
+        case "price":
+          if (type === "trip") {
+            updateData.price = price;
+            updateData.price_child = priceChild;
+          }
+          break;
+        case "slots":
+          if (type === "trip") {
+            updateData.available_tickets = availableSlots;
+          }
+          break;
+        case "date":
+          if (type === "trip") {
+            updateData.date = date;
+          }
+          break;
+        case "amenities":
+          updateData.amenities = amenities.filter(Boolean);
+          break;
+        case "facilities":
+          updateData.facilities = facilities;
+          break;
+        case "activities":
+          updateData.activities = activities;
+          break;
+        case "entranceFee":
+          if (type === "adventure") {
+            updateData.entry_fee_type = entranceFeeType;
+            updateData.entry_fee = entranceFee;
+          } else if (type === "attraction") {
+            updateData.entrance_type = entranceFeeType;
+            updateData.price_adult = entranceFee;
+          }
+          break;
+      }
+
+      const { error } = await supabase
+        .from(table)
+        .update(updateData)
+        .eq("id", id!)
+        .eq("created_by", user?.id!);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Changes saved successfully",
+      });
+
+      toggleEditMode(field);
+    } catch (error) {
+      console.error("Error saving:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save changes",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveImages = async () => {
+    setSaving(true);
+    try {
+      let uploadedImageUrls: string[] = [];
+
+      for (const file of newImages) {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${user?.id}-${Date.now()}-${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("listing-images")
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("listing-images")
+          .getPublicUrl(fileName);
+
+        uploadedImageUrls.push(publicUrl);
+      }
+
+      const allImages = [...existingImages, ...uploadedImageUrls];
+
+      let table: "hotels" | "adventure_places" | "trips" | "attractions" = "hotels";
+      if (type === "hotel") table = "hotels";
+      else if (type === "adventure") table = "adventure_places";
+      else if (type === "trip") table = "trips";
+      else if (type === "attraction") table = "attractions";
+
+      const updateData: any = {
+        gallery_images: allImages,
+        image_url: allImages[0] || existingImages[0],
+      };
+
+      if (type === "attraction") {
+        updateData.photo_urls = allImages;
+      } else {
+        updateData.images = allImages;
+      }
+
+      const { error } = await supabase
+        .from(table)
+        .update(updateData)
+        .eq("id", id!)
+        .eq("created_by", user?.id!);
+
+      if (error) throw error;
+
+      setNewImages([]);
+      toast({
+        title: "Success",
+        description: "Images updated successfully",
+      });
+
+      toggleEditMode("images");
+    } catch (error) {
+      console.error("Error saving images:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update images",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const EditButton = ({ field, onSave }: { field: string; onSave?: () => void }) => (
+    <Button
+      size="icon"
+      variant={editMode[field] ? "default" : "ghost"}
+      onClick={() => {
+        if (editMode[field] && onSave) {
+          onSave();
+        } else {
+          toggleEditMode(field);
+        }
+      }}
+      disabled={saving}
+    >
+      {editMode[field] ? (
+        saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />
+      ) : (
+        <Edit2 className="h-4 w-4" />
+      )}
+    </Button>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -223,189 +485,634 @@ const EditListing = () => {
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header />
       
-      <main className="container px-4 py-8 max-w-2xl mx-auto">
+      <main className="container px-4 py-8 max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Edit Listing</h1>
+          <h1 className="text-3xl font-bold">Edit {type === 'adventure' ? 'Experience' : type === 'trip' ? 'Tour' : type}</h1>
+          <p className="text-muted-foreground">Click the edit icons to modify any detail</p>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <Label htmlFor="name">Name (Cannot be changed)</Label>
-            <Input
-              id="name"
-              value={name}
-              disabled
-              className="bg-muted cursor-not-allowed"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-            />
-          </div>
-
-          <div>
-            <Label>Images ({existingImages.length + newImages.length}/5)</Label>
-            <div className="grid grid-cols-3 gap-4 mt-2">
-              {existingImages.map((img, idx) => (
-                <div key={`existing-${idx}`} className="relative">
-                  <img src={img} alt="" className="w-full h-24 object-cover rounded" />
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-6 w-6"
-                    onClick={() => removeExistingImage(idx)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Images Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Images</CardTitle>
+                  <EditButton field="images" onSave={handleSaveImages} />
                 </div>
-              ))}
-              {newImages.map((file, idx) => (
-                <div key={`new-${idx}`} className="relative">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt=""
-                    className="w-full h-24 object-cover rounded"
-                  />
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-6 w-6"
-                    onClick={() => removeNewImage(idx)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+              </CardHeader>
+              <CardContent>
+                {editMode.images ? (
+                  <div>
+                    <Label>Images ({existingImages.length + newImages.length}/10)</Label>
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                      {existingImages.map((img, idx) => (
+                        <div key={`existing-${idx}`} className="relative">
+                          <img src={img} alt="" className="w-full h-24 object-cover rounded" />
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 h-6 w-6"
+                            onClick={() => removeExistingImage(idx)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      {newImages.map((file, idx) => (
+                        <div key={`new-${idx}`} className="relative">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt=""
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 h-6 w-6"
+                            onClick={() => removeNewImage(idx)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      {existingImages.length + newImages.length < 10 && (
+                        <label className="border-2 border-dashed rounded flex items-center justify-center h-24 cursor-pointer hover:bg-secondary">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleImageUpload}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-4">
+                    {existingImages.slice(0, 6).map((img, idx) => (
+                      <img key={idx} src={img} alt="" className="w-full h-24 object-cover rounded" />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Name & Description */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Name</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Input value={name} disabled className="bg-muted cursor-not-allowed" />
+                <p className="text-xs text-muted-foreground mt-1">Name cannot be changed</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Description</CardTitle>
+                  <EditButton field="description" onSave={() => handleSaveField("description")} />
                 </div>
-              ))}
-              {existingImages.length + newImages.length < 5 && (
-                <label className="border-2 border-dashed rounded flex items-center justify-center h-24 cursor-pointer hover:bg-secondary">
-                  <Upload className="h-6 w-6 text-muted-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageUpload}
+              </CardHeader>
+              <CardContent>
+                {editMode.description ? (
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
                   />
-                </label>
-              )}
-            </div>
-          </div>
+                ) : (
+                  <p className="text-sm">{description || "No description"}</p>
+                )}
+              </CardContent>
+            </Card>
 
-          {(type === 'trip') && (
-            <>
-              <div>
-                <Label htmlFor="availableSlots">Available Slots/Tickets</Label>
-                <Input
-                  id="availableSlots"
-                  type="number"
-                  value={availableSlots}
-                  onChange={(e) => setAvailableSlots(parseInt(e.target.value) || 0)}
-                  min={0}
-                />
-              </div>
+            {/* Location & Map */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Location
+                  </CardTitle>
+                  <EditButton field="location" onSave={() => handleSaveField("location")} />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {editMode.location ? (
+                  <>
+                    <div>
+                      <Label>Location</Label>
+                      <Input
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm">{location}</p>
+                )}
+              </CardContent>
+            </Card>
 
-              <div>
-                <Label htmlFor="priceChild">Price for Child Ticket (KSh)</Label>
-                <Input
-                  id="priceChild"
-                  type="number"
-                  value={priceChild}
-                  onChange={(e) => setPriceChild(parseFloat(e.target.value) || 0)}
-                  min={0}
-                />
-              </div>
-            </>
-          )}
-
-          {type === 'accommodation' && (
-            <>
-              <div>
-                <Label htmlFor="price">Price per Night (KSh)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                  min={0}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="numberOfRooms">Number of Rooms</Label>
-                <Input
-                  id="numberOfRooms"
-                  type="number"
-                  value={numberOfRooms}
-                  onChange={(e) => setNumberOfRooms(parseInt(e.target.value) || 1)}
-                  min={1}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="capacity">Capacity (Maximum Guests)</Label>
-                <Input
-                  id="capacity"
-                  type="number"
-                  value={capacity}
-                  onChange={(e) => setCapacity(parseInt(e.target.value) || 2)}
-                  min={1}
-                />
-              </div>
-            </>
-          )}
-
-          {(type === "hotel" || type === "adventure") && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label>Facilities & Pricing</Label>
-                <Button size="sm" onClick={addFacility}>Add Facility</Button>
-              </div>
-              {facilities.map((facility, idx) => (
-                <div key={idx} className="flex gap-2 mb-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Map Link</CardTitle>
+                  <EditButton field="mapLink" onSave={() => handleSaveField("mapLink")} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {editMode.mapLink ? (
                   <Input
-                    placeholder="Facility name"
-                    value={facility.name}
-                    onChange={(e) => updateFacility(idx, "name", e.target.value)}
+                    value={mapLink}
+                    onChange={(e) => setMapLink(e.target.value)}
+                    placeholder="https://maps.google.com/..."
                   />
-                  <Input
-                    type="number"
-                    placeholder="Price"
-                    value={facility.price}
-                    onChange={(e) => updateFacility(idx, "price", parseFloat(e.target.value))}
-                  />
-                  {type === "hotel" && (
+                ) : (
+                  <p className="text-sm">{mapLink || "No map link"}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Contact Information */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Contact Information
+                  </CardTitle>
+                  <EditButton field="email" onSave={() => handleSaveField("email")} />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {editMode.email ? (
+                  <div>
+                    <Label>Email</Label>
                     <Input
-                      type="number"
-                      placeholder="Capacity"
-                      value={facility.capacity || 1}
-                      onChange={(e) => updateFacility(idx, "capacity", parseInt(e.target.value))}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                     />
-                  )}
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={() => removeFacility(idx)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+                  </div>
+                ) : (
+                  <p className="text-sm">{email || "No email"}</p>
+                )}
+              </CardContent>
+            </Card>
 
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={() => navigate("/my-content")} className="flex-1">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className="flex-1">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
-            </Button>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="h-5 w-5" />
+                    Phone Numbers
+                  </CardTitle>
+                  <EditButton field="phone" onSave={() => handleSaveField("phone")} />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {editMode.phone ? (
+                  <>
+                    {phoneNumbers.map((phone, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <Input
+                          value={phone}
+                          onChange={(e) => updatePhoneNumber(idx, e.target.value)}
+                          placeholder="Phone number"
+                        />
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          onClick={() => removePhoneNumber(idx)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button size="sm" onClick={addPhoneNumber}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Phone
+                    </Button>
+                  </>
+                ) : (
+                  <div className="space-y-1">
+                    {phoneNumbers.map((phone, idx) => (
+                      <p key={idx} className="text-sm">{phone}</p>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Operating Hours */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Operating Hours
+                  </CardTitle>
+                  <EditButton field="hours" onSave={() => handleSaveField("hours")} />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {editMode.hours ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Opening Time</Label>
+                        <Input
+                          type="time"
+                          value={openingHours}
+                          onChange={(e) => setOpeningHours(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Closing Time</Label>
+                        <Input
+                          type="time"
+                          value={closingHours}
+                          onChange={(e) => setClosingHours(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Working Days</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        {DAYS_OF_WEEK.map((day) => (
+                          <div key={day} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={day}
+                              checked={daysOpened.includes(day)}
+                              onCheckedChange={() => toggleDay(day)}
+                            />
+                            <label htmlFor={day} className="text-sm cursor-pointer">
+                              {day}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm">
+                      {openingHours && closingHours
+                        ? `${openingHours} - ${closingHours}`
+                        : "No hours set"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {daysOpened.length > 0 ? daysOpened.join(", ") : "No days set"}
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Trip-specific fields */}
+            {type === "trip" && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Date
+                      </CardTitle>
+                      <EditButton field="date" onSave={() => handleSaveField("date")} />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {editMode.date ? (
+                      <Input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                      />
+                    ) : (
+                      <p className="text-sm">{date ? new Date(date).toLocaleDateString() : "No date"}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5" />
+                        Pricing
+                      </CardTitle>
+                      <EditButton field="price" onSave={() => handleSaveField("price")} />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {editMode.price ? (
+                      <>
+                        <div>
+                          <Label>Adult Price (KSh)</Label>
+                          <Input
+                            type="number"
+                            value={price}
+                            onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <Label>Child Price (KSh)</Label>
+                          <Input
+                            type="number"
+                            value={priceChild}
+                            onChange={(e) => setPriceChild(parseFloat(e.target.value) || 0)}
+                            min={0}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm">Adult: KSh {price}</p>
+                        <p className="text-sm">Child: KSh {priceChild}</p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Available Tickets
+                      </CardTitle>
+                      <EditButton field="slots" onSave={() => handleSaveField("slots")} />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {editMode.slots ? (
+                      <Input
+                        type="number"
+                        value={availableSlots}
+                        onChange={(e) => setAvailableSlots(parseInt(e.target.value) || 0)}
+                        min={0}
+                      />
+                    ) : (
+                      <p className="text-sm">{availableSlots} tickets</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {/* Hotel amenities */}
+            {type === "hotel" && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Amenities</CardTitle>
+                    <EditButton field="amenities" onSave={() => handleSaveField("amenities")} />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {editMode.amenities ? (
+                    <>
+                      {amenities.map((amenity, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <Input
+                            value={amenity}
+                            onChange={(e) => updateAmenity(idx, e.target.value)}
+                            placeholder="Amenity name"
+                          />
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            onClick={() => removeAmenity(idx)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button size="sm" onClick={addAmenity}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Amenity
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {amenities.map((amenity, idx) => (
+                        <Badge key={idx} variant="secondary">{amenity}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Facilities */}
+            {(type === "hotel" || type === "adventure") && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Facilities & Rooms</CardTitle>
+                    <EditButton field="facilities" onSave={() => handleSaveField("facilities")} />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {editMode.facilities ? (
+                    <>
+                      {facilities.map((facility, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <Input
+                            placeholder="Facility name"
+                            value={facility.name}
+                            onChange={(e) => updateFacility(idx, "name", e.target.value)}
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Price"
+                            value={facility.price}
+                            onChange={(e) => updateFacility(idx, "price", parseFloat(e.target.value) || 0)}
+                          />
+                          {type === "hotel" && (
+                            <Input
+                              type="number"
+                              placeholder="Capacity"
+                              value={facility.capacity || 1}
+                              onChange={(e) => updateFacility(idx, "capacity", parseInt(e.target.value) || 1)}
+                            />
+                          )}
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            onClick={() => removeFacility(idx)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button size="sm" onClick={addFacility}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Facility
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      {facilities.map((facility, idx) => (
+                        <div key={idx} className="flex justify-between items-center p-2 border rounded">
+                          <span className="text-sm">{facility.name}</span>
+                          <div className="flex gap-2 text-sm text-muted-foreground">
+                            <span>KSh {facility.price}</span>
+                            {type === "hotel" && <span>• {facility.capacity} guests</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Activities */}
+            {(type === "hotel" || type === "adventure") && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Activities</CardTitle>
+                    <EditButton field="activities" onSave={() => handleSaveField("activities")} />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {editMode.activities ? (
+                    <>
+                      {activities.map((activity, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <Input
+                            placeholder="Activity name"
+                            value={activity.name}
+                            onChange={(e) => updateActivity(idx, "name", e.target.value)}
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Price"
+                            value={activity.price}
+                            onChange={(e) => updateActivity(idx, "price", parseFloat(e.target.value) || 0)}
+                          />
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            onClick={() => removeActivity(idx)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button size="sm" onClick={addActivity}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Activity
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      {activities.map((activity, idx) => (
+                        <div key={idx} className="flex justify-between items-center p-2 border rounded">
+                          <span className="text-sm">{activity.name}</span>
+                          <span className="text-sm text-muted-foreground">KSh {activity.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Entrance Fee */}
+            {(type === "adventure" || type === "attraction") && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Entrance Fee
+                    </CardTitle>
+                    <EditButton field="entranceFee" onSave={() => handleSaveField("entranceFee")} />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {editMode.entranceFee ? (
+                    <>
+                      <div>
+                        <Label>Type</Label>
+                        <Select value={entranceFeeType} onValueChange={setEntranceFeeType}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="paid">Paid</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {entranceFeeType === "paid" && (
+                        <div>
+                          <Label>Price (KSh)</Label>
+                          <Input
+                            type="number"
+                            value={entranceFee}
+                            onChange={(e) => setEntranceFee(parseFloat(e.target.value) || 0)}
+                            min={0}
+                          />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm capitalize">
+                      {entranceFeeType === "free" ? "Free" : `Paid - KSh ${entranceFee}`}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar - Bookings */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Bookings ({bookings.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {bookings.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No bookings yet</p>
+                ) : (
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                    {bookings.map((booking) => (
+                      <div key={booking.id} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-sm font-medium">{booking.guest_name_masked}</p>
+                            <p className="text-xs text-muted-foreground">{booking.guest_email_limited}</p>
+                          </div>
+                          <Badge variant={booking.payment_status === "completed" ? "default" : "secondary"}>
+                            {booking.payment_status}
+                          </Badge>
+                        </div>
+                        <Separator />
+                        <div className="text-xs space-y-1">
+                          <p>Amount: KSh {booking.total_amount}</p>
+                          <p>Slots: {booking.slots_booked}</p>
+                          <p>Date: {new Date(booking.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

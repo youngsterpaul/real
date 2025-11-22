@@ -197,6 +197,11 @@ const BecomeHost = () => {
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
+                    <div className="absolute top-2 left-2">
+                      <Badge variant="outline" className="bg-background/80 backdrop-blur-sm capitalize text-xs">
+                        {item.type === 'adventure' ? 'experience' : item.type}
+                      </Badge>
+                    </div>
                     <div className="absolute top-2 right-2">
                       {getStatusBadge(item.approval_status)}
                     </div>
