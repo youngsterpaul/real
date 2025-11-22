@@ -686,6 +686,7 @@ export type Database = {
           price: number
           price_child: number | null
           rejection_note: string | null
+          type: string | null
         }
         Insert: {
           activities?: Json | null
@@ -714,6 +715,7 @@ export type Database = {
           price: number
           price_child?: number | null
           rejection_note?: string | null
+          type?: string | null
         }
         Update: {
           activities?: Json | null
@@ -742,6 +744,7 @@ export type Database = {
           price?: number
           price_child?: number | null
           rejection_note?: string | null
+          type?: string | null
         }
         Relationships: []
       }

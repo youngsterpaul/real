@@ -324,7 +324,7 @@ const CategoryDetail = () => {
               <ListingCard
                 key={item.id}
                 id={item.id}
-                type={item.table === "trips" ? "TRIP" : item.table === "events" ? "EVENT" : item.table === "hotels" ? "HOTEL" : isAttraction ? "ATTRACTION" : "ADVENTURE PLACE"}
+                type={item.table === "trips" ? (item.type === "event" ? "EVENT" : "TRIP") : item.table === "hotels" ? "HOTEL" : isAttraction ? "ATTRACTION" : "ADVENTURE PLACE"}
                 name={isAttraction ? (item.local_name || item.location_name) : item.name}
                 imageUrl={isAttraction ? (item.photo_urls?.[0] || "") : item.image_url}
                 location={isAttraction ? item.location_name : item.location}

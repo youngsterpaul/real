@@ -82,7 +82,7 @@ export const ListingCard = ({
   return (
     <Card 
       onClick={handleCardClick}
-      className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-0 rounded-lg" 
+      className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-0 rounded-none" 
     >
       <div 
         className="relative aspect-[4/3] overflow-hidden" 
@@ -94,7 +94,7 @@ export const ListingCard = ({
         />
         
         {/* Category Badge - Top-Left */}
-        <Badge className="absolute top-3 left-3 bg-red-600 text-white backdrop-blur text-xs z-10">
+        <Badge className="absolute top-3 left-3 bg-red-600 text-white backdrop-blur text-xs md:text-xs text-2xs z-10">
           {type}
         </Badge>
 
@@ -115,8 +115,8 @@ export const ListingCard = ({
           />
         </Button>
 
-        {/* Price Overlay - Bottom-Right of Image */}
-        {!hidePrice && (
+        {/* Price Overlay - Bottom-Right of Image - Only for TRIP */}
+        {!hidePrice && type === "TRIP" && (
           <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex justify-end items-end">
             {price !== undefined && (
               <p className="font-bold text-sm md:text-lg text-white"> 
@@ -139,15 +139,12 @@ export const ListingCard = ({
           </p>
         </div>
         
-        {/* DATE and PRICE row - only show price for TRIP type */}
+        {/* DATE row */}
         {(date || isCustomDate) && (
           <div className="flex justify-between items-center pt-1">
             <p className="text-2xs md:text-sm font-semibold text-red-600 dark:text-red-400"> 
               {isCustomDate ? "Custom" : formatDate(date)}
             </p>
-            {!hidePrice && type === "TRIP" && price !== undefined && (
-              <p className="text-2xs md:text-sm font-bold text-primary">KSh {price}</p>
-            )}
           </div>
         )}
       </div>

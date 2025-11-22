@@ -37,7 +37,8 @@ const CreateTripEvent = () => {
     email: "",
     phone_number: "",
     map_link: "",
-    is_custom_date: false
+    is_custom_date: false,
+    type: "trip" as "trip" | "event"
   });
   
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
@@ -169,6 +170,7 @@ const CreateTripEvent = () => {
         country: formData.country,
         date: formData.is_custom_date ? new Date().toISOString().split('T')[0] : formData.date,
         is_custom_date: formData.is_custom_date,
+        type: formData.type,
         image_url: uploadedUrls[0] || "",
         gallery_images: uploadedUrls,
         price: parseFloat(formData.price),
@@ -214,6 +216,35 @@ const CreateTripEvent = () => {
         
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Trip/Event Type Selector */}
+            <div className="space-y-2">
+              <Label>Listing Type *</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="trip"
+                    checked={formData.type === "trip"}
+                    onChange={(e) => setFormData({...formData, type: e.target.value as "trip" | "event"})}
+                    className="w-4 h-4"
+                  />
+                  <span>Trip (Flexible Dates)</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="event"
+                    checked={formData.type === "event"}
+                    onChange={(e) => setFormData({...formData, type: e.target.value as "trip" | "event", is_custom_date: false})}
+                    className="w-4 h-4"
+                  />
+                  <span>Event (Fixed Date)</span>
+                </label>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Name *</Label>
@@ -267,19 +298,21 @@ const CreateTripEvent = () => {
               <div className="space-y-2">
                 <Label htmlFor="date">Date {!formData.is_custom_date && "*"}</Label>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="custom_date"
-                      checked={formData.is_custom_date}
-                      onCheckedChange={(checked) => setFormData({...formData, is_custom_date: checked as boolean, date: checked ? "" : formData.date})}
-                    />
-                  <label
-                    htmlFor="custom_date"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Custom tour - Available for 30 days from approval
-                  </label>
-                  </div>
+                  {formData.type === "trip" && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="custom_date"
+                        checked={formData.is_custom_date}
+                        onCheckedChange={(checked) => setFormData({...formData, is_custom_date: checked as boolean, date: checked ? "" : formData.date})}
+                      />
+                      <label
+                        htmlFor="custom_date"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Custom tour - Available for 30 days from approval
+                      </label>
+                    </div>
+                  )}
                   {!formData.is_custom_date && (
                     <div className="relative">
                       <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -293,6 +326,9 @@ const CreateTripEvent = () => {
                         onChange={(e) => setFormData({...formData, date: e.target.value})}
                       />
                     </div>
+                  )}
+                  {formData.type === "event" && formData.is_custom_date && (
+                    <p className="text-sm text-destructive">Events must have a fixed date</p>
                   )}
                 </div>
               </div>

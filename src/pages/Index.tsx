@@ -301,7 +301,7 @@ const Index = () => {
                                 Featured Campsite & Experience
                             </h2>
                             <Link to="/category/campsite">
-                                <Button variant="outline" size="sm" className="text-2xs md:text-sm">
+                                <Button variant="outline" size="sm" className="text-2xs md:text-sm md:px-4 px-2">
                                     View All
                                 </Button>
                             </Link>
@@ -347,7 +347,7 @@ const Index = () => {
                                 Featured Hotels
                             </h2>
                             <Link to="/category/hotels">
-                                <Button variant="outline" size="sm" className="text-2xs md:text-sm">
+                                <Button variant="outline" size="sm" className="text-2xs md:text-sm md:px-4 px-2">
                                     View All
                                 </Button>
                             </Link>
@@ -393,7 +393,7 @@ const Index = () => {
                                 Featured Attractions
                             </h2>
                             <Link to="/category/adventure">
-                                <Button variant="outline" size="sm" className="text-2xs md:text-sm">
+                                <Button variant="outline" size="sm" className="text-2xs md:text-sm md:px-4 px-2">
                                     View All
                                 </Button>
                             </Link>
@@ -441,7 +441,7 @@ const Index = () => {
                                 Featured Trips
                             </h2>
                             <Link to="/category/trips">
-                                <Button variant="outline" size="sm" className="text-2xs md:text-sm">
+                                <Button variant="outline" size="sm" className="text-2xs md:text-sm md:px-4 px-2">
                                     View All
                                 </Button>
                             </Link>
