@@ -110,7 +110,7 @@ const BecomeHost = () => {
           <Card className="p-3 md:p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/CreateTripEvent")}>
             <div className="flex flex-col items-center text-center space-y-1 md:space-y-3">
               <Plane className="h-6 w-6 md:h-12 md:w-12 text-blue-600" />
-              <h3 className="font-semibold text-xs md:text-lg">Create Trip</h3>
+              <h3 className="font-semibold text-xs md:text-lg">Create Tour</h3>
               <Button size="sm" className="w-full text-xs md:text-sm">Create</Button>
             </div>
           </Card>
@@ -134,7 +134,7 @@ const BecomeHost = () => {
           <Card className="p-3 md:p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/CreateAdventure")}>
             <div className="flex flex-col items-center text-center space-y-1 md:space-y-3">
               <Tent className="h-6 w-6 md:h-12 md:w-12 text-purple-600" />
-              <h3 className="font-semibold text-xs md:text-lg">Campsite</h3>
+              <h3 className="font-semibold text-xs md:text-lg">Experience</h3>
               <Button size="sm" className="w-full text-xs md:text-sm">Create</Button>
             </div>
           </Card>

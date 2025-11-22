@@ -217,14 +217,20 @@ const TripDetail = () => {
         {/* BELOW CAROUSEL: Description and Booking sidebar */}
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-4 p-4 md:p-6 border rounded-lg bg-card shadow-sm">
-            {/* Date, Phone, and Email */}
-            <div className="flex flex-wrap gap-4 pb-4 border-b">
+            {/* Date and Price Row */}
+            <div className="flex justify-between items-center pb-4 border-b">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                <span className="text-xs md:text-base">
-                  {trip.is_custom_date ? "Custom" : new Date(trip.date).toLocaleDateString()}
-                </span>
+                <span className="text-xs md:text-base font-semibold">Date</span>
               </div>
+              <div className="text-lg md:text-xl font-bold">${trip.price}</div>
+            </div>
+            <div className="text-xs md:text-base text-muted-foreground">
+              {trip.is_custom_date ? "Available for 30 days - Choose your visit date" : new Date(trip.date).toLocaleDateString()}
+            </div>
+            
+            {/* Contact Info */}
+            <div className="flex flex-wrap gap-4 pt-4 border-t">
               {trip.phone_number && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 md:h-5 md:w-5 text-primary" />
@@ -239,19 +245,15 @@ const TripDetail = () => {
               )}
             </div>
             
-            <h2 className="text-lg md:text-xl font-semibold">About This Trip</h2>
+            <h2 className="text-lg md:text-xl font-semibold">About This Tour</h2>
             <p className="text-xs md:text-base text-muted-foreground">{trip.description}</p>
           </div>
 
           {/* Pricing and Booking (Sidebar) */}
           <div className="space-y-4">
             <div className="bg-card p-6 rounded-lg border space-y-4 shadow-sm">
-              <h3 className="font-semibold text-base md:text-lg">Trip Details & Booking</h3>
+              <h3 className="font-semibold text-base md:text-lg">Tour Details & Booking</h3>
               <div className="pt-2 border-t space-y-2">
-                <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Adult Price</p>
-                  <p className="text-xl md:text-2xl font-bold">${trip.price}</p>
-                </div>
                 {trip.price_child > 0 && (
                   <div>
                     <p className="text-xs md:text-sm text-muted-foreground">Child Price</p>
@@ -267,10 +269,10 @@ const TripDetail = () => {
               <Button 
                 className="w-full text-xs md:text-sm" 
                 onClick={() => setBookingOpen(true)}
-                disabled={trip.available_tickets === 0 || new Date(trip.date) < new Date()}
+                disabled={trip.available_tickets === 0 || (!trip.is_custom_date && new Date(trip.date) < new Date())}
               >
-                {new Date(trip.date) < new Date() 
-                  ? 'Trip Passed' 
+                {!trip.is_custom_date && new Date(trip.date) < new Date()
+                  ? 'Tour Passed' 
                   : trip.available_tickets === 0 
                   ? 'Sold Out' 
                   : 'Book Now'}
