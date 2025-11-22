@@ -230,11 +230,12 @@ const EditListing = () => {
 
         <div className="space-y-6">
           <div>
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">Name (Cannot be changed)</Label>
             <Input
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              disabled
+              className="bg-muted cursor-not-allowed"
             />
           </div>
 
@@ -296,19 +297,8 @@ const EditListing = () => {
             </div>
           </div>
 
-          {(type === 'trip' || type === 'event') && (
+          {(type === 'trip') && (
             <>
-              <div>
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-
               <div>
                 <Label htmlFor="availableSlots">Available Slots/Tickets</Label>
                 <Input

@@ -254,10 +254,10 @@ const CreateHotel = () => {
 
       toast({
         title: "Success!",
-        description: "Your hotel/accommodation has been submitted for verification. You can view it in 'My Listings'.",
+        description: "Your hotel/accommodation has been submitted for verification.",
       });
 
-      navigate("/my-listing");
+      navigate("/become-host");
     } catch (error: any) {
       toast({
         title: "Error",

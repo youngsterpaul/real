@@ -197,7 +197,7 @@ export const BookTripDialog = ({ open, onOpenChange, trip }: Props) => {
 
       toast({
         title: "Booking successful!",
-        description: "Your trip has been booked. Check your email for confirmation.",
+        description: "Your tour has been booked. Check your email for confirmation.",
       });
 
       onOpenChange(false);
@@ -228,19 +228,21 @@ export const BookTripDialog = ({ open, onOpenChange, trip }: Props) => {
           <div className="space-y-4">
             {trip.is_custom_date ? (
               <div>
-                <Label htmlFor="visit_date">Select Visit Date</Label>
+                <Label htmlFor="visit_date">Select Your Visit Date</Label>
                 <Input
                   id="visit_date"
                   type="date"
                   min={new Date().toISOString().split('T')[0]}
+                  max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                   value={visitDate}
                   onChange={(e) => setVisitDate(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground mt-1">Available for bookings within 30 days</p>
               </div>
             ) : (
               <div>
-                <Label>Trip Date</Label>
+                <Label>Tour Date</Label>
                 <Input value={new Date(trip.date).toLocaleDateString()} disabled />
               </div>
             )}

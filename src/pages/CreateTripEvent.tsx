@@ -43,20 +43,26 @@ const CreateTripEvent = () => {
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Fetch user profile and set country/phone prefix
+  // Fetch user profile and set country/phone prefix and email
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('country')
+          .select('country, email')
           .eq('id', user.id)
           .single();
         
         if (profile?.country) {
           const prefix = getCountryPhoneCode(profile.country);
-          setFormData(prev => ({ ...prev, country: profile.country }));
+          setFormData(prev => ({ 
+            ...prev, 
+            country: profile.country,
+            email: profile.email || user.email || ''
+          }));
           setPhonePrefix(prefix);
+        } else if (user.email) {
+          setFormData(prev => ({ ...prev, email: user.email || '' }));
         }
       }
     };
@@ -182,10 +188,10 @@ const CreateTripEvent = () => {
 
       toast({
         title: "Success!",
-        description: `Your trip has been submitted for approval. You can view it in 'My Listings'.`,
+        description: `Your tour has been submitted for approval.`,
       });
 
-      navigate("/my-listing");
+      navigate("/become-host");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -203,8 +209,8 @@ const CreateTripEvent = () => {
       <Header />
       
       <main className="container px-4 py-8 max-w-4xl mx-auto">
-        <PageHeader title="Create Trip" />
-        <h1 className="md:hidden text-3xl font-bold mb-8">Create Trip</h1>
+        <PageHeader title="Create Tour" />
+        <h1 className="md:hidden text-3xl font-bold mb-8">Create Tour</h1>
         
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -267,12 +273,12 @@ const CreateTripEvent = () => {
                       checked={formData.is_custom_date}
                       onCheckedChange={(checked) => setFormData({...formData, is_custom_date: checked as boolean, date: checked ? "" : formData.date})}
                     />
-                    <label
-                      htmlFor="custom_date"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Allow users to choose their own visit date
-                    </label>
+                  <label
+                    htmlFor="custom_date"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Custom tour - Available for 30 days from approval
+                  </label>
                   </div>
                   {!formData.is_custom_date && (
                     <div className="relative">
@@ -368,7 +374,7 @@ const CreateTripEvent = () => {
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="Describe your trip or event..."
+                placeholder="Describe your tour..."
                 rows={5}
               />
             </div>

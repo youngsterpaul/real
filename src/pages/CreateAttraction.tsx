@@ -213,7 +213,7 @@ export default function CreateAttraction() {
         description: "Your attraction has been submitted for approval",
       });
       
-      navigate("/my-listing");
+      navigate("/become-host");
     } catch (error: any) {
       console.error('Error creating attraction:', error);
       toast({
