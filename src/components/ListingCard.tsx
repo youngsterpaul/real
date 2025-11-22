@@ -67,7 +67,7 @@ export const ListingCard = ({
       "TRIP": "trip",
       "EVENT": "event",
       "HOTEL": "hotel",
-      "ADVENTURE PLACE": "adventure",
+      "Experience": "adventure",
       "ACCOMMODATION": "accommodation",
       "ATTRACTION": "attraction"
     };
