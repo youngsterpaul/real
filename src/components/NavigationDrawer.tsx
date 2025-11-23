@@ -1,4 +1,4 @@
-import { Home, Ticket, Heart, Phone, Info, Video, Plus, Edit, Package, LogIn, LogOut, Sun, Moon, User, Shield } from "lucide-react"; 
+import { Home, Ticket, Heart, Phone, Info, Video, Plus, Edit, Package, LogIn, LogOut, Sun, Moon, User, Shield, Download } from "lucide-react"; 
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
   const { user, signOut } = useAuth();
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -71,6 +73,37 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
 
     fetchUserData();
   }, [user]);
+
+  useEffect(() => {
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    // Listen for beforeinstallprompt event
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+      setIsInstalled(true);
+    }
+  };
   
   const handleProtectedNavigation = async (path: string) => {
     if (!user) {
@@ -266,12 +299,30 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
             </ul>
           </li>
           
-          {/* LOGIN/LOGOUT ICON AND NAME (Moved to inside the UL) */}
-          {AuthDisplay}
-          
-        </ul>
-      </nav>
-      {/* Removed the dedicated footer div for AuthButton */}
-    </div>
-   ); 
+          {/* LOGIN/LOGOUT ICON AND NAME (Moved to inside the UL) */}
+          {AuthDisplay}
+          
+        </ul>
+      </nav>
+
+      {/* Install App Section */}
+      {!isInstalled && deferredPrompt && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+          <button
+            onClick={handleInstallClick}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-blue-900 text-white hover:bg-blue-800 transition-all duration-200"
+          >
+            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center font-bold text-lg text-blue-900">
+              T
+            </div>
+            <div className="flex-1 text-left">
+              <span className="font-semibold block">Install TripTrac App</span>
+              <span className="text-xs text-white/80">Quick access on your device</span>
+            </div>
+            <Download className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+    </div>
+   ); 
 };
