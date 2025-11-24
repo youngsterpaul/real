@@ -107,18 +107,35 @@ const MyListing = () => {
                     {item.price && <p className="text-sm font-semibold mt-1">${item.price}</p>}
                     {(item.price_adult || item.entry_fee) && <p className="text-sm font-semibold mt-1">${item.price_adult || item.entry_fee}</p>}
                   </div>
-                  <Badge variant={item.approval_status === 'approved' ? 'default' : item.approval_status === 'pending' ? 'secondary' : 'destructive'}>
-                    {item.approval_status}
-                  </Badge>
+                  <div className="flex flex-col gap-2 items-end">
+                    <Badge variant={item.approval_status === 'approved' ? 'default' : item.approval_status === 'pending' ? 'secondary' : 'destructive'}>
+                      {item.approval_status}
+                    </Badge>
+                    {item.is_hidden && (
+                      <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                        Hidden from Public View
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 
-                <Button
-                  onClick={() => navigate(`/edit-listing/${item.type}/${item.id}`)}
-                  className="mt-3"
-                  size="sm"
-                >
-                  Edit
-                </Button>
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    onClick={() => navigate(`/edit-listing/${item.type}/${item.id}`)}
+                    size="sm"
+                  >
+                    Edit
+                  </Button>
+                  {item.approval_status === 'rejected' && (
+                    <Button
+                      onClick={() => navigate(`/edit-listing/${item.type}/${item.id}?resubmit=true`)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Re-submit for Approval
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </Card>

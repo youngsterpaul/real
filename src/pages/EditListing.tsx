@@ -52,6 +52,12 @@ const EditListing = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [approvalStatus, setApprovalStatus] = useState("");
+  const [isHidden, setIsHidden] = useState(false);
+  
+  // Check if user is re-submitting
+  const urlParams = new URLSearchParams(window.location.search);
+  const isResubmitting = urlParams.get("resubmit") === "true";
   
   // Edit states
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
@@ -182,6 +188,10 @@ const EditListing = () => {
         setEntranceFee((data as any).price_adult || 0);
       }
       
+      // Set approval status and hidden state
+      setApprovalStatus((data as any).approval_status || "");
+      setIsHidden((data as any).is_hidden || false);
+      
     } catch (error) {
       console.error("Error fetching listing:", error);
       toast({
@@ -299,6 +309,41 @@ const EditListing = () => {
       setDaysOpened(daysOpened.filter(d => d !== day));
     } else {
       setDaysOpened([...daysOpened, day]);
+    }
+  };
+
+  const handleResubmit = async () => {
+    setSaving(true);
+    try {
+      let table: "hotels" | "adventure_places" | "trips" | "attractions" = "hotels";
+      if (type === "hotel") table = "hotels";
+      else if (type === "adventure") table = "adventure_places";
+      else if (type === "trip") table = "trips";
+      else if (type === "attraction") table = "attractions";
+
+      const { error } = await supabase
+        .from(table)
+        .update({ approval_status: "pending" })
+        .eq("id", id!)
+        .eq("created_by", user?.id!);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your listing has been re-submitted for approval",
+      });
+
+      navigate("/become-host");
+    } catch (error) {
+      console.error("Error re-submitting:", error);
+      toast({
+        title: "Error",
+        description: "Failed to re-submit listing",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -514,8 +559,34 @@ const EditListing = () => {
       
       <main className="container px-4 py-8 max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Edit {type === 'adventure' ? 'Experience' : type === 'trip' ? 'Tour' : type}</h1>
-          <p className="text-muted-foreground">Click the edit icons to modify any detail</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Edit {type === 'adventure' ? 'Experience' : type === 'trip' ? 'Tour' : type}</h1>
+              <p className="text-muted-foreground">Click the edit icons to modify any detail</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={approvalStatus === 'approved' ? 'default' : approvalStatus === 'pending' ? 'secondary' : 'destructive'}>
+                {approvalStatus}
+              </Badge>
+              {isHidden && (
+                <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                  Hidden from Public View
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          {isResubmitting && approvalStatus === 'rejected' && (
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                Make your desired changes, then click the button below to re-submit your listing for approval.
+              </p>
+              <Button onClick={handleResubmit} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Re-submit for Approval
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">

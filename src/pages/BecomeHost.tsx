@@ -213,7 +213,7 @@ const BecomeHost = () => {
 
           <Card className="p-3 md:p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/create-attraction")}>
             <div className="flex flex-col items-center text-center space-y-1 md:space-y-3">
-              <Tent className="h-6 w-6 md:h-12 md:w-12 text-orange-600" />
+              <MapPin className="h-6 w-6 md:h-12 md:w-12 text-orange-600" />
               <h3 className="font-semibold text-xs md:text-lg">Attraction</h3>
               <Button size="sm" className="w-full text-xs md:text-sm">Create</Button>
             </div>
@@ -230,9 +230,14 @@ const BecomeHost = () => {
 
         {/* My Created Items Section */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Package className="h-6 w-6" />
-            <h2 className="text-2xl font-bold">My Created Items ({myContent.length})</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Package className="h-6 w-6" />
+              <h2 className="text-2xl font-bold">My Created Items</h2>
+            </div>
+            <Badge variant="secondary" className="text-lg px-4 py-2">
+              {myContent.length} Items
+            </Badge>
           </div>
 
           {myContent.length === 0 ? (

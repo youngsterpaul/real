@@ -7,7 +7,7 @@ import { ListingCard } from "@/components/ListingCard";
 import { MapView } from "@/components/MapView";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/ui/card";
-import { Calendar, Hotel, Tent, Compass, Map, Grid } from "lucide-react";
+import { Calendar, Hotel, Tent, Compass, Map, Grid, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -239,7 +239,7 @@ const Index = () => {
 
     const categories = [
         { icon: Calendar, title: "Trips", path: "/category/trips", bgImage: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800", description: "Explore guided tours and day trips" },
-        { icon: Compass, title: "Attractions", path: "/category/adventure", bgImage: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800", description: "Visit must-see landmarks" },
+        { icon: MapPin, title: "Attractions", path: "/category/adventure", bgImage: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800", description: "Visit must-see landmarks" },
         { icon: Hotel, title: "Hotels", path: "/category/hotels", bgImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800", description: "Find comfortable stays" },
         { icon: Tent, title: "Campsite & Experience", path: "/category/campsite", bgImage: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800", description: "Adventure camping spots" },
     ];
