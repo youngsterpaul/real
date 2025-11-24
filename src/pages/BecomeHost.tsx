@@ -62,13 +62,13 @@ const BecomeHost = () => {
         const { data: trips } = await supabase.from("trips").select("*").eq("created_by", user.id);
         const { data: hotels } = await supabase.from("hotels").select("id, name, location, place, country, image_url, description, email, phone_numbers, amenities, establishment_type, map_link, gallery_images, images, approval_status, admin_notes, created_at, created_by, approved_by, approved_at, is_hidden, registration_number, facilities").eq("created_by", user.id);
         const { data: adventures } = await supabase.from("adventure_places").select("id, name, location, place, country, image_url, description, email, phone_numbers, amenities, activities, facilities, entry_fee, entry_fee_type, map_link, gallery_images, images, approval_status, admin_notes, created_at, created_by, approved_by, approved_at, is_hidden, registration_number").eq("created_by", user.id);
-        const { data: attractions } = await supabase.from("attractions").select("*").eq("created_by", user.id);
+        const { data: attractions } = await supabase.from("attractions").select("id, location_name, local_name, country, description, email, phone_number, entrance_type, price_adult, price_child, photo_urls, gallery_images, approval_status, created_at, created_by, approved_by, approved_at, is_hidden, registration_number, registration_type, opening_hours, closing_hours, days_opened, location_link").eq("created_by", user.id);
 
         const allContent = [
           ...(trips?.map(t => ({ ...t, type: "trip" })) || []),
           ...(hotels?.map(h => ({ ...h, type: "hotel" })) || []),
           ...(adventures?.map(a => ({ ...a, type: "adventure" })) || []),
-          ...(attractions?.map(a => ({ ...a, type: "attraction", name: a.local_name || a.location_name })) || [])
+          ...(attractions?.map(a => ({ ...a, type: "attraction", name: a.local_name || a.location_name, location: a.location_name })) || [])
         ];
 
         setMyContent(allContent);
