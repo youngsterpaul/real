@@ -275,6 +275,7 @@ const Index = () => {
 
     const categories = [
         { icon: Calendar, title: "Trips", path: "/category/trips", bgImage: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&h=600&fit=crop&auto=format&q=80", description: "Explore guided tours and day trips" },
+        { icon: Compass, title: "Events", path: "/category/events", bgImage: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=600&fit=crop&auto=format&q=80", description: "Discover exciting events" },
         { icon: MapPin, title: "Attractions", path: "/category/adventure", bgImage: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&auto=format&q=80", description: "Visit must-see landmarks" },
         { icon: Hotel, title: "Hotels", path: "/category/hotels", bgImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop&auto=format&q=80", description: "Find comfortable stays" },
         { icon: Tent, title: "Campsite & Experience", path: "/category/campsite", bgImage: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&h=600&fit=crop&auto=format&q=80", description: "Adventure camping spots" },
@@ -349,7 +350,7 @@ const Index = () => {
                     
                     {/* Categories Section - Below on all screens */}
                     <div className="w-full px-2 md:px-0">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 md:gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-1.5 md:gap-4">
                             {categories.map((cat) => (
                                 <div
                                     key={cat.title}
@@ -411,7 +412,7 @@ const Index = () => {
                     <section className="mb-4 md:mb-8">
                         <div className="flex justify-between items-center mb-2 md:mb-4 mt-2 md:mt-0">
                             <h2 className="text-xs md:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
-                                {searchQuery ? 'Search Results' : 'Latest'}
+                                {searchQuery ? 'Search Results' : (position ? 'Near You' : 'Latest')}
                             </h2>
                             {searchQuery && listings.length > 0 && (
                                 <div className="flex gap-2">
