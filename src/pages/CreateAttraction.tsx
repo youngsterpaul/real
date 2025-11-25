@@ -15,6 +15,7 @@ import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Footer } from "@/components/Footer";
 import { PageHeader } from "@/components/creation/PageHeader";
+import { PhoneInput } from "@/components/creation/PhoneInput";
 const EAST_AFRICAN_COUNTRIES = [
   { name: "Kenya", code: "KE", flag: "🇰🇪" },
   { name: "Uganda", code: "UG", flag: "🇺🇬" },
@@ -334,13 +335,13 @@ export default function CreateAttraction() {
 
             <div>
               <Label htmlFor="phone_number">Phone Number</Label>
-              <Input
-                id="phone_number"
-                type="tel"
+              <PhoneInput
                 value={formData.phone_number}
-                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                placeholder="+1234567890"
+                onChange={(value) => setFormData({...formData, phone_number: value})}
+                country={formData.country}
+                placeholder="758800117"
               />
+              <p className="text-sm text-muted-foreground">Enter number without leading zero</p>
             </div>
 
             <div>

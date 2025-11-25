@@ -13,16 +13,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, MapPin, DollarSign, Users, Upload, Navigation } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getCountryPhoneCode } from "@/lib/countryHelpers";
 import { CountrySelector } from "@/components/creation/CountrySelector";
 import { PageHeader } from "@/components/creation/PageHeader";
+import { PhoneInput } from "@/components/creation/PhoneInput";
 
 const CreateTripEvent = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [phonePrefix, setPhonePrefix] = useState("+254");
   
   const [formData, setFormData] = useState({
     name: "",
@@ -44,7 +43,7 @@ const CreateTripEvent = () => {
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Fetch user profile and set country/phone prefix and email
+  // Fetch user profile and set country and email
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
@@ -55,13 +54,11 @@ const CreateTripEvent = () => {
           .single();
         
         if (profile?.country) {
-          const prefix = getCountryPhoneCode(profile.country);
           setFormData(prev => ({ 
             ...prev, 
             country: profile.country,
             email: profile.email || user.email || ''
           }));
-          setPhonePrefix(prefix);
         } else if (user.email) {
           setFormData(prev => ({ ...prev, email: user.email || '' }));
         }
@@ -264,11 +261,7 @@ const CreateTripEvent = () => {
                 <Label htmlFor="country">Country *</Label>
                 <CountrySelector
                   value={formData.country}
-                  onChange={(value) => {
-                    const prefix = getCountryPhoneCode(value);
-                    setPhonePrefix(prefix);
-                    setFormData({...formData, country: value});
-                  }}
+                  onChange={(value) => setFormData({...formData, country: value})}
                 />
               </div>
 
@@ -397,13 +390,13 @@ const CreateTripEvent = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="phone_number">Contact Phone</Label>
-                <Input
-                  id="phone_number"
-                  type="tel"
+                <PhoneInput
                   value={formData.phone_number}
-                  onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                  placeholder={`${phonePrefix}...`}
+                  onChange={(value) => setFormData({...formData, phone_number: value})}
+                  country={formData.country}
+                  placeholder="758800117"
                 />
+                <p className="text-sm text-muted-foreground">Enter number without leading zero</p>
               </div>
             </div>
 
@@ -436,16 +429,24 @@ const CreateTripEvent = () => {
 
             <div className="space-y-2">
               <Label>Gallery Images (Max 5) *</Label>
+              <Label htmlFor="gallery-images-trip" className="cursor-pointer">
+                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-accent/50 transition-colors">
+                  <div className="mx-auto h-12 w-12 text-muted-foreground mb-2">📁</div>
+                  <p className="text-sm font-medium">Click to upload photos</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {galleryImages.length}/5 images uploaded
+                  </p>
+                </div>
+              </Label>
               <Input
+                id="gallery-images-trip"
                 type="file"
                 accept="image/*"
                 multiple
                 onChange={(e) => handleImageUpload(e.target.files)}
                 disabled={galleryImages.length >= 5}
+                className="hidden"
               />
-              <p className="text-sm text-muted-foreground">
-                {galleryImages.length}/5 images selected
-              </p>
               {galleryImages.length > 0 && (
                 <div className="grid grid-cols-5 gap-2">
                   {galleryImages.map((file, index) => (

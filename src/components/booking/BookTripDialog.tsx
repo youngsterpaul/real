@@ -234,7 +234,7 @@ export const BookTripDialog = ({ open, onOpenChange, trip }: Props) => {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] md:max-w-[50%] md:mx-auto">
         <DrawerHeader>
           <DrawerTitle>Book {trip.name}</DrawerTitle>
         </DrawerHeader>

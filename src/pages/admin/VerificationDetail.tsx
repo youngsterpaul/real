@@ -242,7 +242,7 @@ const VerificationDetail = () => {
                 <img
                   src={verification.document_front_url}
                   alt="Document front"
-                  className="w-full h-64 object-contain rounded-lg border mt-2 cursor-pointer hover:opacity-90"
+                  className="w-full h-auto object-contain rounded-lg border mt-2 cursor-pointer hover:opacity-90"
                   onClick={() => window.open(verification.document_front_url, "_blank")}
                 />
               </div>
@@ -252,7 +252,7 @@ const VerificationDetail = () => {
                   <img
                     src={verification.document_back_url}
                     alt="Document back"
-                    className="w-full h-64 object-contain rounded-lg border mt-2 cursor-pointer hover:opacity-90"
+                    className="w-full h-auto object-contain rounded-lg border mt-2 cursor-pointer hover:opacity-90"
                     onClick={() => window.open(verification.document_back_url, "_blank")}
                   />
                 </div>
@@ -264,7 +264,7 @@ const VerificationDetail = () => {
               <img
                 src={verification.selfie_url}
                 alt="Selfie"
-                className="w-full max-w-md h-64 object-contain rounded-lg border mt-2 cursor-pointer hover:opacity-90"
+                className="w-full max-w-md h-auto object-contain rounded-lg border mt-2 cursor-pointer hover:opacity-90"
                 onClick={() => window.open(verification.selfie_url, "_blank")}
               />
             </div>

@@ -394,8 +394,9 @@ const CreateAdventure = () => {
                     onChange={(e) => setFormData({...formData, locationLink: e.target.value})}
                     placeholder="https://maps.google.com/..."
                   />
-                  <Button type="button" variant="outline" onClick={getCurrentLocation}>
-                    <Navigation className="h-4 w-4" />
+                  <Button type="button" variant="outline" onClick={getCurrentLocation} className="shrink-0">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Auto-Access My Location
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">Add Google Maps link or use your current location</p>
@@ -637,12 +638,23 @@ const CreateAdventure = () => {
             {/* Image Upload */}
             <div className="space-y-4 pt-6 border-t">
               <h3 className="text-lg font-semibold">Images (Maximum 5) *</h3>
+              <Label htmlFor="gallery-images-adventure" className="cursor-pointer">
+                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-accent/50 transition-colors">
+                  <div className="mx-auto h-12 w-12 text-muted-foreground mb-2">📁</div>
+                  <p className="text-sm font-medium">Click to upload photos</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {galleryImages.length}/5 images uploaded
+                  </p>
+                </div>
+              </Label>
               <Input
+                id="gallery-images-adventure"
                 type="file"
                 accept="image/*"
                 multiple
                 onChange={(e) => handleImageUpload(e.target.files)}
                 disabled={galleryImages.length >= 5}
+                className="hidden"
               />
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {galleryImages.map((file, index) => (

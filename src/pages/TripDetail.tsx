@@ -300,8 +300,8 @@ const TripDetail = () => {
               </Button>
             </div>
 
-            {/* Pricing and Booking */}
-            <div className="bg-card p-6 rounded-lg border space-y-4 shadow-sm">
+            {/* Pricing and Booking - Hidden on small screens, shown on large */}
+            <div className="hidden md:block bg-card p-6 rounded-lg border space-y-4 shadow-sm">
               <h3 className="font-semibold text-base md:text-lg">Tour Details & Booking</h3>
               <div className="pt-2 border-t space-y-2">
                 <div className="flex justify-between items-center pb-2">
@@ -341,7 +341,7 @@ const TripDetail = () => {
             </div>
 
             {/* Contact Info */}
-            <div className="flex flex-wrap gap-4 pt-4 border-t">
+            <div className="flex flex-wrap gap-4 pt-4 border-t md:border-0 md:pt-0">
               {trip.phone_number && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 md:h-5 md:w-5 text-primary" />
@@ -364,6 +364,46 @@ const TripDetail = () => {
             <h2 className="text-lg md:text-xl font-semibold mb-4">About This Tour</h2>
             <p className="text-xs md:text-base text-muted-foreground">{trip.description}</p>
           </div>
+        </div>
+
+        {/* Booking Button for Small Screens - Below Description */}
+        <div className="md:hidden mt-6 bg-card p-6 rounded-lg border space-y-4 shadow-sm">
+          <h3 className="font-semibold text-base">Tour Details & Booking</h3>
+          <div className="pt-2 border-t space-y-2">
+            <div className="flex justify-between items-center pb-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold">Date</span>
+              </div>
+              <div className="text-lg font-bold">${trip.price}</div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {trip.is_custom_date ? "Available for 30 days - Choose your visit date" : new Date(trip.date).toLocaleDateString()}
+            </div>
+            
+            {trip.price_child > 0 && (
+              <div className="pt-2">
+                <p className="text-xs text-muted-foreground">Child Price</p>
+                <p className="text-base font-semibold">${trip.price_child}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-muted-foreground">Available Tickets</p>
+              <p className="text-base font-semibold">{trip.available_tickets}</p>
+            </div>
+          </div>
+          
+          <Button 
+            className="w-full text-xs" 
+            onClick={() => setBookingOpen(true)}
+            disabled={trip.available_tickets === 0 || (!trip.is_custom_date && new Date(trip.date) < new Date())}
+          >
+            {!trip.is_custom_date && new Date(trip.date) < new Date()
+              ? 'Tour Passed' 
+              : trip.available_tickets === 0 
+              ? 'Sold Out' 
+              : 'Book Now'}
+          </Button>
         </div>
 
         <ReviewSection itemId={trip.id} itemType="trip" />

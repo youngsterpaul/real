@@ -140,6 +140,20 @@ export const LoginForm = () => {
       >
         Login with Google
       </Button>
+
+      <div className="text-center text-sm text-muted-foreground">
+        Don't have an account?{" "}
+        <button
+          type="button"
+          onClick={() => {
+            const tabTrigger = document.querySelector('[value="signup"]') as HTMLElement;
+            tabTrigger?.click();
+          }}
+          className="text-primary hover:underline font-medium"
+        >
+          Sign up
+        </button>
+      </div>
     </form>
   );
 };
