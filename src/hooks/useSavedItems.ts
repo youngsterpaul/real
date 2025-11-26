@@ -104,7 +104,7 @@ export const useSavedItems = () => {
           .insert([{ 
             user_id: user.id, 
             item_id: itemId, 
-            item_type: itemType 
+            item_type: itemType.toLowerCase()
           }]);
       }
     }
