@@ -463,7 +463,7 @@ const Index = () => {
                                             <ChevronRight className="h-6 w-6" />
                                         </Button>
                                     </>}
-                                <div ref={featuredForYouRef} onScroll={handleScroll('featuredForYou')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredForYouRef)} className="gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[5px] flex items-start justify-end">
+                                <div ref={featuredForYouRef} onScroll={handleScroll('featuredForYou')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredForYouRef)} className="gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[8px] flex items-start justify-start">
                                 {loading || listings.length === 0 ? [...Array(10)].map((_, i) => <div key={i} className="flex-shrink-0 w-[85vw] md:w-64 rounded-lg overflow-hidden shadow-md snap-center md:snap-align-none">
                                             <div className="aspect-[4/3] bg-muted animate-pulse" />
                                             <div className="p-2 md:p-4 space-y-2 md:space-y-3">
@@ -500,7 +500,7 @@ const Index = () => {
                                         <ChevronRight className="h-6 w-6" />
                                     </Button>
                                 </>}
-                            <div ref={featuredEventsRef} onScroll={handleScroll('featuredEvents')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredEventsRef)} className="flex gap-2 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none">
+                            <div ref={featuredEventsRef} onScroll={handleScroll('featuredEvents')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredEventsRef)} className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[8px]">
                             {loadingScrollable ? <div className="flex gap-2 md:gap-4">
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[85vw] md:w-64 snap-center md:snap-align-none">
                                             <ListingSkeleton />
@@ -533,7 +533,7 @@ const Index = () => {
                                         <ChevronRight className="h-6 w-6" />
                                     </Button>
                                 </>}
-                            <div ref={featuredCampsitesRef} onScroll={handleScroll('featuredCampsites')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredCampsitesRef)} className="flex gap-2 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none">
+                            <div ref={featuredCampsitesRef} onScroll={handleScroll('featuredCampsites')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredCampsitesRef)} className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[8px]">
                             {loadingScrollable ? <div className="flex gap-2 md:gap-4">
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[85vw] md:w-64 snap-center md:snap-align-none">
                                             <ListingSkeleton />
@@ -564,7 +564,7 @@ const Index = () => {
                                         <ChevronRight className="h-6 w-6" />
                                     </Button>
                                 </>}
-                            <div ref={featuredHotelsRef} onScroll={handleScroll('featuredHotels')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredHotelsRef)} className="flex gap-2 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none">
+                            <div ref={featuredHotelsRef} onScroll={handleScroll('featuredHotels')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredHotelsRef)} className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[8px]">
                             {loadingScrollable ? <div className="flex gap-2 md:gap-4">
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[85vw] md:w-64 snap-center md:snap-align-none">
                                             <ListingSkeleton />
@@ -595,7 +595,7 @@ const Index = () => {
                                         <ChevronRight className="h-6 w-6" />
                                     </Button>
                                 </>}
-                            <div ref={featuredAttractionsRef} onScroll={handleScroll('featuredAttractions')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredAttractionsRef)} className="flex gap-2 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none">
+                            <div ref={featuredAttractionsRef} onScroll={handleScroll('featuredAttractions')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredAttractionsRef)} className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[8px]">
                             {loadingScrollable ? <div className="flex gap-2 md:gap-4">
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[85vw] md:w-64 snap-center md:snap-align-none">
                                             <ListingSkeleton />
@@ -628,7 +628,7 @@ const Index = () => {
                                         <ChevronRight className="h-6 w-6" />
                                     </Button>
                                 </>}
-                            <div ref={featuredTripsRef} onScroll={handleScroll('featuredTrips')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredTripsRef)} className="flex gap-2 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none">
+                            <div ref={featuredTripsRef} onScroll={handleScroll('featuredTrips')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredTripsRef)} className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[8px]">
                             {loadingScrollable ? <div className="flex gap-2 md:gap-4">
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[85vw] md:w-64 snap-center md:snap-align-none">
                                             <ListingSkeleton />
