@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { Compass, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-
-export const Footer = ({ className = "" }: { className?: string }) => {
+export const Footer = ({
+  className = ""
+}: {
+  className?: string;
+}) => {
   const [isInstalled, setIsInstalled] = useState(false);
-
   useEffect(() => {
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -16,18 +18,14 @@ export const Footer = ({ className = "" }: { className?: string }) => {
   // Detect if running in webview/in-app context
   const isInApp = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('inApp') === 'true' || 
-           urlParams.get('forceHideBadge') === 'true' ||
-           /webview|wv|inapp/i.test(navigator.userAgent);
+    return urlParams.get('inApp') === 'true' || urlParams.get('forceHideBadge') === 'true' || /webview|wv|inapp/i.test(navigator.userAgent);
   };
 
   // Don't render footer on small screens when in-app
   if (typeof window !== 'undefined' && window.innerWidth < 768 && isInApp()) {
     return null;
   }
-
-  return (
-    <footer className={`hidden md:block bg-white border-t mt-12 text-gray-900 ${className}`}>
+  return <footer className={`hidden md:block bg-white border-t mt-12 text-gray-900 ${className}`}>
       <div className="container px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">
@@ -68,14 +66,9 @@ export const Footer = ({ className = "" }: { className?: string }) => {
               <li><Link to="/saved" className="text-gray-600 hover:text-blue-600 transition-colors">Wishlist</Link></li>
               <li><Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">Profile</Link></li>
             </ul>
-            {!isInstalled && (
-              <Link to="/install">
-                <Button variant="outline" size="sm" className="mt-4 w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Install App
-                </Button>
-              </Link>
-            )}
+            {!isInstalled && <Link to="/install">
+                
+              </Link>}
           </div>
         </div>
         
@@ -83,6 +76,5 @@ export const Footer = ({ className = "" }: { className?: string }) => {
           <p>© 2025 TripTrac. All rights reserved.</p>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
