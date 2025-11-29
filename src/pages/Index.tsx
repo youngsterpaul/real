@@ -369,7 +369,7 @@ const Index = () => {
                     </div>
                 </div>}
 
-            <main className="container md:px-4 md:py-8 py-[3px] px-px">
+            <main className="container md:px-4 md:py-8 px-px py-[12px]">
                 {/* Hero and Categories - Hide when search is focused */}
                 <section className={`flex flex-col gap-1 md:gap-3 ${isSearchFocused ? 'hidden' : ''}`}>
                 {/* Hero Section with Background Image */}
@@ -463,7 +463,7 @@ const Index = () => {
                                             <ChevronRight className="h-6 w-6" />
                                         </Button>
                                     </>}
-                                <div ref={featuredForYouRef} onScroll={handleScroll('featuredForYou')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredForYouRef)} className="gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none md:gap-[8px] flex items-start justify-start">
+                                <div ref={featuredForYouRef} onScroll={handleScroll('featuredForYou')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredForYouRef)} className="gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none flex items-start justify-start md:gap-[10px]">
                                 {loading || listings.length === 0 ? [...Array(10)].map((_, i) => <div key={i} className="flex-shrink-0 w-[85vw] md:w-64 rounded-lg overflow-hidden shadow-md snap-center md:snap-align-none">
                                             <div className="aspect-[4/3] bg-muted animate-pulse" />
                                             <div className="p-2 md:p-4 space-y-2 md:space-y-3">
