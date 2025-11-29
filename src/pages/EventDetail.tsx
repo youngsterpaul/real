@@ -16,12 +16,10 @@ import { ReviewSection } from "@/components/ReviewSection";
 import { useSavedItems } from "@/hooks/useSavedItems";
 import { MultiStepBooking, BookingFormData } from "@/components/booking/MultiStepBooking";
 import { getReferralTrackingId } from "@/lib/referralUtils";
-
 interface Activity {
   name: string;
   price: number;
 }
-
 interface Event {
   id: string;
   name: string;
@@ -42,74 +40,92 @@ interface Event {
   activities?: Activity[];
   type: string;
 }
-
 const EventDetail = () => {
-  const { id } = useParams();
+  const {
+    id
+  } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBooking, setShowBooking] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const { savedItems, handleSave: handleSaveItem } = useSavedItems();
+  const {
+    savedItems,
+    handleSave: handleSaveItem
+  } = useSavedItems();
   const isSaved = savedItems.has(id || "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-
   useEffect(() => {
     if (id) {
       fetchEvent();
     }
   }, [id, user]);
-
   const fetchEvent = async () => {
     try {
-      const { data, error } = await supabase.from("trips").select("*").eq("id", id).eq("type", "event").single();
+      const {
+        data,
+        error
+      } = await supabase.from("trips").select("*").eq("id", id).eq("type", "event").single();
       if (error) throw error;
       setEvent(data as any);
     } catch (error) {
       console.error("Error fetching event:", error);
-      toast({ title: "Event not found", variant: "destructive" });
+      toast({
+        title: "Event not found",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
-
   const handleSave = () => {
     if (id) {
       handleSaveItem(id, "event");
     }
   };
-
   const handleShare = async () => {
     if (!user) {
-      toast({ title: "Login required", description: "Please log in to share with referral link", variant: "destructive" });
+      toast({
+        title: "Login required",
+        description: "Please log in to share with referral link",
+        variant: "destructive"
+      });
       navigate("/auth");
       return;
     }
-
     try {
-      const { data: trackingData } = await supabase.from("referral_tracking").insert({
+      const {
+        data: trackingData
+      } = await supabase.from("referral_tracking").insert({
         referrer_id: user.id,
         referral_type: "item_share",
         item_type: "event",
-        item_id: id,
+        item_id: id
       }).select().single();
-
       const shareUrl = `${window.location.origin}/event/${id}?ref=${trackingData?.id}`;
-
       if (navigator.share) {
-        await navigator.share({ title: event?.name, text: `Check out this event: ${event?.name}`, url: shareUrl });
+        await navigator.share({
+          title: event?.name,
+          text: `Check out this event: ${event?.name}`,
+          url: shareUrl
+        });
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Link copied to clipboard!" });
+        toast({
+          title: "Link copied to clipboard!"
+        });
       }
     } catch (error) {
       console.error("Error sharing:", error);
     }
   };
-
   const openInMaps = () => {
     if (event?.map_link) {
       window.open(event.map_link, "_blank");
@@ -118,59 +134,67 @@ const EventDetail = () => {
       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
     }
   };
-
   const handleBookingSubmit = async (data: BookingFormData) => {
     if (!event) return;
-
     setIsProcessing(true);
-
     try {
       const totalPeople = data.num_adults + data.num_children;
-      const totalAmount = (data.num_adults * event.price) + (data.num_children * event.price_child) +
-                         data.selectedActivities.reduce((sum, a) => sum + (a.price * a.numberOfPeople), 0);
+      const totalAmount = data.num_adults * event.price + data.num_children * event.price_child + data.selectedActivities.reduce((sum, a) => sum + a.price * a.numberOfPeople, 0);
 
       // Free booking flow
       if (totalAmount === 0) {
-        const { data: bookingData, error } = await supabase.from('bookings').insert([{
+        const {
+          data: bookingData,
+          error
+        } = await supabase.from('bookings').insert([{
           user_id: user?.id || null,
           item_id: id,
           booking_type: 'trip',
           visit_date: event.date,
           total_amount: 0,
           slots_booked: totalPeople,
-          booking_details: { trip_name: event.name, date: event.date, adults: data.num_adults, children: data.num_children, activities: data.selectedActivities } as any,
+          booking_details: {
+            trip_name: event.name,
+            date: event.date,
+            adults: data.num_adults,
+            children: data.num_children,
+            activities: data.selectedActivities
+          } as any,
           payment_status: 'paid',
           payment_method: 'free',
           is_guest_booking: !user,
           guest_name: !user ? data.guest_name : null,
           guest_email: !user ? data.guest_email : null,
-          guest_phone: !user ? data.guest_phone : null,
+          guest_phone: !user ? data.guest_phone : null
         }]).select();
-
         if (error) throw error;
-
-        const { data: eventData } = await supabase.from('trips').select('created_by').eq('id', id).single();
-
+        const {
+          data: eventData
+        } = await supabase.from('trips').select('created_by').eq('id', id).single();
         if (eventData?.created_by) {
           await supabase.from('notifications').insert({
             user_id: eventData.created_by,
             type: 'booking',
             title: 'New Booking Received',
             message: `You have a new free booking for ${event.name}`,
-            data: { booking_id: bookingData[0].id, item_type: 'trip' },
+            data: {
+              booking_id: bookingData[0].id,
+              item_type: 'trip'
+            }
           });
         }
-
         if (user) {
           await supabase.from('notifications').insert({
             user_id: user.id,
             type: 'booking',
             title: 'Booking Confirmed',
             message: `Your free booking for ${event.name} has been confirmed`,
-            data: { booking_id: bookingData[0].id, item_type: 'trip' },
+            data: {
+              booking_id: bookingData[0].id,
+              item_type: 'trip'
+            }
           });
         }
-
         await supabase.functions.invoke('send-booking-confirmation', {
           body: {
             bookingId: bookingData[0].id,
@@ -179,11 +203,15 @@ const EventDetail = () => {
             bookingType: 'trip',
             itemName: event.name,
             totalAmount: 0,
-            bookingDetails: { adults: data.num_adults, children: data.num_children, selectedActivities: data.selectedActivities, phone: user ? "" : data.guest_phone },
-            visitDate: event.date,
-          },
+            bookingDetails: {
+              adults: data.num_adults,
+              children: data.num_children,
+              selectedActivities: data.selectedActivities,
+              phone: user ? "" : data.guest_phone
+            },
+            visitDate: event.date
+          }
         });
-
         setIsProcessing(false);
         setIsCompleted(true);
         return;
@@ -205,7 +233,13 @@ const EventDetail = () => {
           guest_phone: !user ? data.guest_phone : null,
           slots_booked: totalPeople,
           visit_date: event.date,
-          booking_details: { trip_name: event.name, date: event.date, adults: data.num_adults, children: data.num_children, activities: data.selectedActivities } as any,
+          booking_details: {
+            trip_name: event.name,
+            date: event.date,
+            adults: data.num_adults,
+            children: data.num_children,
+            activities: data.selectedActivities
+          } as any,
           emailData: {
             bookingId: '',
             email: user ? user.email : data.guest_email,
@@ -213,36 +247,40 @@ const EventDetail = () => {
             bookingType: "trip",
             itemName: event.name,
             totalAmount,
-            bookingDetails: { adults: data.num_adults, children: data.num_children, selectedActivities: data.selectedActivities, phone: user ? "" : data.guest_phone },
-            visitDate: event.date,
-          },
+            bookingDetails: {
+              adults: data.num_adults,
+              children: data.num_children,
+              selectedActivities: data.selectedActivities,
+              phone: user ? "" : data.guest_phone
+            },
+            visitDate: event.date
+          }
         };
-
-        const { data: mpesaResponse, error: mpesaError } = await supabase.functions.invoke("mpesa-stk-push", {
+        const {
+          data: mpesaResponse,
+          error: mpesaError
+        } = await supabase.functions.invoke("mpesa-stk-push", {
           body: {
             phoneNumber: data.payment_phone,
             amount: totalAmount,
             accountReference: `EVENT-${event.id}`,
             transactionDesc: `Booking for ${event.name}`,
-            bookingData: bookingPayload,
-          },
+            bookingData: bookingPayload
+          }
         });
-
         if (mpesaError || !mpesaResponse?.success) {
           throw new Error(mpesaResponse?.error || "M-Pesa payment failed");
         }
-
         const checkoutRequestId = mpesaResponse.checkoutRequestId;
 
         // Poll for payment
         const startTime = Date.now();
         const timeout = 120000;
-
         while (Date.now() - startTime < timeout) {
           await new Promise(resolve => setTimeout(resolve, 2000));
-
-          const { data: pendingPayment } = await supabase.from('pending_payments').select('payment_status').eq('checkout_request_id', checkoutRequestId).single();
-
+          const {
+            data: pendingPayment
+          } = await supabase.from('pending_payments').select('payment_status').eq('checkout_request_id', checkoutRequestId).single();
           if (pendingPayment?.payment_status === 'completed') {
             setIsProcessing(false);
             setIsCompleted(true);
@@ -253,8 +291,13 @@ const EventDetail = () => {
         }
 
         // Fallback query
-        const { data: queryResponse } = await supabase.functions.invoke('mpesa-stk-query', { body: { checkoutRequestId } });
-        
+        const {
+          data: queryResponse
+        } = await supabase.functions.invoke('mpesa-stk-query', {
+          body: {
+            checkoutRequestId
+          }
+        });
         if (queryResponse?.resultCode === '0') {
           setIsProcessing(false);
           setIsCompleted(true);
@@ -265,63 +308,64 @@ const EventDetail = () => {
       }
 
       // Other payment methods
-      const { error } = await supabase.from('bookings').insert([{
+      const {
+        error
+      } = await supabase.from('bookings').insert([{
         user_id: user?.id || null,
         item_id: id,
         booking_type: 'trip',
         visit_date: event.date,
         total_amount: totalAmount,
         slots_booked: totalPeople,
-        booking_details: { trip_name: event.name, date: event.date, adults: data.num_adults, children: data.num_children, activities: data.selectedActivities } as any,
+        booking_details: {
+          trip_name: event.name,
+          date: event.date,
+          adults: data.num_adults,
+          children: data.num_children,
+          activities: data.selectedActivities
+        } as any,
         payment_method: data.payment_method,
         is_guest_booking: !user,
         guest_name: !user ? data.guest_name : null,
         guest_email: !user ? data.guest_email : null,
         guest_phone: !user ? data.guest_phone : null,
-        payment_status: 'completed',
+        payment_status: 'completed'
       }]);
-
       if (error) throw error;
-
       setIsProcessing(false);
       setIsCompleted(true);
     } catch (error: any) {
       console.error('Booking error:', error);
-      toast({ title: "Booking failed", description: error.message || "Failed to create booking", variant: "destructive" });
+      toast({
+        title: "Booking failed",
+        description: error.message || "Failed to create booking",
+        variant: "destructive"
+      });
       setIsProcessing(false);
     }
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background pb-20 md:pb-0">
+    return <div className="min-h-screen bg-background pb-20 md:pb-0">
         <Header />
         <div className="container px-4 py-6 max-w-6xl mx-auto">
           <div className="h-64 md:h-96 bg-muted animate-pulse rounded-lg" />
         </div>
         <Footer />
         <MobileBottomBar />
-      </div>
-    );
+      </div>;
   }
-
   if (!event) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto px-4 py-8">
           <p>Event not found</p>
         </div>
         <Footer />
         <MobileBottomBar />
-      </div>
-    );
+      </div>;
   }
-
   const allImages = [event.image_url, ...(event.images || [])].filter(Boolean);
-
-  return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+  return <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header />
       
       <main className="container px-4 py-6 max-w-6xl mx-auto">
@@ -331,32 +375,26 @@ const EventDetail = () => {
         </Button>
 
         <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
-          <div className="w-full relative">
+          <div className="w-full relative opacity-100">
             <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground z-20 text-xs font-bold px-3 py-1">
               EVENT
             </Badge>
             <Carousel className="w-full rounded-2xl overflow-hidden">
               <CarouselContent>
-                {allImages.map((img, idx) => (
-                  <CarouselItem key={idx}>
+                {allImages.map((img, idx) => <CarouselItem key={idx}>
                     <img src={img} alt={`${event.name} ${idx + 1}`} className="w-full h-64 md:h-96 object-cover" />
-                  </CarouselItem>
-                ))}
+                  </CarouselItem>)}
               </CarouselContent>
-              {allImages.length > 1 && (
-                <>
+              {allImages.length > 1 && <>
                   <CarouselPrevious className="left-2" />
                   <CarouselNext className="right-2" />
-                </>
-              )}
+                </>}
             </Carousel>
             
-            {event.description && (
-              <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white p-4 z-10">
-                <h2 className="text-lg font-semibold mb-2">About This Event</h2>
+            {event.description && <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white p-4 z-10">
+                <h2 className="text-lg font-semibold mb-2 text-justify">About This Event</h2>
                 <p className="text-sm line-clamp-3">{event.description}</p>
-              </div>
-            )}
+              </div>}
           </div>
 
           <div className="space-y-4">
@@ -368,7 +406,7 @@ const EventDetail = () => {
               </div>
             </div>
 
-            <div className="space-y-3 p-4 border bg-card">
+            <div className="space-y-3 p-4 border bg-card px-px py-0">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
                 <div>
@@ -385,13 +423,17 @@ const EventDetail = () => {
               </div>
 
               <Button size="lg" className="w-full" onClick={() => {
-                if (!user) {
-                  toast({ title: "Login Required", description: "Please login to book this event", variant: "destructive" });
-                  navigate('/auth');
-                  return;
-                }
-                setShowBooking(true);
-              }} disabled={event.available_tickets <= 0}>
+              if (!user) {
+                toast({
+                  title: "Login Required",
+                  description: "Please login to book this event",
+                  variant: "destructive"
+                });
+                navigate('/auth');
+                return;
+              }
+              setShowBooking(true);
+            }} disabled={event.available_tickets <= 0}>
                 {event.available_tickets <= 0 ? "Sold Out" : "Book Now"}
               </Button>
             </div>
@@ -412,41 +454,31 @@ const EventDetail = () => {
           </div>
         </div>
 
-        {event.activities && event.activities.length > 0 && (
-          <div className="mt-6 p-6 border bg-card">
+        {event.activities && event.activities.length > 0 && <div className="mt-6 p-6 border bg-card">
             <h2 className="text-xl font-semibold mb-4">Included Activities</h2>
             <div className="flex flex-wrap gap-2">
-              {event.activities.map((activity, idx) => (
-                <div key={idx} className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm flex items-center gap-2">
+              {event.activities.map((activity, idx) => <div key={idx} className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm flex items-center gap-2">
                   <span className="font-medium">{activity.name}</span>
                   <span className="text-xs opacity-90">KSh {activity.price}</span>
-                </div>
-              ))}
+                </div>)}
             </div>
-          </div>
-        )}
+          </div>}
 
-        {(event.phone_number || event.email) && (
-          <div className="mt-6 p-6 border rounded-lg bg-card">
+        {(event.phone_number || event.email) && <div className="mt-6 p-6 border bg-card my-[2px] rounded-none">
             <h2 className="text-xl font-semibold mb-3">Contact Information</h2>
             <div className="space-y-2">
-              {event.phone_number && (
-                <p className="flex items-center gap-2">
+              {event.phone_number && <p className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
                   <a href={`tel:${event.phone_number}`} className="text-primary hover:underline">{event.phone_number}</a>
-                </p>
-              )}
-              {event.email && (
-                <p className="flex items-center gap-2">
+                </p>}
+              {event.email && <p className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   <a href={`mailto:${event.email}`} className="text-primary hover:underline">{event.email}</a>
-                </p>
-              )}
+                </p>}
             </div>
-          </div>
-        )}
+          </div>}
 
-        <div className="mt-6">
+        <div className="mt-6 rounded-none my-[10px]">
           <ReviewSection itemId={event.id} itemType="event" />
         </div>
 
@@ -455,22 +487,12 @@ const EventDetail = () => {
 
       <Dialog open={showBooking} onOpenChange={setShowBooking}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <MultiStepBooking
-            onSubmit={handleBookingSubmit}
-            activities={event.activities || []}
-            priceAdult={event.price}
-            priceChild={event.price_child}
-            isProcessing={isProcessing}
-            isCompleted={isCompleted}
-            itemName={event.name}
-          />
+          <MultiStepBooking onSubmit={handleBookingSubmit} activities={event.activities || []} priceAdult={event.price} priceChild={event.price_child} isProcessing={isProcessing} isCompleted={isCompleted} itemName={event.name} />
         </DialogContent>
       </Dialog>
 
       <Footer />
       <MobileBottomBar />
-    </div>
-  );
+    </div>;
 };
-
 export default EventDetail;
