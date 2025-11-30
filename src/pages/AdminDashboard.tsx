@@ -128,7 +128,7 @@ const AdminDashboard = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-8">Listing review</h1>
 
         <Card>
           <div className="divide-y divide-border">
@@ -180,7 +180,7 @@ const AdminDashboard = () => {
             >
               <div className="flex items-center gap-4">
                 <ShieldCheck className="h-5 w-5 text-primary" />
-                <span className="font-medium text-foreground">Host Verifications</span>
+                <span className="font-medium text-foreground">Host details review</span>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{hostVerificationCount}</Badge>
