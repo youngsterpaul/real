@@ -800,8 +800,6 @@ export type Database = {
         Row: {
           booking_commission_rate: number
           created_at: string | null
-          host_commission_duration_days: number
-          host_commission_rate: number
           id: string
           platform_referral_commission_rate: number
           platform_service_fee: number
@@ -810,8 +808,6 @@ export type Database = {
         Insert: {
           booking_commission_rate?: number
           created_at?: string | null
-          host_commission_duration_days?: number
-          host_commission_rate?: number
           id?: string
           platform_referral_commission_rate?: number
           platform_service_fee?: number
@@ -820,8 +816,6 @@ export type Database = {
         Update: {
           booking_commission_rate?: number
           created_at?: string | null
-          host_commission_duration_days?: number
-          host_commission_rate?: number
           id?: string
           platform_referral_commission_rate?: number
           platform_service_fee?: number

@@ -22,8 +22,6 @@ export default function AdminReferralSettings() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [settings, setSettings] = useState({
     bookingCommissionRate: 5.0,
-    hostCommissionRate: 10.0,
-    hostCommissionDurationDays: 15,
     platformServiceFee: 20.0,
     platformReferralCommissionRate: 5.0,
   });
@@ -61,8 +59,6 @@ export default function AdminReferralSettings() {
         if (settingsData) {
           setSettings({
             bookingCommissionRate: Number(settingsData.booking_commission_rate),
-            hostCommissionRate: Number(settingsData.host_commission_rate),
-            hostCommissionDurationDays: settingsData.host_commission_duration_days,
             platformServiceFee: Number(settingsData.platform_service_fee || 20.0),
             platformReferralCommissionRate: Number(settingsData.platform_referral_commission_rate || 5.0),
           });
@@ -85,8 +81,6 @@ export default function AdminReferralSettings() {
         .from("referral_settings")
         .update({
           booking_commission_rate: settings.bookingCommissionRate,
-          host_commission_rate: settings.hostCommissionRate,
-          host_commission_duration_days: settings.hostCommissionDurationDays,
           platform_service_fee: settings.platformServiceFee,
           platform_referral_commission_rate: settings.platformReferralCommissionRate,
         })
@@ -184,53 +178,6 @@ export default function AdminReferralSettings() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Commission earned when someone books through a referral link
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="hostRate">
-                    Host Referral Commission Rate (%)
-                  </Label>
-                  <Input
-                    id="hostRate"
-                    type="number"
-                    value={settings.hostCommissionRate}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        hostCommissionRate: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Commission earned on new host's bookings during the commission period
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="duration">
-                    Host Commission Duration (Days)
-                  </Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={settings.hostCommissionDurationDays}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        hostCommissionDurationDays: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    min="1"
-                    max="365"
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    How many days after the first booking the referrer continues to earn commission
                   </p>
                 </div>
               </CardContent>

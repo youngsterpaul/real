@@ -102,38 +102,8 @@ export const calculateAndAwardCommission = async (
 
     if (settingsError || !settings) return;
 
-    let commissionRate = Number(settings.booking_commission_rate);
-    let commissionType = "booking";
-
-    // Check if this is a host referral
-    if (tracking.referral_type === "host") {
-      // Check if referred user has made their first booking
-      const { data: existingCommissions } = await supabase
-        .from("referral_commissions")
-        .select("*")
-        .eq("referrer_id", tracking.referrer_id)
-        .eq("referred_user_id", tracking.referred_user_id)
-        .eq("commission_type", "host");
-
-      if (existingCommissions && existingCommissions.length === 0) {
-        // This is the first booking, check if within duration
-        commissionRate = Number(settings.host_commission_rate);
-        commissionType = "host";
-      } else if (existingCommissions && existingCommissions.length > 0) {
-        // Check if still within commission period
-        const firstCommission = existingCommissions[0];
-        const daysSinceFirst = Math.floor(
-          (Date.now() - new Date(firstCommission.created_at).getTime()) / (1000 * 60 * 60 * 24)
-        );
-        
-        if (daysSinceFirst <= settings.host_commission_duration_days) {
-          commissionRate = Number(settings.host_commission_rate);
-          commissionType = "host";
-        } else {
-          return; // Commission period expired
-        }
-      }
-    }
+    const commissionRate = Number(settings.booking_commission_rate);
+    const commissionType = "booking";
 
     const commissionAmount = (bookingAmount * commissionRate) / 100;
 
