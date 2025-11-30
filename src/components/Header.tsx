@@ -98,14 +98,14 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-blue-900 text-white h-16 dark:bg-blue-900 dark:text-white">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-[#008080] text-white h-16 dark:bg-[#008080] dark:text-white">
       <div className="container flex h-full items-center justify-between px-4">
         
         {/* Logo and Drawer Trigger (Left Side) */}
         <div className="flex items-center gap-3">
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
-              <button className="inline-flex items-center justify-center h-10 w-10 rounded-md text-white hover:bg-blue-800 transition-colors">
+              <button className="inline-flex items-center justify-center h-10 w-10 rounded-md text-white hover:bg-[#006666] transition-colors">
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
