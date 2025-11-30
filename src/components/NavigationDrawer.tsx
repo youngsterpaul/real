@@ -158,10 +158,10 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
   ];
 
 
-  const handleLogout = () => {
-    signOut();
-    onClose();
-  };
+  const handleLogout = () => {
+    signOut();
+    onClose();
+  };
   
   // Reworked Auth Display to be a list item
   const AuthDisplay = user ? (
@@ -211,17 +211,17 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header section with logo, name, and paragraph - Always blue */}
-      <div className="p-4 border-b bg-blue-900 text-white border-blue-800">
+      {/* Header section with logo, name, and paragraph - Now Teal */}
+      <div className="p-4 border-b bg-[#008080] text-white border-[#006666]">
         <div className="flex items-center gap-3 mb-2">
-          <div className="h-8 w-8 rounded-lg bg-blue-700 flex items-center justify-center font-bold text-lg text-white">
+          <div className="h-8 w-8 rounded-lg bg-[#006666] flex items-center justify-center font-bold text-lg text-white">
             T
           </div>
           <div>
             <span className="font-bold text-base block text-white">
               TripTrac
             </span>
-            <p className="text-xs text-blue-200">Your journey starts now.</p>
+            <p className="text-xs text-[#80c0c0]">Your journey starts now.</p>
           </div>
         </div>
       </div>
@@ -229,9 +229,9 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
       {/* Navigation links section with white bg and dark mode support */}
       <nav 
         className="flex-1 p-4 pt-6 overflow-y-auto bg-white dark:bg-gray-950
-                   [&::-webkit-scrollbar]:hidden 
-                   [-ms-overflow-style:none] 
-                   [scrollbar-width:none]"
+                  [&::-webkit-scrollbar]:hidden 
+                  [-ms-overflow-style:none] 
+                  [scrollbar-width:none]"
       >
         <ul className="space-y-2">
           
@@ -324,7 +324,7 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
               </ul>
             </li>
           )}
-          
+          
           {/* LOGIN/LOGOUT ICON AND NAME (Moved to inside the UL) */}
           {AuthDisplay}
           
@@ -337,9 +337,9 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
           <Link
             to="/install"
             onClick={onClose}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-blue-900 text-white hover:bg-blue-800 transition-all duration-200"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-[#008080] text-white hover:bg-[#006666] transition-all duration-200"
           >
-            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center font-bold text-lg text-blue-900">
+            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center font-bold text-lg text-[#008080]">
               T
             </div>
             <div className="flex-1 text-left">
