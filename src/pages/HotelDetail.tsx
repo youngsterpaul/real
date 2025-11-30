@@ -170,6 +170,7 @@ const HotelDetail = () => {
       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
     }
   };
+  
   const handleBookingSubmit = async (data: BookingFormData) => {
     if (!hotel) return;
     setIsProcessing(true);
@@ -181,6 +182,7 @@ const HotelDetail = () => {
         }
         return sum + f.price;
       }, 0) + data.selectedActivities.reduce((sum, a) => sum + a.price * a.numberOfPeople, 0);
+      
       if (totalAmount === 0) {
         const {
           data: bookingResult,
@@ -205,10 +207,13 @@ const HotelDetail = () => {
           guest_phone: !user ? data.guest_phone : null,
           payment_status: 'paid'
         }]).select();
+        
         if (error) throw error;
+        
         const {
           data: hotelData
         } = await supabase.from('hotels').select('created_by').eq('id', id).single();
+        
         if (hotelData?.created_by) {
           await supabase.from('notifications').insert({
             user_id: hotelData.created_by,
@@ -221,6 +226,7 @@ const HotelDetail = () => {
             }
           });
         }
+        
         if (user) {
           await supabase.from('notifications').insert({
             user_id: user.id,
@@ -233,6 +239,7 @@ const HotelDetail = () => {
             }
           });
         }
+        
         await supabase.functions.invoke('send-booking-confirmation', {
           body: {
             bookingId: bookingResult[0].id,
@@ -251,6 +258,7 @@ const HotelDetail = () => {
             visitDate: data.visit_date
           }
         });
+        
         setIsProcessing(false);
         setIsCompleted(true);
         return;
@@ -291,14 +299,18 @@ const HotelDetail = () => {
             bookingData: bookingPayload
           }
         });
+        
         if (mpesaError || !mpesaResponse?.success) throw new Error("M-Pesa payment failed");
+        
         const checkoutRequestId = mpesaResponse.checkoutRequestId;
         const startTime = Date.now();
+        
         while (Date.now() - startTime < 40000) {
           await new Promise(resolve => setTimeout(resolve, 2000));
           const {
             data: pendingPayment
           } = await supabase.from('pending_payments').select('payment_status').eq('checkout_request_id', checkoutRequestId).single();
+          
           if (pendingPayment?.payment_status === 'completed') {
             setIsProcessing(false);
             setIsCompleted(true);
@@ -307,6 +319,7 @@ const HotelDetail = () => {
             throw new Error('Payment failed');
           }
         }
+        
         const {
           data: queryResponse
         } = await supabase.functions.invoke('mpesa-stk-query', {
@@ -314,6 +327,7 @@ const HotelDetail = () => {
             checkoutRequestId
           }
         });
+        
         if (queryResponse?.resultCode === '0') {
           setIsProcessing(false);
           setIsCompleted(true);
@@ -331,6 +345,7 @@ const HotelDetail = () => {
       setIsProcessing(false);
     }
   };
+  
   if (loading || !hotel) {
     return <div className="min-h-screen bg-background pb-20 md:pb-0">
         <Header />
@@ -339,12 +354,14 @@ const HotelDetail = () => {
         <MobileBottomBar />
       </div>;
   }
+  
   const displayImages = [hotel.image_url, ...(hotel.gallery_images || []), ...(hotel.images || [])].filter(Boolean);
+  
   return <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header />
       
-      <main className="container max-w-6xl mx-auto py-[2px] px-[24px]">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 text-xs font-mono text-right font-thin border-solid rounded-none my-[10px]">
+      <main className="container max-w-6xl mx-auto py-6 px-4">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
@@ -366,26 +383,37 @@ const HotelDetail = () => {
               {displayImages.length > 1 && <>
                   <CarouselPrevious className="left-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-none" />
                   <CarouselNext className="right-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-none" />
-                </>}
+                </>
+              }
             </Carousel>
             
-            {hotel.description && <div className="absolute bottom-0 left-0 right-0 backdrop-blur-sm text-white p-4 z-10 px-0 bg-black/[0.26] py-0 my-0 border-0">
+            {/* START: Description Section with slide-down and border radius */}
+            {hotel.description && 
+              <div 
+                className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white p-4 z-10 
+                           rounded-b-2xl 
+                           shadow-lg 
+                           transform translate-y-2" // Slide down effect
+              >
                 <h2 className="text-lg font-semibold mb-2">About This Hotel</h2>
                 <p className="text-sm line-clamp-3">{hotel.description}</p>
-              </div>}
+              </div>
+            }
+            {/* END: Description Section */}
           </div>
 
           <div className="space-y-4">
             <div>
               <h1 className="text-3xl font-bold mb-2">{hotel.name}</h1>
               <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                {/* MapPin Icon Teal */}
+                {/* MapPin Icon Teal (As requested and confirmed) */}
                 <MapPin className="h-4 w-4" style={{ color: TEAL_COLOR }} />
                 <span>{hotel.location}, {hotel.country}</span>
               </div>
             </div>
 
-            {(hotel.opening_hours || hotel.closing_hours) && <div className="p-4 border bg-card mb-4" style={{ borderColor: TEAL_COLOR }}>
+            {(hotel.opening_hours || hotel.closing_hours) && 
+              <div className="p-4 border bg-card mb-4" style={{ borderColor: TEAL_COLOR }}>
                 <div className="flex items-center gap-2">
                   {/* Clock Icon Teal */}
                   <Clock className="h-5 w-5" style={{ color: TEAL_COLOR }} />
@@ -395,7 +423,8 @@ const HotelDetail = () => {
                     {hotel.days_opened && hotel.days_opened.length > 0 && <p className="text-xs text-muted-foreground mt-1">{hotel.days_opened.join(', ')}</p>}
                   </div>
                 </div>
-              </div>}
+              </div>
+            }
 
             <div className="space-y-3">
               {/* Book Now Button Teal and dark hover */}
@@ -507,7 +536,7 @@ const HotelDetail = () => {
             </div>
           </div>}
 
-        {(hotel.phone_numbers || hotel.email) && <div className="mt-6 p-6 border bg-card my-[5px] px-[10px] py-[10px]">
+        {(hotel.phone_numbers || hotel.email) && <div className="mt-6 p-6 border bg-card">
             <h2 className="text-xl font-semibold mb-3">Contact Information</h2>
             <div className="space-y-2">
               {hotel.phone_numbers?.map((phone, idx) => 
@@ -528,6 +557,11 @@ const HotelDetail = () => {
           <ReviewSection itemId={hotel.id} itemType="hotel" />
         </div>
 
+        {/* Note on SimilarItems: 
+            To apply the TEAL_COLOR to the location icon and a RED_COLOR class (e.g., text-red-600) 
+            to the price in the SimilarItems cards, you must modify the internal implementation of the 
+            <SimilarItems /> component itself, as it is an external import here.
+        */}
         {hotel && <SimilarItems currentItemId={hotel.id} itemType="hotel" country={hotel.country} />}
       </main>
 
