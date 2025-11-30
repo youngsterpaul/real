@@ -60,10 +60,10 @@ export const ListingCard = ({
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "";
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
@@ -79,7 +79,7 @@ export const ListingCard = ({
     <Card 
       onClick={handleCardClick}
       className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border rounded-lg bg-card shadow-sm
-                   w-full" 
+                       w-full" 
     >
       <div className="relative aspect-[4/3] overflow-hidden m-0">
         <img
@@ -93,20 +93,9 @@ export const ListingCard = ({
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 m-0 p-0"
         />
         
-        {type === "TRIP" && (
-          <Badge className="absolute top-2 left-2 **bg-red-600** text-primary-foreground backdrop-blur text-xs font-bold z-10 px-2 py-1">
-            TRIP
-          </Badge>
-        )}
-
-        {type === "EVENT" && (
-          <Badge className="absolute top-2 left-2 **bg-red-600** text-primary-foreground backdrop-blur text-xs font-bold z-10 px-2 py-1">
-            EVENT
-          </Badge>
-        )}
-
-        {type !== "EVENT" && type !== "TRIP" && showBadge && (
-          <Badge className="absolute top-2 left-2 bg-red-600 text-white backdrop-blur text-[0.6rem] z-10 p-1">
+        {/* Unified Badge: Red background for all types when showBadge is true */}
+        {showBadge && (
+          <Badge className="absolute top-2 left-2 bg-red-600 text-primary-foreground backdrop-blur text-xs font-bold z-10 px-2 py-1">
             {type}
           </Badge>
         )}
@@ -132,8 +121,9 @@ export const ListingCard = ({
           </Button>
         )}
 
+        {/* Price Tag (remains red for TRIP/EVENT, as in original code) */}
         {!hidePrice && price !== undefined && (type === "TRIP" || type === "EVENT") && (
-          <div className="absolute bottom-2 left-2 **bg-red-600** text-primary-foreground px-3 py-1.5 md:px-2 md:py-1 **rounded-none** shadow-lg z-10">
+          <div className="absolute bottom-2 left-2 bg-red-600 text-primary-foreground px-3 py-1.5 md:px-2 md:py-1 rounded-none shadow-lg z-10">
             <p className="font-bold text-sm md:text-xs whitespace-nowrap">
               KSh {price}
             </p>
