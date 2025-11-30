@@ -44,7 +44,7 @@ export interface BookingFormData {
   guest_name: string;
   guest_email: string;
   guest_phone: string;
-  payment_method: string; // "mpesa", "airtel", "card"
+  payment_method: string; // "mpesa", "card" (Removed "airtel")
   payment_phone: string;
   card_number: string;
   card_expiry: string;
@@ -548,20 +548,14 @@ export const MultiStepBooking = ({
           {/* Payment Method Selection */}
           <div className="space-y-2">
             <Label>Select Payment Method</Label>
-            <div className="grid grid-cols-3 gap-2">
+            {/* Payment options updated from grid-cols-3 to grid-cols-2, removing Airtel */}
+            <div className="grid grid-cols-2 gap-2"> 
               <Button
                 type="button"
                 variant={formData.payment_method === "mpesa" ? "default" : "outline"}
                 onClick={() => setFormData({ ...formData, payment_method: "mpesa" })}
               >
                 M-Pesa
-              </Button>
-              <Button
-                type="button"
-                variant={formData.payment_method === "airtel" ? "default" : "outline"}
-                onClick={() => setFormData({ ...formData, payment_method: "airtel" })}
-              >
-                Airtel
               </Button>
               <Button
                 type="button"
@@ -574,7 +568,8 @@ export const MultiStepBooking = ({
           </div>
 
           {/* Mobile Money Input */}
-          {(formData.payment_method === "mpesa" || formData.payment_method === "airtel") && (
+          {/* Check now only for "mpesa" (removed "airtel") */}
+          {(formData.payment_method === "mpesa") && (
             <div>
               <Label htmlFor="payment_phone">Phone Number for Payment *</Label>
               <Input
