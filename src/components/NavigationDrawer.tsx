@@ -221,7 +221,7 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
             <span className="font-bold text-base block text-white">
               TripTrac
             </span>
-            <p className="text-xs text-blue-200">Explore the world</p>
+            <p className="text-xs text-blue-200">Your journey starts now.</p>
           </div>
         </div>
       </div>
