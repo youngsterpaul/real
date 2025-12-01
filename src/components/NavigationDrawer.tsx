@@ -1,4 +1,4 @@
-import { Home, Ticket, Heart, Phone, Info, Video, Plus, Edit, Package, LogIn, LogOut, Sun, Moon, User, Shield, Download } from "lucide-react"; 
+import { Home, Ticket, Heart, Phone, Info, Video, Plus, Edit, Package, LogIn, LogOut, Sun, Moon, User, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -39,25 +39,12 @@ const MobileThemeToggle = () => {
 export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
   const { user, signOut } = useAuth();
   const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return;
-
-      // Fetch user role
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      if (roleData && roleData.length > 0) {
-        const roles = roleData.map((r) => r.role);
-        if (roles.includes("admin")) setUserRole("admin");
-        else setUserRole("user");
-      }
 
       // Fetch only user profile name (not email)
       const { data: profile } = await supabase
@@ -93,18 +80,20 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
     };
   }, []);
 
+  // Removed handleInstallClick logic as it's not used in the final button
+  // Re-instating it to handle the PWA install prompt logic
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       setDeferredPrompt(null);
       setIsInstalled(true);
     }
   };
-  
+
   const handleProtectedNavigation = async (path: string) => {
     if (!user) {
       window.location.href = "/auth";
@@ -112,30 +101,8 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
       return;
     }
 
-    // Special handling for Become a Host
-    if (path === "/host-verification") {
-      try {
-        const { data: verification } = await supabase
-          .from("host_verifications")
-          .select("status")
-          .eq("user_id", user.id)
-          .single();
-
-        if (!verification) {
-          window.location.href = "/host-verification";
-        } else if (verification.status === "pending") {
-          window.location.href = "/verification-status";
-        } else if (verification.status === "rejected") {
-          window.location.href = "/host-verification";
-        } else if (verification.status === "approved") {
-          window.location.href = "/become-host";
-        }
-      } catch (error) {
-        window.location.href = "/host-verification";
-      }
-    } else {
-      window.location.href = path;
-    }
+    // Direct navigation for protected routes other than the removed Host Verification
+    window.location.href = path;
     onClose();
   };
 
@@ -147,14 +114,14 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
   ];
 
   const appNavItems = [
-    { icon: Download, label: "Install App", path: "/install", protected: false },
+    { icon: Download, label: "Install App", path: "/install", protected: false, onClick: handleInstallClick },
   ];
 
   const topContentItems = [
     { icon: Home, label: "Home", path: "/", protected: false },
     { icon: Ticket, label: "My Bookings", path: "/bookings", protected: true },
     { icon: Heart, label: "Wishlist", path: "/saved", protected: true },
-    { icon: Shield, label: "Host Verification", path: "/admin/verification", protected: true, adminOnly: true },
+    // Removed Host Verification item
   ];
 
 
@@ -162,21 +129,12 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
     signOut();
     onClose();
   };
-  
+
   // Reworked Auth Display to be a list item
   const AuthDisplay = user ? (
     <li className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
       <p className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Account</p>
-      {userRole === "admin" && (
-        <Link
-          to="/admin"
-          onClick={onClose}
-          className="w-full flex items-center gap-3 px-4 py-2.5 mb-2 rounded-lg bg-black dark:bg-gray-800 text-white hover:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-200 group"
-        >
-          <Shield className="h-5 w-5 text-white" />
-          <span className="font-medium text-white">Admin Dashboard</span>
-        </Link>
-      )}
+      {/* Removed Admin Dashboard Link */}
       <Link
         to="/profile"
         onClick={onClose}
@@ -200,7 +158,8 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
       <Link
         to="/auth"
         onClick={onClose}
-        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-black dark:bg-gray-800 text-white hover:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-200 group"
+        // Updated to a blue login button (bg-blue-600, hover:bg-blue-700)
+        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-blue-600 dark:bg-blue-800 text-white hover:bg-blue-700 dark:hover:bg-blue-700 transition-all duration-200 group"
       >
         <LogIn className="h-5 w-5 text-white" />
         <span className="font-medium text-white">Login / Register</span>
@@ -225,24 +184,21 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
           </div>
         </div>
       </div>
-      
+
       {/* Navigation links section with white bg and dark mode support */}
-      <nav 
+      <nav
         className="flex-1 p-4 pt-6 overflow-y-auto bg-white dark:bg-gray-950
-                  [&::-webkit-scrollbar]:hidden 
-                  [-ms-overflow-style:none] 
+                  [&::-webkit-scrollbar]:hidden
+                  [-ms-overflow-style:none]
                   [scrollbar-width:none]"
       >
         <ul className="space-y-2">
-          
+
           {/* 1. HOME, MY BOOKINGS, WISHLIST (TOP SECTION) */}
           <li className="mb-4 pt-2">
             <p className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Navigation</p>
             <ul className="space-y-1">
               {topContentItems.map((item, index) => {
-                // Hide admin-only items for non-admin users
-                if ((item as any).adminOnly && userRole !== "admin") return null;
-                
                 return (
                   <li key={item.path}>
                     {/* Home is a link, others are buttons for protected navigation */}
@@ -309,34 +265,32 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
               <ul className="space-y-1">
                 {appNavItems.map((item) => (
                   <li key={item.path}>
-                    <Link
-                      to={item.path}
-                      onClick={onClose}
-                      className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                    <button
+                      onClick={item.onClick}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                     >
                       <item.icon className="h-5 w-5 text-black dark:text-white" />
                       <span className="font-medium text-black dark:text-white">
                         {item.label}
                       </span>
-                    </Link>
+                    </button>
                   </li>
                 ))}
               </ul>
             </li>
           )}
-          
+
           {/* LOGIN/LOGOUT ICON AND NAME (Moved to inside the UL) */}
           {AuthDisplay}
-          
+
         </ul>
       </nav>
 
       {/* Install App Bottom Banner - Only shows if browser supports it */}
       {!isInstalled && deferredPrompt && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-          <Link
-            to="/install"
-            onClick={onClose}
+          <button
+            onClick={handleInstallClick}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-[#008080] text-white hover:bg-[#006666] transition-all duration-200"
           >
             <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center font-bold text-lg text-[#008080]">
@@ -347,9 +301,9 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
               <span className="text-xs text-white/80">Quick access on your device</span>
             </div>
             <Download className="h-5 w-5" />
-          </Link>
+          </button>
         </div>
       )}
     </div>
-   ); 
+   );
 };
