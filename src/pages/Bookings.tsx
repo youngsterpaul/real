@@ -46,9 +46,33 @@ const Bookings = () => {
     }
   }, [user, authLoading, navigate]);
 
+
   useEffect(() => {
     if (user) {
       fetchBookings();
+
+      // Subscribe to real-time updates on pending_payments
+      const channel = supabase
+        .channel('pending-payments-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'pending_payments',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Pending payment update:', payload);
+            // Refresh bookings when any change occurs
+            fetchBookings();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
