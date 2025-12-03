@@ -29,6 +29,7 @@ interface Booking {
   isPending?: boolean;
   payment_phone?: string;
   pendingPaymentId?: string;
+  result_code?: string | null;
 }
 
 const Bookings = () => {
@@ -90,6 +91,7 @@ const Bookings = () => {
         isPending: true,
         payment_phone: pp.phone_number,
         pendingPaymentId: pp.id,
+        result_code: pp.result_code,
       }));
 
       // Combine and sort by date
@@ -105,40 +107,78 @@ const Bookings = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  // Get color based on Daraja result code or payment status
+  const getStatusColor = (booking: Booking) => {
+    const { payment_status, result_code } = booking;
+    
+    // Check result_code first (actual Daraja codes)
+    if (result_code) {
+      switch (result_code) {
+        case "0": return "bg-green-500/10 text-green-500"; // Success
+        case "1": return "bg-orange-500/10 text-orange-500"; // Insufficient funds
+        case "1032": return "bg-red-500/10 text-red-500"; // User cancelled
+        case "1037": return "bg-yellow-500/10 text-yellow-500"; // Timeout
+        case "1001": return "bg-orange-500/10 text-orange-500"; // Subscriber busy
+        case "2001": return "bg-red-500/10 text-red-500"; // Invalid initiator
+        default: return "bg-orange-500/10 text-orange-500"; // Other failures
+      }
+    }
+    
+    // Fallback to payment_status
+    switch (payment_status) {
       case "confirmed": 
       case "paid":
       case "completed":
         return "bg-green-500/10 text-green-500";
       case "pending": 
         return "bg-yellow-500/10 text-yellow-500";
-      case "cancelled": 
-      case "timeout":
-        return "bg-red-500/10 text-red-500";
-      case "failed":
-        return "bg-orange-500/10 text-orange-500";
       default: 
         return "bg-gray-500/10 text-gray-500";
     }
   };
 
-  const getPaymentStatusLabel = (status: string) => {
-    switch (status) {
+  // Get label based on Daraja result code
+  const getPaymentStatusLabel = (booking: Booking) => {
+    const { payment_status, result_code } = booking;
+    
+    // Check result_code first (actual Daraja codes)
+    if (result_code) {
+      switch (result_code) {
+        case "0": return "Paid";
+        case "1": return "Insufficient Funds";
+        case "1032": return "Cancelled by User";
+        case "1037": return "PIN Timeout";
+        case "1001": return "Subscriber Busy";
+        case "2001": return "Invalid Request";
+        case "2": return "Not Supported";
+        default: return `Failed (${result_code})`;
+      }
+    }
+    
+    // Fallback to payment_status
+    switch (payment_status) {
       case "paid":
       case "completed":
         return "Paid";
       case "pending":
         return "Awaiting Payment";
-      case "failed":
-        return "Payment Failed";
-      case "cancelled":
-        return "Cancelled";
-      case "timeout":
-        return "Timed Out";
       default:
-        return status;
+        return payment_status;
     }
+  };
+
+  // Check if payment can be retried based on result_code
+  const canRetryPayment = (booking: Booking) => {
+    if (!booking.isPending) return false;
+    const { result_code, payment_status } = booking;
+    
+    // Allow retry for these Daraja result codes
+    if (result_code) {
+      return ["1", "1032", "1037", "1001", "2001", "2"].includes(result_code);
+    }
+    
+    // Fallback to payment_status
+    return ["failed", "cancelled", "timeout"].includes(payment_status);
   };
 
   const getTypeLabel = (type: string) => {
@@ -243,14 +283,14 @@ const Bookings = () => {
                     <div className="flex items-center gap-3 flex-wrap">
                       <Badge variant="outline">{getTypeLabel(booking.booking_type)}</Badge>
                       {booking.isPending ? (
-                        <Badge className={getStatusColor(booking.payment_status)}>
-                          {getPaymentStatusLabel(booking.payment_status)}
+                        <Badge className={getStatusColor(booking)}>
+                          {getPaymentStatusLabel(booking)}
                         </Badge>
                       ) : (
                         <>
-                          <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                          <Badge className={getStatusColor(booking.payment_status)}>
-                            {getPaymentStatusLabel(booking.payment_status)}
+                          <Badge className="bg-green-500/10 text-green-500">{booking.status}</Badge>
+                          <Badge className={getStatusColor(booking)}>
+                            {getPaymentStatusLabel(booking)}
                           </Badge>
                         </>
                       )}
@@ -338,7 +378,7 @@ const Bookings = () => {
                     </div>
                     
                     {/* Retry Payment Button for failed/cancelled/timeout payments */}
-                    {booking.isPending && ['failed', 'cancelled', 'timeout'].includes(booking.payment_status) && (
+                    {canRetryPayment(booking) && (
                       <Button
                         variant="default"
                         size="sm"
