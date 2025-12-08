@@ -469,7 +469,10 @@ const HotelDetail = () => {
             activities={hotel.activities || []} 
             isProcessing={isProcessing} 
             isCompleted={isCompleted} 
-            itemName={hotel.name} 
+            itemName={hotel.name}
+            itemId={hotel.id}
+            bookingType="hotel"
+            hostId={hotel.created_by || ""}
           />
         </DialogContent>
       </Dialog>

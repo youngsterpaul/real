@@ -420,7 +420,10 @@ const EventDetail = () => {
             itemName={event.name} 
             skipDateSelection={true} 
             fixedDate={event.date} 
-            skipFacilitiesAndActivities={true} 
+            skipFacilitiesAndActivities={true}
+            itemId={event.id}
+            bookingType="event"
+            hostId={event.created_by || ""}
           />
         </DialogContent>
       </Dialog>

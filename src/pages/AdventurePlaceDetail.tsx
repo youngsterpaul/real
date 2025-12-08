@@ -461,6 +461,9 @@ const AdventurePlaceDetail = () => {
             isProcessing={isProcessing} 
             isCompleted={isCompleted} 
             itemName={place.name}
+            itemId={place.id}
+            bookingType="adventure_place"
+            hostId={place.created_by || ""}
           />
         </DialogContent>
       </Dialog>
