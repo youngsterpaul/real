@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // Determine payment status: pending -> completed or failed
     const paymentStatus = resultCode === '0' ? 'completed' : 'failed';
     const bookingStatus = resultCode === '0' ? 'confirmed' : 'cancelled';
-    const bookingPaymentStatus = resultCode === '0' ? 'paid' : 'failed';
+    const bookingPaymentStatus = resultCode === '0' ? 'completed' : 'failed';
 
     // First, get the payment record to access booking_data
     const { data: payment, error: fetchError } = await supabaseClient
