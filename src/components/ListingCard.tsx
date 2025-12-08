@@ -198,6 +198,27 @@ export const ListingCard = ({
                     </p>
                 </div>
 
+                {/* Price and Date Info for Trips/Events - displayed prominently */}
+                {(type === "TRIP" || type === "EVENT") && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+                        {!hidePrice && price !== undefined && price > 0 && (
+                            <span className="text-[10px] md:text-xs font-bold text-[rgb(200,0,0)]">
+                                KSh {price.toLocaleString()}
+                            </span>
+                        )}
+                        {date && !isCustomDate && (
+                            <span className="text-[10px] md:text-xs text-muted-foreground">
+                                {formatDate(date)}
+                            </span>
+                        )}
+                        {isCustomDate && (
+                            <span className="text-[10px] md:text-xs text-muted-foreground italic">
+                                Flexible Date
+                            </span>
+                        )}
+                    </div>
+                )}
+
                 {/* Activities Section - MODIFIED for fixed height */}
                 <div className={cn("flex flex-wrap gap-0.5 md:gap-1 pt-0.5 md:pt-1", activityContainerClass)}>
                     {activityNames.length > 0 && (
