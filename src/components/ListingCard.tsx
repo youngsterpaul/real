@@ -131,7 +131,7 @@ export const ListingCard = ({
             
             {/* Content Area - MODIFIED: Added flex-1 to make it take up remaining space */}
             <div className="p-2 md:p-4 flex flex-col space-y-1 md:space-y-2 flex-1"> 
-                <h3 className="font-bold text-xs md:text-base line-clamp-2">
+                <h3 className="font-bold text-xs md:text-base line-clamp-2 py-[5px] my-px">
                     {name}
                 </h3>
                 
