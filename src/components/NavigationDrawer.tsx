@@ -126,8 +126,7 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
       <Link
         to="/auth"
         onClick={onClose}
-        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-blue-600 dark:bg-blue-800 text-white hover:bg-blue-700 dark:hover:bg-blue-700 transition-all duration-200 group"
-      >
+       className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-teal-600 dark:bg-teal-800 text-white hover:bg-teal-700 dark:hover:bg-teal-700 transition-all duration-200 group"      >
         <LogIn className="h-5 w-5 text-white" />
         <span className="font-medium text-white">Login / Register</span>
       </Link>
