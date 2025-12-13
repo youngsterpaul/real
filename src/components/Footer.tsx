@@ -8,10 +8,17 @@ import {
   Mail,
   MessageSquare,
   Send as TikTok,
-  Youtube, // <<< ADDED YOUTUBE IMPORT
+  Youtube,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+
+// Custom Tailwind Hover Color: #008080 (Dark Teal)
+const TEAL_HOVER_CLASS = "hover:text-[#008080]";
+// Custom Tailwind WhatsApp Color: #25D366
+const WHATSAPP_COLOR_CLASS = "text-[#25D366]"; 
+// Custom Tailwind TikTok Color: #000000 (Black)
+const TIKTOK_COLOR_CLASS = "text-black";
 
 // --- START: Define Social Media Links (Customize these URLs) ---
 const socialLinks = {
@@ -57,7 +64,8 @@ export const Footer = ({
           {/* TripTrac Info */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Compass className="h-6 w-6 text-blue-600" />
+              {/* NOTE: Compass color changed to match new link hover color */}
+              <Compass className="h-6 w-6 text-[#008080]" /> 
               <span className="font-bold text-lg">TripTrac</span>
             </div>
             <p className="text-sm text-gray-600"> 
@@ -69,10 +77,11 @@ export const Footer = ({
           <div>
             <h3 className="font-bold mb-3">Quick Links</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link></li>
-              <li><Link to="/become-host" className="text-gray-600 hover:text-blue-600 transition-colors">Become a Host</Link></li>
-              <li><Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors">About</Link></li>
-              <li><Link to="/contact" className="text-gray-600 hover:text-blue-600 transition-colors">Contact</Link></li>
+              {/* Link hover colors updated to custom teal */}
+              <li><Link to="/" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Home</Link></li>
+              <li><Link to="/become-host" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Become a Host</Link></li>
+              <li><Link to="/about" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>About</Link></li>
+              <li><Link to="/contact" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Contact</Link></li>
             </ul>
           </div>
           
@@ -80,10 +89,11 @@ export const Footer = ({
           <div>
             <h3 className="font-bold mb-3">Categories</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/category/trips" className="text-gray-600 hover:text-blue-600 transition-colors">Trips</Link></li>
-              <li><Link to="/category/events" className="text-gray-600 hover:text-blue-600 transition-colors">Events</Link></li>
-              <li><Link to="/category/hotels" className="text-gray-600 hover:text-blue-600 transition-colors">Hotels</Link></li>
-              <li><Link to="/category/adventure" className="text-gray-600 hover:text-blue-600 transition-colors">Adventure Place</Link></li>
+              {/* Link hover colors updated to custom teal */}
+              <li><Link to="/category/trips" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Trips</Link></li>
+              <li><Link to="/category/events" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Events</Link></li>
+              <li><Link to="/category/hotels" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Hotels</Link></li>
+              <li><Link to="/category/adventure" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Adventure Place</Link></li>
             </ul>
           </div>
           
@@ -91,13 +101,13 @@ export const Footer = ({
           <div>
             <h3 className="font-bold mb-3">My Account</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/become-host" className="text-gray-600 hover:text-blue-600 transition-colors">Become a Host</Link></li>
-              <li><Link to="/bookings" className="text-gray-600 hover:text-blue-600 transition-colors">My Bookings</Link></li>
-              <li><Link to="/saved" className="text-gray-600 hover:text-blue-600 transition-colors">Wishlist</Link></li>
-              <li><Link to="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">Profile</Link></li>
+              {/* Link hover colors updated to custom teal */}
+              <li><Link to="/become-host" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Become a Host</Link></li>
+              <li><Link to="/bookings" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>My Bookings</Link></li>
+              <li><Link to="/saved" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Wishlist</Link></li>
+              <li><Link to="/profile" className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>Profile</Link></li>
             </ul>
             {!isInstalled && <Link to="/install">
-                
               </Link>}
           </div>
 
@@ -106,43 +116,43 @@ export const Footer = ({
             <h3 className="font-bold mb-3">Connect With Us</h3>
             <div className="flex space-x-4 mb-4">
               
-              {/* WhatsApp */}
+              {/* WhatsApp: Brand Color #25D366, Hover color is the same */}
               <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-                <MessageSquare className="h-6 w-6 text-gray-600 hover:text-green-500 transition-colors" />
+                <MessageSquare className={`h-6 w-6 ${WHATSAPP_COLOR_CLASS} hover:opacity-80 transition-opacity`} />
               </a>
               
-              {/* Instagram */}
+              {/* Instagram: Brand Color (Pink/Purple gradient, approximating to pink-600) */}
               <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram className="h-6 w-6 text-gray-600 hover:text-pink-600 transition-colors" />
+                <Instagram className="h-6 w-6 text-pink-600 hover:opacity-80 transition-opacity" />
               </a>
 
-              {/* TikTok (Using 'Send' as a placeholder) */}
+              {/* TikTok (Using 'Send' as a placeholder): Brand Color Black, Hover color is the same */}
               <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-                <TikTok className="h-6 w-6 text-gray-600 hover:text-black transition-colors" />
+                <TikTok className={`h-6 w-6 ${TIKTOK_COLOR_CLASS} hover:opacity-80 transition-opacity`} />
               </a>
               
-              {/* YouTube */}
+              {/* YouTube: Brand Color Red-600, Hover color is the same */}
               <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                <Youtube className="h-6 w-6 text-gray-600 hover:text-red-600 transition-colors" />
+                <Youtube className="h-6 w-6 text-red-600 hover:opacity-80 transition-opacity" />
               </a>
 
-              {/* Facebook */}
+              {/* Facebook: Brand Color Blue-600, Hover color is the same */}
               <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <Facebook className="h-6 w-6 text-gray-600 hover:text-blue-600 transition-colors" />
+                <Facebook className="h-6 w-6 text-blue-600 hover:opacity-80 transition-opacity" />
               </a>
 
-              {/* X (Twitter) */}
+              {/* X (Twitter): Brand Color Black, Hover color is the same */}
               <a href={socialLinks.x} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
-                <X className="h-6 w-6 text-gray-600 hover:text-black transition-colors" />
+                <X className="h-6 w-6 text-black hover:opacity-80 transition-opacity" />
               </a>
             </div>
             
             {/* Email Link */}
             <div className="flex items-center space-x-2 text-sm">
-                <Mail className="h-5 w-5 text-gray-600" />
-                <a href={socialLinks.email} className="text-gray-600 hover:text-blue-600 transition-colors">
-                  Send us an email
-                </a>
+              <Mail className="h-5 w-5 text-gray-600" />
+              <a href={socialLinks.email} className={`text-gray-600 transition-colors ${TEAL_HOVER_CLASS}`}>
+                Send us an email
+              </a>
             </div>
           </div>
           
@@ -150,10 +160,11 @@ export const Footer = ({
         
         <div className="border-t border-gray-300 mt-8 pt-6 text-center text-sm text-gray-600">
           <div className="flex justify-center gap-6 mb-3">
-            <Link to="/terms-of-service" className="hover:text-blue-600 transition-colors">
+            {/* Link hover colors updated to custom teal */}
+            <Link to="/terms-of-service" className={`transition-colors ${TEAL_HOVER_CLASS}`}>
               Terms of Service
             </Link>
-            <Link to="/privacy-policy" className="hover:text-blue-600 transition-colors">
+            <Link to="/privacy-policy" className={`transition-colors ${TEAL_HOVER_CLASS}`}>
               Privacy Policy
             </Link>
           </div>
