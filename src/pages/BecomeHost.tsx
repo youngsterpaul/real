@@ -225,7 +225,7 @@ const BecomeHost = () => {
               <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-all" />
               <div className="relative h-full flex flex-col items-center justify-center text-white p-6">
                 <Plane className="h-10 w-10 mb-3" />
-                <span className="text-xl font-bold mb-2">Tours</span>
+                <span className="text-xl font-bold mb-2">Trip,events and sports</span>
                 <Badge variant="secondary" className="bg-white/90 text-foreground">
                   {myContent.filter(i => i.type === 'trip').length} Created
                 </Badge>
@@ -264,7 +264,7 @@ const BecomeHost = () => {
               <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-all" />
               <div className="relative h-full flex flex-col items-center justify-center text-white p-6">
                 <Building className="h-10 w-10 mb-3" />
-                <span className="text-xl font-bold mb-2">Hotels</span>
+                <span className="text-xl font-bold mb-2">Hotels & accommodation</span>
                 <Badge variant="secondary" className="bg-white/90 text-foreground">
                   {myContent.filter(i => i.type === 'hotel').length} Created
                 </Badge>

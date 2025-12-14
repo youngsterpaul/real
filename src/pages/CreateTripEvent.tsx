@@ -245,13 +245,13 @@ const CreateTripEvent = () => {
           title="Create Tour" 
           backgroundImage="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200"
         />
-        <h1 className="md:hidden text-3xl font-bold mb-8">Create Tour</h1>
+        <h1 className="md:hidden text-3xl font-bold mb-8">Create Trip,event or a sport activities</h1>
         
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Trip/Event Type Selector */}
             <div className="space-y-2">
-              <Label>Listing Type *</Label>
+              <Label>Listing Type </Label>
               <div className="flex gap-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -273,7 +273,7 @@ const CreateTripEvent = () => {
                     onChange={(e) => setFormData({...formData, type: e.target.value as "trip" | "event", is_custom_date: false})}
                     className="w-4 h-4"
                   />
-                  <span>Event (Fixed Date)</span>
+                  <span>Event or Sports (Fixed Date)</span>
                 </label>
               </div>
             </div>

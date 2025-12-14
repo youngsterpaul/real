@@ -509,7 +509,7 @@ const Index = () => {
                             {/* Content */}
                             <div className="relative z-10 flex flex-col items-center gap-4 md:gap-6 max-w-3xl mx-auto">
                                 <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4 text-center drop-shadow-lg">
-                                    Discover Your Next adventure and experience.
+                                    Discover Your Next adventure and experiences.
                                 </h1>
                                 
                                 {/* Search Bar Below Paragraph */}
