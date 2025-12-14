@@ -6,7 +6,9 @@ import { SearchBarWithSuggestions } from "@/components/SearchBarWithSuggestions"
 import { ListingCard } from "@/components/ListingCard";
 
 // Lazy load MapView to defer loading heavy mapbox-gl library
-const MapView = lazy(() => import("@/components/MapView").then(mod => ({ default: mod.MapView })));
+const MapView = lazy(() => import("@/components/MapView").then(mod => ({
+  default: mod.MapView
+})));
 import { Card } from "@/components/ui/card";
 import { Calendar, Hotel, Tent, Compass, Map, Grid, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +37,7 @@ const Index = () => {
     position,
     requestLocation
   } = useGeolocation();
-  
+
   // Request location on first user interaction
   useEffect(() => {
     const handleInteraction = () => {
@@ -43,8 +45,12 @@ const Index = () => {
       window.removeEventListener('scroll', handleInteraction);
       window.removeEventListener('click', handleInteraction);
     };
-    window.addEventListener('scroll', handleInteraction, { once: true });
-    window.addEventListener('click', handleInteraction, { once: true });
+    window.addEventListener('scroll', handleInteraction, {
+      once: true
+    });
+    window.addEventListener('click', handleInteraction, {
+      once: true
+    });
     return () => {
       window.removeEventListener('scroll', handleInteraction);
       window.removeEventListener('click', handleInteraction);
@@ -200,7 +206,6 @@ const Index = () => {
       return;
     }
     const [placesData, hotelsData, attractionsData] = await Promise.all([supabase.from("adventure_places").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(12), supabase.from("hotels").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(12), supabase.from("attractions").select("*").eq("approval_status", "approved").eq("is_hidden", false).limit(12)]);
-    
     const combined = [...(placesData.data || []).map(item => ({
       ...item,
       type: "ADVENTURE PLACE",
@@ -220,22 +225,20 @@ const Index = () => {
       location: item.location_name,
       image_url: item.photo_urls?.[0] || ""
     }))];
-    
+
     // Calculate distance for items with coordinates
     const withDistance = combined.map(item => {
       let distance: number | undefined;
       const itemAny = item as any;
       if (itemAny.latitude && itemAny.longitude && position) {
-        distance = calculateDistance(
-          position.latitude,
-          position.longitude,
-          itemAny.latitude,
-          itemAny.longitude
-        );
+        distance = calculateDistance(position.latitude, position.longitude, itemAny.latitude, itemAny.longitude);
       }
-      return { ...item, distance };
+      return {
+        ...item,
+        distance
+      };
     });
-    
+
     // Sort by distance (items with distance first, then others)
     const sorted = withDistance.sort((a, b) => {
       if (a.distance !== undefined && b.distance !== undefined) {
@@ -245,7 +248,6 @@ const Index = () => {
       if (b.distance !== undefined) return 1;
       return 0;
     });
-    
     const nearby = sorted.slice(0, 12);
     setNearbyPlacesHotels(nearby);
     // Only set loading to false if we have data
@@ -493,16 +495,7 @@ const Index = () => {
                     <div className="w-full">
                         <div className="relative w-full overflow-hidden flex flex-col items-center justify-center p-4 md:p-12 py-12 md:py-[80px]">
                             {/* Hero background image with high priority for faster LCP */}
-                            <img 
-                              src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920&h=800&fit=crop&auto=format&q=80"
-                              alt=""
-                              fetchPriority="high"
-                              loading="eager"
-                              decoding="async"
-                              className="absolute inset-0 w-full h-full object-cover"
-                              width={1920}
-                              height={800}
-                            />
+                            <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920&h=800&fit=crop&auto=format&q=80" alt="" fetchPriority="high" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" width={1920} height={800} />
                             {/* Overlay for better text readability */}
                             <div className="absolute inset-0 bg-black/40" />
                             
@@ -515,15 +508,15 @@ const Index = () => {
                                 {/* Search Bar Below Paragraph */}
                                 <div className="w-full mt-2 md:mt-4 relative z-[200]">
                                     <SearchBarWithSuggestions value={searchQuery} onChange={setSearchQuery} onSubmit={() => {
-                                      if (searchQuery.trim()) {
-                                        setIsSearchFocused(true);
-                                        fetchAllData(searchQuery);
-                                      }
-                                    }} onSuggestionSearch={query => {
-                                      setSearchQuery(query);
-                                      setIsSearchFocused(true);
-                                      fetchAllData(query);
-                                    }} onFocus={() => setIsSearchFocused(true)} />
+                  if (searchQuery.trim()) {
+                    setIsSearchFocused(true);
+                    fetchAllData(searchQuery);
+                  }
+                }} onSuggestionSearch={query => {
+                  setSearchQuery(query);
+                  setIsSearchFocused(true);
+                  fetchAllData(query);
+                }} onFocus={() => setIsSearchFocused(true)} />
                                 </div>
                             </div>
                         </div>
@@ -556,12 +549,11 @@ const Index = () => {
                                 {[...Array(6)].map((_, i) => <div key={i} className="w-full"><ListingSkeleton /></div>)}
                             </div> : listings.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
                                 {listings.map((listing, index) => {
-                                  const itemDistance = position && listing.latitude && listing.longitude
-                                    ? calculateDistance(position.latitude, position.longitude, listing.latitude, listing.longitude)
-                                    : undefined;
-                                  return <div key={listing.id} className="w-full">
+            const itemDistance = position && listing.latitude && listing.longitude ? calculateDistance(position.latitude, position.longitude, listing.latitude, listing.longitude) : undefined;
+            return <div key={listing.id} className="w-full">
                                     <ListingCard id={listing.id} type={listing.type} name={listing.name} location={listing.location} country={listing.country} imageUrl={listing.image_url} price={listing.price || listing.entry_fee || 0} date={listing.date} isCustomDate={listing.is_custom_date} isSaved={savedItems.has(listing.id)} onSave={() => handleSave(listing.id, listing.type)} availableTickets={listing.type === "TRIP" || listing.type === "EVENT" ? listing.available_tickets : undefined} bookedTickets={listing.type === "TRIP" || listing.type === "EVENT" ? bookingStats[listing.id] || 0 : undefined} showBadge={true} priority={index < 4} hidePrice={listing.type === "HOTEL" || listing.type === "ADVENTURE PLACE"} activities={listing.activities} distance={itemDistance} />
-                                </div>})}
+                                </div>;
+          })}
                             </div> : <p className="text-center text-muted-foreground py-8">No results found</p>}
                     </div>}
                 
@@ -591,12 +583,11 @@ const Index = () => {
                                         <p className="text-muted-foreground text-lg">No results found for "{searchQuery}"</p>
                                         <p className="text-muted-foreground text-sm mt-2">Try searching with different keywords</p>
                                     </div> : listings.map((item, index) => {
-                                      const itemDistance = position && item.latitude && item.longitude
-                                        ? calculateDistance(position.latitude, position.longitude, item.latitude, item.longitude)
-                                        : undefined;
-                                      return <div key={item.id} className="w-full">
+              const itemDistance = position && item.latitude && item.longitude ? calculateDistance(position.latitude, position.longitude, item.latitude, item.longitude) : undefined;
+              return <div key={item.id} className="w-full">
                                         <ListingCard id={item.id} type={item.type} name={item.name} imageUrl={item.image_url} location={item.location} country={item.country} price={item.price || item.entry_fee || item.price_adult || 0} date={item.date} isCustomDate={item.is_custom_date} onSave={handleSave} isSaved={savedItems.has(item.id)} hidePrice={item.type === "HOTEL" || item.type === "ADVENTURE PLACE"} showBadge={true} priority={index < 4} availableTickets={item.type === "TRIP" || item.type === "EVENT" ? item.available_tickets : undefined} bookedTickets={item.type === "TRIP" || item.type === "EVENT" ? bookingStats[item.id] || 0 : undefined} activities={item.activities} distance={itemDistance} />
-                                    </div>})}
+                                    </div>;
+            })}
                             </div> :
           // Horizontal scroll view for latest items (when not searching)
           <div className="relative">
@@ -683,20 +674,17 @@ const Index = () => {
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
                                             <ListingSkeleton />
                                         </div>)}
-                                </div> : scrollableRows.campsites.length === 0 ? <p className="text-center text-muted-foreground py-8 w-full">No campsites available</p> : [...scrollableRows.campsites]
-                                    .sort((a, b) => {
-                                      if (!position) return 0;
-                                      const distA = a.latitude && a.longitude ? calculateDistance(position.latitude, position.longitude, a.latitude, a.longitude) : Infinity;
-                                      const distB = b.latitude && b.longitude ? calculateDistance(position.latitude, position.longitude, b.latitude, b.longitude) : Infinity;
-                                      return distA - distB;
-                                    })
-                                    .map((place, index) => {
-                                      const itemDistance = position && place.latitude && place.longitude
-                                        ? calculateDistance(position.latitude, position.longitude, place.latitude, place.longitude)
-                                        : undefined;
-                                      return <div key={place.id} className="flex-shrink-0 w-[45vw] md:w-56">
+                                </div> : scrollableRows.campsites.length === 0 ? <p className="text-center text-muted-foreground py-8 w-full">No campsites available</p> : [...scrollableRows.campsites].sort((a, b) => {
+                if (!position) return 0;
+                const distA = a.latitude && a.longitude ? calculateDistance(position.latitude, position.longitude, a.latitude, a.longitude) : Infinity;
+                const distB = b.latitude && b.longitude ? calculateDistance(position.latitude, position.longitude, b.latitude, b.longitude) : Infinity;
+                return distA - distB;
+              }).map((place, index) => {
+                const itemDistance = position && place.latitude && place.longitude ? calculateDistance(position.latitude, position.longitude, place.latitude, place.longitude) : undefined;
+                return <div key={place.id} className="flex-shrink-0 w-[45vw] md:w-56">
                                         <ListingCard id={place.id} type="ADVENTURE PLACE" name={place.name} imageUrl={place.image_url} location={place.location} country={place.country} price={place.entry_fee || 0} date="" onSave={handleSave} isSaved={savedItems.has(place.id)} hidePrice={true} showBadge={true} priority={index === 0} activities={place.activities} distance={itemDistance} />
-                                    </div>})}
+                                    </div>;
+              })}
                             </div>
                         </div>
                     </section>
@@ -725,64 +713,25 @@ const Index = () => {
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
                                             <ListingSkeleton />
                                         </div>)}
-                                </div> : scrollableRows.hotels.length === 0 ? <p className="text-center text-muted-foreground py-8 w-full">No hotels available</p> : [...scrollableRows.hotels]
-                                    .sort((a, b) => {
-                                      if (!position) return 0;
-                                      const distA = a.latitude && a.longitude ? calculateDistance(position.latitude, position.longitude, a.latitude, a.longitude) : Infinity;
-                                      const distB = b.latitude && b.longitude ? calculateDistance(position.latitude, position.longitude, b.latitude, b.longitude) : Infinity;
-                                      return distA - distB;
-                                    })
-                                    .map((hotel, index) => {
-                                      const itemDistance = position && hotel.latitude && hotel.longitude
-                                        ? calculateDistance(position.latitude, position.longitude, hotel.latitude, hotel.longitude)
-                                        : undefined;
-                                      return <div key={hotel.id} className="flex-shrink-0 w-[45vw] md:w-56">
+                                </div> : scrollableRows.hotels.length === 0 ? <p className="text-center text-muted-foreground py-8 w-full">No hotels available</p> : [...scrollableRows.hotels].sort((a, b) => {
+                if (!position) return 0;
+                const distA = a.latitude && a.longitude ? calculateDistance(position.latitude, position.longitude, a.latitude, a.longitude) : Infinity;
+                const distB = b.latitude && b.longitude ? calculateDistance(position.latitude, position.longitude, b.latitude, b.longitude) : Infinity;
+                return distA - distB;
+              }).map((hotel, index) => {
+                const itemDistance = position && hotel.latitude && hotel.longitude ? calculateDistance(position.latitude, position.longitude, hotel.latitude, hotel.longitude) : undefined;
+                return <div key={hotel.id} className="flex-shrink-0 w-[45vw] md:w-56">
                                         <ListingCard id={hotel.id} type="HOTEL" name={hotel.name} imageUrl={hotel.image_url} location={hotel.location} country={hotel.country} price={0} date="" onSave={handleSave} isSaved={savedItems.has(hotel.id)} hidePrice={true} showBadge={true} priority={index === 0} activities={hotel.activities} distance={itemDistance} />
-                                    </div>})}
+                                    </div>;
+              })}
                             </div>
                         </div>
                     </section>
 
                     {/* Attractions */}
                     <section className="mb-2 md:mb-6">
-                        <div className="mb-1.5 md:mb-3 flex items-start justify-between">
-                            <h2 className="text-xs md:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
-                                Attractions
-                            </h2>
-                            <Link to="/category/adventure" className="text-primary text-3xs md:text-sm hover:underline">
-                                View All
-                            </Link>
-                        </div>
-                        <div className="relative">
-                            {scrollableRows.attractions.length > 0 && <>
-                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredAttractionsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
-                                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredAttractionsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
-                                        <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
-                                    </Button>
-                                </>}
-                            <div ref={featuredAttractionsRef} onScroll={handleScroll('featuredAttractions')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredAttractionsRef)} className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide md:gap-2 pl-1 pr-8 md:pl-2 md:pr-12 scroll-smooth">
-                            {loadingScrollable ? <div className="flex gap-1.5 md:gap-2">
-                                    {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
-                                            <ListingSkeleton />
-                                        </div>)}
-                                </div> : scrollableRows.attractions.length === 0 ? <p className="text-center text-muted-foreground py-8 w-full">No attractions available</p> : [...scrollableRows.attractions]
-                                    .sort((a, b) => {
-                                      if (!position) return 0;
-                                      const distA = a.latitude && a.longitude ? calculateDistance(position.latitude, position.longitude, a.latitude, a.longitude) : Infinity;
-                                      const distB = b.latitude && b.longitude ? calculateDistance(position.latitude, position.longitude, b.latitude, b.longitude) : Infinity;
-                                      return distA - distB;
-                                    })
-                                    .map((attraction, index) => {
-                                      const itemDistance = position && attraction.latitude && attraction.longitude
-                                        ? calculateDistance(position.latitude, position.longitude, attraction.latitude, attraction.longitude)
-                                        : undefined;
-                                      return <div key={attraction.id} className="flex-shrink-0 w-[45vw] md:w-56">
-                                        <ListingCard id={attraction.id} type="ATTRACTION" name={attraction.local_name || attraction.location_name} imageUrl={attraction.photo_urls?.[0] || ""} location={attraction.location_name} country={attraction.country} price={attraction.price_adult || 0} date="" onSave={handleSave} isSaved={savedItems.has(attraction.id)} hidePrice={true} showBadge={true} priority={index === 0} activities={attraction.activities} distance={itemDistance} />
-                                    </div>})}
-                            </div>
-                        </div>
+                        
+                        
                     </section>
 
                     <hr className="border-t border-gray-200 my-1 md:my-4" />
