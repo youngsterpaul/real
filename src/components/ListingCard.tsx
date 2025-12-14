@@ -126,7 +126,7 @@ export const ListingCard = ({
                     </Badge>}
 
 
-                {onSave && <Button size="icon" onClick={handleSaveClick} className={cn("absolute top-2 right-2 z-20 h-10 w-10 md:h-8 md:w-8 p-0 bg-transparent touch-manipulation active:scale-95 transition-transform", "border-none shadow-none", "outline-none focus-visible:ring-0 focus-visible:bg-transparent hover:bg-transparent")}>
+                {onSave && <Button size="icon" onClick={handleSaveClick} aria-label={isSaved ? "Remove from wishlist" : "Add to wishlist"} className={cn("absolute top-2 right-2 z-20 h-10 w-10 md:h-8 md:w-8 p-0 bg-transparent touch-manipulation active:scale-95 transition-transform", "border-none shadow-none", "outline-none focus-visible:ring-0 focus-visible:bg-transparent hover:bg-transparent")}>
                         <Heart className={cn("h-5 w-5 md:h-4 md:w-4", isSaved ? "text-red-500 fill-red-500" : "text-black stroke-[2.5] drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]")} />
                     </Button>}
             </div>

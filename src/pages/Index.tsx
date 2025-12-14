@@ -603,10 +603,10 @@ const Index = () => {
           // Horizontal scroll view for latest items (when not searching)
           <div className="relative">
                                 {!searchQuery && listings.length > 0 && <>
-                                        <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredForYouRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                        <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredForYouRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                             <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredForYouRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                        <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredForYouRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                             <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
                                         </Button>
                                     </>}
@@ -641,10 +641,10 @@ const Index = () => {
                         </div>
                         <div className="relative">
                             {scrollableRows.events.length > 0 && <>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredEventsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredEventsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredEventsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredEventsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
                                 </>}
@@ -674,10 +674,10 @@ const Index = () => {
                         </div>
                         <div className="relative">
                             {scrollableRows.campsites.length > 0 && <>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredCampsitesRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredCampsitesRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredCampsitesRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredCampsitesRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
                                 </>}
@@ -716,10 +716,10 @@ const Index = () => {
                         </div>
                         <div className="relative">
                             {scrollableRows.hotels.length > 0 && <>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredHotelsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredHotelsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredHotelsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredHotelsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
                                 </>}
@@ -758,10 +758,10 @@ const Index = () => {
                         </div>
                         <div className="relative">
                             {scrollableRows.attractions.length > 0 && <>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredAttractionsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredAttractionsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredAttractionsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredAttractionsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
                                 </>}
@@ -802,10 +802,10 @@ const Index = () => {
                         </div>
                         <div className="relative">
                             {scrollableRows.trips.length > 0 && <>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredTripsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredTripsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSection(featuredTripsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredTripsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                         <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
                                     </Button>
                                 </>}
@@ -836,10 +836,10 @@ const Index = () => {
                             </Link>
                         </div>
                         <div className="relative">
-                            <Button variant="ghost" size="icon" onClick={() => scrollSection(vlogsRef, 'left')} className="absolute left-2 top-[30%] -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                            <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(vlogsRef, 'left')} className="absolute left-2 top-[30%] -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                 <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => scrollSection(vlogsRef, 'right')} className="absolute right-2 top-[30%] -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                            <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(vlogsRef, 'right')} className="absolute right-2 top-[30%] -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
                                 <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
                             </Button>
                             <div ref={vlogsRef} onScroll={handleScroll('vlogs')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(vlogsRef)} className="flex gap-2 md:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory md:snap-none pl-1 pr-8 md:pl-2 md:pr-12 scroll-smooth">

@@ -184,7 +184,7 @@ export const NotificationBell = () => {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <button className={`rounded-full h-10 w-10 flex items-center justify-center transition-colors bg-header-foreground/10 ${TEAL_HOVER_10} group relative`}>
+        <button className={`rounded-full h-10 w-10 flex items-center justify-center transition-colors bg-header-foreground/10 ${TEAL_HOVER_10} group relative`} aria-label="Notifications">
           <Bell className="h-5 w-5 text-header-foreground group-hover:text-header" />
           {unreadCount > 0 && (
             <Badge
