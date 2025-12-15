@@ -447,11 +447,11 @@ const Index = () => {
               }}
             >
               <div className="absolute inset-0 bg-black/40" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
-                <h1 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold text-center mb-4 md:mb-6">
-                  Discover Your Next Adventure
-                </h1>
-                <div className="w-full max-w-2xl">
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="container md:px-4 px-4">
+                  <h1 className="text-white text-2xl md:text-4xl lg:text-5xl font-bold text-center mb-4 md:mb-6">
+                    Discover Your Next Adventure
+                  </h1>
                   <SearchBarWithSuggestions 
                     value={searchQuery} 
                     onChange={setSearchQuery} 
@@ -481,7 +481,7 @@ const Index = () => {
             
             {/* Search Bar - Appears below header when focused on all screens */}
             {isSearchFocused && <div className="sticky top-[64px] z-[100] bg-background p-4 border-b shadow-md">
-                    <div className="max-w-3xl mx-auto">
+                    <div className="container md:px-4 px-4 mx-auto">
                         <SearchBarWithSuggestions value={searchQuery} onChange={setSearchQuery} onSubmit={() => {
           if (searchQuery.trim()) {
             fetchAllData(searchQuery);
@@ -499,12 +499,10 @@ const Index = () => {
                     </div>
                 </div>}
 
-            <main className="container md:px-4 md:py-8 px-px py-[24px]">
+            <main className="container md:px-4 md:py-8 px-4 py-[24px]">
 {/* Categories Section - Below on all screens */}
-                    <div className="w-full px-2 md:px-0 flex justify-center">
-                        
-                        {/* New container classes: flex, flex-wrap, and justify-center to handle variable card count */}
-                        <div className="flex flex-wrap justify-center gap-2 md:gap-4 w-full max-w-6xl pr-0">
+                    <div className="w-full">
+                        <div className="flex flex-wrap gap-2 md:gap-4 w-full">
                             {categories.map(cat => (
                                 <div 
                                     key={cat.title} 
@@ -523,8 +521,8 @@ const Index = () => {
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    </div>
+                        </div>
+                    </div>
                 
                 {/* Search Results - Show when search is focused */}
                 {isSearchFocused && <div className="px-4 mt-4">
