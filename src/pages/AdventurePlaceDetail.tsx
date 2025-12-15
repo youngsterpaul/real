@@ -406,90 +406,92 @@ const AdventurePlaceDetail = () => {
             Keeping them as is allows for the full-width feel.
         */}
 
-        {/* --- Amenities Section (RED) --- */}
-        {place.amenities && place.amenities.length > 0 && (
-          <div className="mt-6 sm:mt-4 p-6 sm:p-3 border bg-card">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-2">Amenities</h2>
-            <div className="flex flex-wrap gap-2 sm:gap-1">
-              {place.amenities.map((amenity: any, idx: number) => (
-                // Amenities Badge RED
-                <div 
-                  key={idx} 
-                  className="px-4 py-2 sm:px-3 sm:py-1 text-primary-foreground rounded-full text-sm sm:text-xs"
-                  style={{ backgroundColor: RED_COLOR }} 
-                >
-                  {amenity}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* --- Amenities Section (RED) --- */}
+        {place.amenities && place.amenities.length > 0 && (
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Amenities</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {place.amenities.map((amenity: any, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="px-3 py-2 text-white rounded-lg text-sm flex items-center justify-center text-center min-h-[44px]"
+                  style={{ backgroundColor: RED_COLOR }} 
+                >
+                  <span className="font-medium">{amenity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* --- Facilities Section (TEAL) --- */}
-        {place.facilities && place.facilities.length > 0 && (
-          <div className="mt-6 sm:mt-4 p-6 sm:p-3 border bg-card">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-2">Facilities (Rentable Spaces)</h2>
-            <div className="flex flex-wrap gap-2 sm:gap-1">
-              {place.facilities.map((facility: Facility, idx: number) => (
-                // Facilities Badge TEAL
-                <div 
-                  key={idx} 
-                  className="px-4 py-2 sm:px-3 sm:py-1 text-primary-foreground rounded-full text-sm sm:text-xs flex items-center gap-2 sm:gap-1"
-                  style={{ backgroundColor: TEAL_COLOR }} 
-                >
-                  <span className="font-medium">{facility.name}</span>
-                  <span className="text-xs opacity-90">{facility.price === 0 ? 'Free' : `KSh ${facility.price}/day`}</span>
-                  {facility.capacity && <span className="text-xs opacity-90">• Capacity: {facility.capacity}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* --- Facilities Section (TEAL) --- */}
+        {place.facilities && place.facilities.length > 0 && (
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Facilities (Rentable Spaces)</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {place.facilities.map((facility: Facility, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
+                  style={{ backgroundColor: TEAL_COLOR }} 
+                >
+                  <span className="font-medium">{facility.name}</span>
+                  <span className="text-xs opacity-90 mt-1">{facility.price === 0 ? 'Free' : `KSh ${facility.price}/day`}</span>
+                  {facility.capacity && <span className="text-xs opacity-90">Capacity: {facility.capacity}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* --- Activities Section (ORANGE) --- */}
-        {place.activities && place.activities.length > 0 && (
-          <div className="mt-6 sm:mt-4 p-6 sm:p-3 border bg-card">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-2">Activities (Bookable Experiences)</h2>
-            <div className="flex flex-wrap gap-2 sm:gap-1">
-              {place.activities.map((activity: Activity, idx: number) => (
-                // Activities Badge Orange
-                <div 
-                  key={idx} 
-                  className="px-4 py-2 sm:px-3 sm:py-1 text-primary-foreground rounded-full text-sm sm:text-xs flex items-center gap-2 sm:gap-1"
-                  style={{ backgroundColor: ORANGE_COLOR }}
-                >
-                  <span className="font-medium">{activity.name}</span>
-                  <span className="text-xs opacity-90">{activity.price === 0 ? 'Free' : `KSh ${activity.price}/person`}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* --- Activities Section (ORANGE) --- */}
+        {place.activities && place.activities.length > 0 && (
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Activities (Bookable Experiences)</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {place.activities.map((activity: Activity, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
+                  style={{ backgroundColor: ORANGE_COLOR }}
+                >
+                  <span className="font-medium">{activity.name}</span>
+                  <span className="text-xs opacity-90 mt-1">{activity.price === 0 ? 'Free' : `KSh ${activity.price}/person`}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* --- Contact Information Section --- */}
-        {(place.phone_numbers || place.email) && (
-          <div className="mt-6 sm:mt-4 p-6 sm:p-3 border bg-card">
-            <h2 className="text-xl sm:text-lg font-semibold mb-3 sm:mb-2">Contact Information</h2>
-            <div className="space-y-2 sm:space-y-1">
-              {place.phone_numbers?.map((phone, idx) => (
-                <p key={idx} className="flex items-center gap-2 sm:text-sm">
-                  {/* Phone Icon Teal */}
-                  <Phone className="h-4 w-4" style={{ color: TEAL_COLOR }} />
-                  {/* Phone Link Teal */}
-                  <a href={`tel:${phone}`} className="hover:underline" style={{ color: TEAL_COLOR }}>{phone}</a>
-                </p>
-              ))}
-              {place.email && (
-                <p className="flex items-center gap-2 sm:text-sm">
-                  {/* Mail Icon Teal */}
-                  <Mail className="h-4 w-4" style={{ color: TEAL_COLOR }} />
-                  {/* Mail Link Teal */}
-                  <a href={`mailto:${place.email}`} className="hover:underline" style={{ color: TEAL_COLOR }}>{place.email}</a>
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* --- Contact Information Section --- */}
+        {(place.phone_numbers || place.email) && (
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Contact Information</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {place.phone_numbers?.map((phone, idx) => (
+                <a 
+                  key={idx} 
+                  href={`tel:${phone}`}
+                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                  style={{ borderColor: TEAL_COLOR }}
+                >
+                  <Phone className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{phone}</span>
+                </a>
+              ))}
+              {place.email && (
+                <a 
+                  href={`mailto:${place.email}`}
+                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                  style={{ borderColor: TEAL_COLOR }}
+                >
+                  <Mail className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{place.email}</span>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* --- Review Section --- */}
         <div className="mt-6 sm:mt-4">

@@ -356,46 +356,52 @@ const EventDetail = () => {
         </div>
 
         {/* --- Activities Section --- */}
-        {event.activities && event.activities.length > 0 && <div className="mt-6 **sm:mt-4** p-6 **sm:p-3** border bg-card">
-            <h2 className="text-xl **sm:text-lg** font-semibold mb-4 **sm:mb-2**">Included Activities</h2>
-            <div className="flex flex-wrap gap-2 **sm:gap-1**">
-              {event.activities.map((activity, idx) =>
-          // Activities Badge Orange
-          <div key={idx} className="px-4 py-2 **sm:px-3 sm:py-1** text-white rounded-full text-sm **sm:text-xs** flex items-center gap-2 **sm:gap-1**" style={{
-            backgroundColor: ORANGE_COLOR
-          }}>
+        {event.activities && event.activities.length > 0 && (
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Included Activities</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {event.activities.map((activity, idx) => (
+                <div 
+                  key={idx} 
+                  className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
+                  style={{ backgroundColor: ORANGE_COLOR }}
+                >
                   <span className="font-medium">{activity.name}</span>
-                  <span className="text-xs opacity-90">{activity.price > 0 ? `KSh ${activity.price}` : 'Free'}</span>
-                </div>)}
+                  <span className="text-xs opacity-90 mt-1">{activity.price > 0 ? `KSh ${activity.price}` : 'Free'}</span>
+                </div>
+              ))}
             </div>
-          </div>}
+          </div>
+        )}
 
         {/* --- Contact Information Section --- */}
-        {(event.phone_number || event.email) && <div className="mt-6 **sm:mt-4** p-6 **sm:p-3** border bg-card my-[2px] rounded-none">
-            <h2 className="text-xl **sm:text-lg** font-semibold mb-3 **sm:mb-2**">Contact Information</h2>
-            <div className="space-y-2 **sm:space-y-1**">
-              {event.phone_number && <p className="flex items-center gap-2 **sm:text-sm**">
-                  {/* Phone Icon Teal */}
-                  <Phone className="h-4 w-4" style={{
-              color: TEAL_COLOR
-            }} />
-                  {/* Phone Link Teal */}
-                  <a href={`tel:${event.phone_number}`} className="hover:underline" style={{
-              color: TEAL_COLOR
-            }}>{event.phone_number}</a>
-                </p>}
-              {event.email && <p className="flex items-center gap-2 **sm:text-sm**">
-                  {/* Mail Icon Teal */}
-                  <Mail className="h-4 w-4" style={{
-              color: TEAL_COLOR
-            }} />
-                  {/* Email Link Teal */}
-                  <a href={`mailto:${event.email}`} className="hover:underline" style={{
-              color: TEAL_COLOR
-            }}>{event.email}</a>
-                </p>}
+        {(event.phone_number || event.email) && (
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Contact Information</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {event.phone_number && (
+                <a 
+                  href={`tel:${event.phone_number}`}
+                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                  style={{ borderColor: TEAL_COLOR }}
+                >
+                  <Phone className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{event.phone_number}</span>
+                </a>
+              )}
+              {event.email && (
+                <a 
+                  href={`mailto:${event.email}`}
+                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                  style={{ borderColor: TEAL_COLOR }}
+                >
+                  <Mail className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{event.email}</span>
+                </a>
+              )}
             </div>
-          </div>}
+          </div>
+        )}
 
         {/* --- Review Section --- */}
         <div className="mt-6 **sm:mt-4** rounded-none my-[10px] **sm:my-[5px]**">

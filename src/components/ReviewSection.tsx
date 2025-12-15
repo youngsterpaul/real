@@ -114,18 +114,24 @@ export function ReviewSection({
           </div>
         </div>
 
-        {/* User Rating Interface */}
-        <div className="border-t pt-4">
-          <h3 className="font-medium mb-2">Rate this {itemType}</h3>
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4, 5].map(star => <button key={star} onClick={() => handleRating(star)} onMouseEnter={() => setHoveredStar(star)} onMouseLeave={() => setHoveredStar(0)} className="transition-transform hover:scale-110 focus:outline-none">
-                <Star className={`h-8 w-8 cursor-pointer transition-colors ${star <= (hoveredStar || userRating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
-              </button>)}
+        {/* User Rating Interface - Only for logged in users */}
+        {user ? (
+          <div className="border-t pt-4">
+            <h3 className="font-medium mb-2">Rate this {itemType}</h3>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map(star => <button key={star} onClick={() => handleRating(star)} onMouseEnter={() => setHoveredStar(star)} onMouseLeave={() => setHoveredStar(0)} className="transition-transform hover:scale-110 focus:outline-none">
+                  <Star className={`h-8 w-8 cursor-pointer transition-colors ${star <= (hoveredStar || userRating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                </button>)}
+            </div>
+            {userRating > 0 && <p className="text-sm text-muted-foreground mt-2">
+                You rated this {userRating} {userRating === 1 ? "star" : "stars"}
+              </p>}
           </div>
-          {userRating > 0 && <p className="text-sm text-muted-foreground mt-2">
-              You rated this {userRating} {userRating === 1 ? "star" : "stars"}
-            </p>}
-        </div>
+        ) : (
+          <div className="border-t pt-4">
+            <p className="text-sm text-muted-foreground">Log in to rate this {itemType}</p>
+          </div>
+        )}
       </div>
     </Card>;
 }

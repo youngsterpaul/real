@@ -400,18 +400,17 @@ const TripDetail = () => {
 
         {/* --- Included Activities Section --- */}
         {trip.activities && trip.activities.length > 0 && (
-          <div className="mt-6 sm:mt-4 p-6 sm:p-3 border bg-card">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-2">Included Activities</h2>
-            <div className="flex flex-wrap gap-2 sm:gap-1">
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Included Activities</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {trip.activities.map((activity, idx) => (
-                // Activities Badge Orange
                 <div 
                   key={idx} 
-                  className="px-4 py-2 sm:px-3 sm:py-1 text-white rounded-full text-sm sm:text-xs flex items-center gap-2 sm:gap-1"
+                  className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
                   style={{ backgroundColor: ORANGE_COLOR }}
                 >
                   <span className="font-medium">{activity.name}</span>
-                  <span className="text-xs opacity-90">KSh {activity.price}</span>
+                  <span className="text-xs opacity-90 mt-1">{activity.price === 0 ? 'Free' : `KSh ${activity.price}`}</span>
                 </div>
               ))}
             </div>
@@ -420,24 +419,28 @@ const TripDetail = () => {
 
         {/* --- Contact Information Section --- */}
         {(trip.phone_number || trip.email) && (
-          <div className="mt-6 sm:mt-4 p-6 sm:p-3 border bg-card">
-            <h2 className="text-xl sm:text-lg font-semibold mb-3 sm:mb-2">Contact Information</h2>
-            <div className="space-y-2 sm:space-y-1">
+          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Contact Information</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {trip.phone_number && (
-                <p className="flex items-center gap-2 sm:text-sm">
-                  {/* Phone Icon Teal */}
+                <a 
+                  href={`tel:${trip.phone_number}`}
+                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                  style={{ borderColor: TEAL_COLOR }}
+                >
                   <Phone className="h-4 w-4" style={{ color: TEAL_COLOR }} />
-                  {/* Phone Link Teal */}
-                  <a href={`tel:${trip.phone_number}`} className="hover:underline" style={{ color: TEAL_COLOR }}>{trip.phone_number}</a>
-                </p>
+                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{trip.phone_number}</span>
+                </a>
               )}
               {trip.email && (
-                <p className="flex items-center gap-2 sm:text-sm">
-                  {/* Mail Icon Teal */}
+                <a 
+                  href={`mailto:${trip.email}`}
+                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                  style={{ borderColor: TEAL_COLOR }}
+                >
                   <Mail className="h-4 w-4" style={{ color: TEAL_COLOR }} />
-                  {/* Mail Link Teal */}
-                  <a href={`mailto:${trip.email}`} className="hover:underline" style={{ color: TEAL_COLOR }}>{trip.email}</a>
-                </p>
+                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{trip.email}</span>
+                </a>
               )}
             </div>
           </div>
