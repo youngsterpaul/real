@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge"; // Removed Badge import
 // Icons will be Teal: #008080
 import { MapPin, Share2, Heart, Calendar, Phone, Mail, ArrowLeft, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,7 +153,7 @@ const EventDetail = () => {
       window.open(event.map_link, "_blank");
     } else {
       const query = encodeURIComponent(`${event?.name}, ${event?.location}, ${event?.country}`);
-      window.open(`https://www.google.com/maps/search/?api=1&query=$${query}`, "_blank");
+      window.open(`https://www.google.com/maps/search/?api=1&query=$$${query}`, "_blank");
     }
   };
 
@@ -251,9 +251,12 @@ const EventDetail = () => {
           <Heart className={`h-5 w-5 ${isSaved ? "fill-white" : ""}`} />
         </Button>
         
-        <Badge className="absolute top-4 right-20 sm:top-4 sm:right-20 bg-primary text-primary-foreground z-30 text-xs font-bold px-3 py-1 rounded-full">
-          EVENT
-        </Badge>
+        {/*
+          // REMOVED: Badge component that says "EVENT"
+          <Badge className="absolute top-4 right-20 sm:top-4 sm:right-20 bg-primary text-primary-foreground z-30 text-xs font-bold px-3 py-1 rounded-full">
+            EVENT
+          </Badge>
+        */}
 
         <Carousel 
           opts={{ loop: true }} 
@@ -306,10 +309,7 @@ const EventDetail = () => {
       <main className="container px-4 max-w-6xl mx-auto mt-4 sm:mt-6">
         <div className="grid lg:grid-cols-[2fr,1fr] gap-6 sm:gap-4">
           
-          {/* --- 1. RIGHT COLUMN CONTENT (Booking Card + Action Buttons) ---
-             This block is ordered first to appear at the top on small screens, 
-             but uses lg:order-2 to sit in the right column on desktop.
-          */}
+          {/* --- 1. RIGHT COLUMN CONTENT (Booking Card + Action Buttons) --- */}
           <div className="space-y-4 sm:space-y-3 lg:order-2 lg:sticky lg:top-20">
             
             {/* Price and Booking Card */}
@@ -381,9 +381,7 @@ const EventDetail = () => {
             </div>
           </div>
           
-          {/* --- 2. LEFT COLUMN CONTENT (Details) --- 
-             This block is ordered second for mobile, but uses lg:order-1 to sit in the left column on desktop.
-          */}
+          {/* --- 2. LEFT COLUMN CONTENT (Details) --- */}
           <div className="w-full space-y-4 sm:space-y-3 lg:order-1">
             
             {/* Location/Map Link Section (Hides location name on small screen) */}
