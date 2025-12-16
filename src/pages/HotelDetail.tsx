@@ -320,7 +320,70 @@ const HotelDetail = () => {
                 <p className="text-sm text-muted-foreground">{hotel.description}</p>
               </div>
             }
-          </div>
+            
+             {/* --- Amenities Section (RED) - Remain on the left side/full width --- */}
+            {hotel.amenities && hotel.amenities.length > 0 && (
+              <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Amenities</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {hotel.amenities.map((amenity, idx) => (
+                    <div 
+                      key={idx} 
+                      className="px-3 py-2 text-white rounded-lg text-sm flex items-center justify-center text-center min-h-[44px]"
+                      style={{ backgroundColor: RED_COLOR }}
+                    >
+                      <span className="font-medium">{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* --- Facilities (Room Types) Section (TEAL) - Remain on the left side/full width --- */}
+            {hotel.facilities && hotel.facilities.length > 0 && (
+              <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Facilities (Room Types)</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {hotel.facilities.map((facility, idx) => (
+                    <div 
+                      key={idx} 
+                      className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
+                      style={{ backgroundColor: TEAL_COLOR }}
+                    >
+                      <span className="font-medium">{facility.name}</span>
+                      <span className="text-xs opacity-90 mt-1">{facility.price === 0 ? 'Free' : `KSh ${facility.price}/day`}</span>
+                      {facility.capacity > 0 && <span className="text-xs opacity-90">Capacity: {facility.capacity}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* --- Activities Section (ORANGE) - Remain on the left side/full width --- */}
+            {hotel.activities && hotel.activities.length > 0 && (
+              <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Activities</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {hotel.activities.map((activity, idx) => (
+                    <div 
+                      key={idx} 
+                      className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
+                      style={{ backgroundColor: ORANGE_COLOR }}
+                    >
+                      <span className="font-medium">{activity.name}</span>
+                      <span className="text-xs opacity-90 mt-1">{activity.price === 0 ? 'Free' : `KSh ${activity.price}/person`}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* --- Review Section - Remain on the left side/full width --- */}
+            <div className="mt-6 sm:mt-4">
+              <ReviewSection itemId={hotel.id} itemType="hotel" />
+            </div>
+
+          </div> {/* End of Left/Full Width Column */}
 
           {/* --- Detail/Booking Section (Right Column on large screens, Stacked on small) --- */}
           <div className="space-y-4 sm:space-y-3">
@@ -426,100 +489,42 @@ const HotelDetail = () => {
                 <Heart className={`h-4 w-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
             </div>
-          </div>
+            
+            {/* // --- Contact Information Section (MOVED TO RIGHT COLUMN) --- 
+            // The inner layout is changed from a grid to space-y to stack vertically.
+            */}
+            {(hotel.phone_numbers || hotel.email) && (
+              <div className="mt-4 p-4 sm:p-3 border bg-card rounded-lg">
+                <h2 className="text-xl sm:text-lg font-semibold mb-3">Contact Information</h2>
+                <div className="space-y-2"> {/* Changed from grid to space-y-2 */}
+                  {hotel.phone_numbers?.map((phone, idx) => (
+                    <a 
+                      key={idx} 
+                      href={`tel:${phone}`}
+                      className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                      style={{ borderColor: TEAL_COLOR }}
+                    >
+                      <Phone className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                      <span className="text-sm" style={{ color: TEAL_COLOR }}>{phone}</span>
+                    </a>
+                  ))}
+                  {hotel.email && (
+                    <a 
+                      href={`mailto:${hotel.email}`}
+                      className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                      style={{ borderColor: TEAL_COLOR }}
+                    >
+                      <Mail className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                      <span className="text-sm" style={{ color: TEAL_COLOR }}>{hotel.email}</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+          </div> {/* End of Right Column */}
         </div>
-
-        {/* --- Amenities Section (RED) --- */}
-        {hotel.amenities && hotel.amenities.length > 0 && (
-          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Amenities</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {hotel.amenities.map((amenity, idx) => (
-                <div 
-                  key={idx} 
-                  className="px-3 py-2 text-white rounded-lg text-sm flex items-center justify-center text-center min-h-[44px]"
-                  style={{ backgroundColor: RED_COLOR }}
-                >
-                  <span className="font-medium">{amenity}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* --- Facilities (Room Types) Section (TEAL) --- */}
-        {hotel.facilities && hotel.facilities.length > 0 && (
-          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Facilities (Room Types)</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {hotel.facilities.map((facility, idx) => (
-                <div 
-                  key={idx} 
-                  className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
-                  style={{ backgroundColor: TEAL_COLOR }}
-                >
-                  <span className="font-medium">{facility.name}</span>
-                  <span className="text-xs opacity-90 mt-1">{facility.price === 0 ? 'Free' : `KSh ${facility.price}/day`}</span>
-                  {facility.capacity > 0 && <span className="text-xs opacity-90">Capacity: {facility.capacity}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* --- Activities Section (ORANGE) --- */}
-        {hotel.activities && hotel.activities.length > 0 && (
-          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Activities</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {hotel.activities.map((activity, idx) => (
-                <div 
-                  key={idx} 
-                  className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
-                  style={{ backgroundColor: ORANGE_COLOR }}
-                >
-                  <span className="font-medium">{activity.name}</span>
-                  <span className="text-xs opacity-90 mt-1">{activity.price === 0 ? 'Free' : `KSh ${activity.price}/person`}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* --- Contact Information Section (Teal Borders/Icons) --- */}
-        {(hotel.phone_numbers || hotel.email) && (
-          <div className="mt-6 sm:mt-4 p-4 sm:p-3 border bg-card rounded-lg">
-            <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Contact Information</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {hotel.phone_numbers?.map((phone, idx) => (
-                <a 
-                  key={idx} 
-                  href={`tel:${phone}`}
-                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
-                  style={{ borderColor: TEAL_COLOR }}
-                >
-                  <Phone className="h-4 w-4" style={{ color: TEAL_COLOR }} />
-                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{phone}</span>
-                </a>
-              ))}
-              {hotel.email && (
-                <a 
-                  href={`mailto:${hotel.email}`}
-                  className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
-                  style={{ borderColor: TEAL_COLOR }}
-                >
-                  <Mail className="h-4 w-4" style={{ color: TEAL_COLOR }} />
-                  <span className="text-sm" style={{ color: TEAL_COLOR }}>{hotel.email}</span>
-                </a>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* --- Review Section --- */}
-        <div className="mt-6 sm:mt-4">
-          <ReviewSection itemId={hotel.id} itemType="hotel" />
-        </div>
+        {/* The rest of the sections remain full-width below the two-column grid */}
 
         {/* --- Similar Items Section --- */}
         {hotel && <SimilarItems currentItemId={hotel.id} itemType="hotel" country={hotel.country} />}
@@ -545,4 +550,4 @@ const HotelDetail = () => {
       <MobileBottomBar />
     </div>;
 };
-export default HotelDetail;
+export default HotelDetail;2
