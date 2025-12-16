@@ -38,7 +38,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
   const { user, signOut } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  // --- Start of functional code ---
+  // --- Start of functional code (omitted for brevity) ---
   useEffect(() => {
     const checkRole = async () => {
       if (!user) {
@@ -92,7 +92,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
     }
     return "U";
   };
-  // --- End of functional code ---
+  // --- End of functional code (omitted for brevity) ---
 
   // Conditional classes for the main header element
   const mobileHeaderClasses = isIndexPage 
@@ -102,29 +102,31 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
     : "sticky top-0 left-0 right-0 border-b border-border bg-[#008080] dark:bg-[#008080] text-white dark:text-white";
 
   // Conditional icon styling for non-index pages
-  const nonIndexIconStyle = isIndexPage ? {} : { backgroundColor: 'transparent' };
-  const nonIndexIconColor = isIndexPage ? 'text-white' : 'text-white'; 
+  // We can remove this now and control styles via classes
+  // const nonIndexIconStyle = isIndexPage ? {} : { backgroundColor: 'transparent' };
+  const nonIndexIconColor = 'text-white'; 
 
   return (
     // 1. Apply conditional classes to the header
     <header className={`z-[100] text-black dark:text-white md:sticky md:h-16 md:text-white dark:md:text-white ${mobileHeaderClasses}`}>
       
-      {/* 2. Main container: Use flexbox to align items for non-index pages on mobile */}
+      {/* 2. Main container: Always use flexbox to align items and justify space. */}
       <div className={`container md:flex md:h-full md:items-center md:justify-between md:px-4 
-                      ${!isIndexPage ? 'flex items-center justify-between h-16' : ''}`}>
+                      flex items-center justify-between h-16`}>
         
-        {/* 3. Mobile Left Icons (Menu) - Conditional Fixed/Relative Position */}
+        {/* 3. Left Icons (Menu & Logo) - Combined Group */}
+        {/* On mobile, this will contain the Menu icon and the Logo/Description (which is hidden) */}
         <div className={`flex items-center gap-3 
                         ${isIndexPage ? 'absolute top-4 left-4' : 'relative'} 
                         md:relative md:top-auto md:left-auto`}>
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
-              {/* Menu Icon: Conditionally apply RGBA Background */}
+              {/* Menu Icon: Conditionally apply RGBA Background on index page */}
               <button 
-                className={`inline-flex items-center justify-center h-10 w-10 rounded-full transition-colors md:text-white md:hover:bg-[#006666] ${isIndexPage ? 'text-white hover:bg-white/20' : 'text-white bg-white/10 hover:bg-white/20'}`}
+                className={`inline-flex items-center justify-center h-10 w-10 rounded-full transition-colors md:text-white md:hover:bg-[#006666] ${isIndexPage ? 'text-white hover:bg-white/20' : 'text-white hover:bg-white/20'}`}
                 aria-label="Open navigation menu"
                 // Apply mobile background style only on the index page
-                style={isIndexPage ? { backgroundColor: MOBILE_ICON_BG } : nonIndexIconStyle}
+                style={isIndexPage ? { backgroundColor: MOBILE_ICON_BG } : {}} // Removed nonIndexIconStyle
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -134,7 +136,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             </SheetContent>
           </Sheet>
           
-          {/* Logo/Description: Hidden on mobile, flows with relative positioning on other pages */}
+          {/* Logo/Description: Always hidden on mobile, flows with relative positioning on other pages */}
           <Link to="/" className="hidden md:flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-[#0066cc] font-bold text-lg">
                 T
@@ -148,7 +150,8 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
           </Link>
         </div>
 
-        {/* Desktop Navigation (Centered) - Unchanged */}
+        {/* Desktop Navigation (Centered) - HIDES ON MOBILE */}
+        {/* You asked to remove the navigation buttons on a small screen */}
         <nav className="hidden lg:flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 font-bold hover:text-muted-foreground transition-colors">
             <Home className="h-4 w-4" />
@@ -171,11 +174,12 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
           </button>
         </nav>
 
-        {/* 4. Mobile Right Icons (Search, Notification) - Conditional Fixed/Relative Position */}
-        <div className={`flex items-center gap-2 md:relative md:top-auto md:right-auto md:flex 
-                        ${isIndexPage ? 'absolute top-4 right-4' : 'relative'}`}>
+        {/* 4. Right Icons (Search, Notification, Theme, Account) - Conditional Fixed/Relative Position */}
+        <div className={`flex items-center gap-2 
+                        ${isIndexPage ? 'absolute top-4 right-4' : 'relative'}
+                        md:relative md:top-auto md:right-auto md:flex`}>
           
-          {/* Search Icon Button: Conditionally apply RGBA Background and White Icon */}
+          {/* Search Icon Button: Conditionally apply RGBA Background on index page */}
           {showSearchIcon && (
             <button 
               onClick={() => {
@@ -188,17 +192,20 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
               }}
               className={`rounded-full h-10 w-10 flex items-center justify-center transition-colors md:bg-white/10 md:hover:bg-white hover:bg-white/20`}
               aria-label="Search"
-              style={isIndexPage ? { backgroundColor: MOBILE_ICON_BG } : nonIndexIconStyle}
+              // Apply mobile background style only on the index page
+              style={isIndexPage ? { backgroundColor: MOBILE_ICON_BG } : {}}
             >
+              {/* For non-index pages on mobile, the button is transparent, and the icon is white (inherited/explicit) */}
               <Search className={`h-5 w-5 md:text-white md:group-hover:text-[#008080] ${nonIndexIconColor}`} />
             </button>
           )}
           
-          {/* Notification Bell with Conditional RGBA Background */}
-          <div className="flex items-center gap-2">
+          {/* Notification Bell: HIDES ON MOBILE FOR NON-INDEX PAGES */}
+          {/* Keep for index page and desktop, hide on mobile non-index page with md:flex (hidden default) */}
+          <div className={`${!isIndexPage ? 'hidden' : 'flex'} items-center gap-2 md:flex`}>
             <div 
                 className="rounded-full h-10 w-10 flex items-center justify-center transition-colors md:bg-transparent hover:bg-white/20"
-                style={isIndexPage ? { backgroundColor: MOBILE_ICON_BG } : nonIndexIconStyle}
+                style={isIndexPage ? { backgroundColor: MOBILE_ICON_BG } : {}}
             >
               <NotificationBell 
                   mobileIconClasses="text-white"
@@ -207,19 +214,32 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             </div>
           </div>
 
-          {/* Theme Toggle and Account: Hidden on mobile, shown on desktop - Unchanged */}
+          {/* Theme Toggle: HIDES ON MOBILE */}
+          {/* You asked to remove the dark mode toggle on a small screen */}
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
             
             <button 
               onClick={() => user ? navigate('/account') : navigate('/auth')}
               className="rounded-full h-10 w-10 flex items-center justify-center transition-colors 
-                         bg-white/10 hover:bg-white group" 
+                          bg-white/10 hover:bg-white group" 
               aria-label="Account"
             >
               <User className="h-5 w-5 text-white group-hover:text-[#008080]" />
             </button>
           </div>
+          
+          {/* Account Icon (Mobile Only for Non-Index): Shows on mobile for non-index pages */}
+          {/* The desktop account icon is already handled above with the ThemeToggle. This handles the mobile one */}
+          {!isIndexPage && (
+            <button 
+              onClick={() => user ? navigate('/account') : navigate('/auth')}
+              className="md:hidden rounded-full h-10 w-10 flex items-center justify-center transition-colors hover:bg-white/20" 
+              aria-label="Account"
+            >
+              <User className="h-5 w-5 text-white" />
+            </button>
+          )}
         </div>
       </div>
     </header>
