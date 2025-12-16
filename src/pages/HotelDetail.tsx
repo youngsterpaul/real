@@ -23,13 +23,13 @@ import { extractIdFromSlug } from "@/lib/slugUtils";
 import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
 
 interface Facility {
-  name: string;
-  price: number;
-  capacity: number;
+  name: string;
+  price: number;
+  capacity: number;
 }
 interface Activity {
-  name: string;
-  price: number;
+  name: string;
+  price: number;
 }
 interface Hotel {
   id: string;
@@ -101,171 +101,172 @@ const HotelDetail = () => {
     : undefined;
 
   useEffect(() => {
-    fetchHotel();
-    
-    // Track referral clicks
-    const urlParams = new URLSearchParams(window.location.search);
-    const refSlug = urlParams.get("ref");
-    if (refSlug && id) {
-      trackReferralClick(refSlug, id, "hotel", "booking");
-    }
-  }, [id]);
+    fetchHotel();
+    
+    // Track referral clicks
+    const urlParams = new URLSearchParams(window.location.search);
+    const refSlug = urlParams.get("ref");
+    if (refSlug && id) {
+      trackReferralClick(refSlug, id, "hotel", "booking");
+    }
+  }, [id]);
 
-  const fetchHotel = async () => {
-    if (!id) return;
-    try {
-      let { data, error } = await supabase.from("hotels").select("*").eq("id", id).single();
-      
-      if (error && id.length === 8) {
-        const { data: prefixData, error: prefixError } = await supabase
-          .from("hotels")
-          .select("*")
-          .ilike("id", `${id}%`)
-          .single();
-        if (!prefixError) {
-          data = prefixData;
-          error = null;
-        }
-      }
-      
-      if (error) throw error;
-      setHotel(data as any);
-    } catch (error) {
-      console.error("Error fetching hotel:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load hotel details",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchHotel = async () => {
+    if (!id) return;
+    try {
+      let { data, error } = await supabase.from("hotels").select("*").eq("id", id).single();
+      
+      if (error && id.length === 8) {
+        const { data: prefixData, error: prefixError } = await supabase
+          .from("hotels")
+          .select("*")
+          .ilike("id", `${id}%`)
+          .single();
+        if (!prefixError) {
+          data = prefixData;
+          error = null;
+        }
+      }
+      
+      if (error) throw error;
+      setHotel(data as any);
+    } catch (error) {
+      console.error("Error fetching hotel:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load hotel details",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleSave = () => {
-    if (id) {
-      handleSaveItem(id, "hotel");
-    }
-  };
+  const handleSave = () => {
+    if (id) {
+      handleSaveItem(id, "hotel");
+    }
+  };
 
-  const handleCopyLink = async () => {
-    if (!hotel) {
-      toast({ title: "Unable to Copy", description: "Hotel information not available", variant: "destructive" });
-      return;
-    }
+  const handleCopyLink = async () => {
+    if (!hotel) {
+      toast({ title: "Unable to Copy", description: "Hotel information not available", variant: "destructive" });
+      return;
+    }
 
-    const refLink = await generateReferralLink(hotel.id, "hotel", hotel.id);
+    const refLink = await generateReferralLink(hotel.id, "hotel", hotel.id);
 
-    try {
-      await navigator.clipboard.writeText(refLink);
-      toast({ 
-        title: "Link Copied!", 
-        description: user 
-          ? "Share this link to earn commission on bookings!" 
-          : "Share this hotel with others!" 
-      });
-    } catch (error) {
-      toast({ 
-        title: "Copy Failed", 
-        description: "Unable to copy link to clipboard", 
-        variant: "destructive" 
-      });
-    }
-  };
+    try {
+      await navigator.clipboard.writeText(refLink);
+      toast({ 
+        title: "Link Copied!", 
+        description: user 
+          ? "Share this link to earn commission on bookings!" 
+          : "Share this hotel with others!" 
+      });
+    } catch (error) {
+      toast({ 
+        title: "Copy Failed", 
+        description: "Unable to copy link to clipboard", 
+        variant: "destructive" 
+      });
+    }
+  };
 
-  const handleShare = async () => {
-    if (!hotel) {
-      toast({ title: "Unable to Share", description: "Hotel information not available", variant: "destructive" });
-      return;
-    }
+  const handleShare = async () => {
+    if (!hotel) {
+      toast({ title: "Unable to Share", description: "Hotel information not available", variant: "destructive" });
+      return;
+    }
 
-    const refLink = await generateReferralLink(hotel.id, "hotel", hotel.id);
+    const refLink = await generateReferralLink(hotel.id, "hotel", hotel.id);
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: hotel?.name,
-          text: hotel?.description,
-          url: refLink
-        });
-      } catch (error) {
-        console.log("Share failed:", error);
-      }
-    } else {
-      await handleCopyLink();
-    }
-  };
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: hotel?.name,
+          text: hotel?.description,
+          url: refLink
+        });
+      } catch (error) {
+        console.log("Share failed:", error);
+      }
+    } else {
+      await handleCopyLink();
+    }
+  };
 
-  const openInMaps = () => {
-    if (hotel?.map_link) {
-      window.open(hotel.map_link, '_blank');
-    } else {
-      const query = encodeURIComponent(`${hotel?.name}, ${hotel?.location}, ${hotel?.country}`);
-      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
-    }
-  };
-  
-  const { submitBooking } = useBookingSubmit();
+  const openInMaps = () => {
+    if (hotel?.map_link) {
+      window.open(hotel.map_link, '_blank');
+    } else {
+      const query = encodeURIComponent(`${hotel?.name}, ${hotel?.location}, ${hotel?.country}`);
+      // Fixed the URL to be a standard Google Maps URL
+      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+    }
+  };
+  
+  const { submitBooking } = useBookingSubmit();
 
-  const handleBookingSubmit = async (data: BookingFormData) => {
-    if (!hotel) return;
-    setIsProcessing(true);
-    
-    try {
-      const totalAmount = data.selectedFacilities.reduce((sum, f) => { 
-        if (f.startDate && f.endDate) {
-          // Calculate number of full days booked (minimum 1 day)
-          const days = Math.ceil((new Date(f.endDate).getTime() - new Date(f.startDate).getTime()) / (1000 * 60 * 60 * 24));
-          return sum + (f.price * Math.max(days, 1));
-        }
-        return sum + f.price; // Fallback if dates are somehow missing
-      }, 0) +
-      data.selectedActivities.reduce((sum, a) => sum + (a.price * a.numberOfPeople), 0);
-      const totalPeople = data.num_adults + data.num_children;
+  const handleBookingSubmit = async (data: BookingFormData) => {
+    if (!hotel) return;
+    setIsProcessing(true);
+    
+    try {
+      const totalAmount = data.selectedFacilities.reduce((sum, f) => { 
+        if (f.startDate && f.endDate) {
+          // Calculate number of full days booked (minimum 1 day)
+          const days = Math.ceil((new Date(f.endDate).getTime() - new Date(f.startDate).getTime()) / (1000 * 60 * 60 * 24));
+          return sum + (f.price * Math.max(days, 1));
+        }
+        return sum + f.price; // Fallback if dates are somehow missing
+      }, 0) +
+      data.selectedActivities.reduce((sum, a) => sum + (a.price * a.numberOfPeople), 0);
+      const totalPeople = data.num_adults + data.num_children;
 
-      await submitBooking({
-        itemId: hotel.id,
-        itemName: hotel.name,
-        bookingType: 'hotel',
-        totalAmount,
-        slotsBooked: totalPeople,
-        visitDate: data.visit_date,
-        guestName: data.guest_name,
-        guestEmail: data.guest_email,
-        guestPhone: data.guest_phone,
-        hostId: hotel.created_by,
-        bookingDetails: {
-          hotel_name: hotel.name,
-          adults: data.num_adults,
-          children: data.num_children,
-          facilities: data.selectedFacilities,
-          activities: data.selectedActivities
-        }
-      });
-      
-      setIsProcessing(false);
-      setIsCompleted(true);
-      toast({ title: "Booking Submitted", description: "Your booking has been saved. Check your email for confirmation." });
-    } catch (error: any) {
-      toast({
-        title: "Booking failed",
-        description: error.message,
-        variant: "destructive"
-      });
-      setIsProcessing(false);
-    }
-  };
-  
-  if (loading || !hotel) {
-    return <div className="min-h-screen bg-background pb-20 md:pb-0">
-        <Header className="hidden md:block" />
-        <div className="h-96 bg-muted animate-pulse" />
-        <MobileBottomBar />
-      </div>;
-  }
-  
-  const displayImages = [hotel.image_url, ...(hotel.gallery_images || []), ...(hotel.images || [])].filter(Boolean);
-  
+      await submitBooking({
+        itemId: hotel.id,
+        itemName: hotel.name,
+        bookingType: 'hotel',
+        totalAmount,
+        slotsBooked: totalPeople,
+        visitDate: data.visit_date,
+        guestName: data.guest_name,
+        guestEmail: data.guest_email,
+        guestPhone: data.guest_phone,
+        hostId: hotel.created_by,
+        bookingDetails: {
+          hotel_name: hotel.name,
+          adults: data.num_adults,
+          children: data.num_children,
+          facilities: data.selectedFacilities,
+          activities: data.selectedActivities
+        }
+      });
+      
+      setIsProcessing(false);
+      setIsCompleted(true);
+      toast({ title: "Booking Submitted", description: "Your booking has been saved. Check your email for confirmation." });
+    } catch (error: any) {
+      toast({
+        title: "Booking failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      setIsProcessing(false);
+    }
+  };
+  
+  if (loading || !hotel) {
+    return <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <Header className="hidden md:block" />
+        <div className="h-96 bg-muted animate-pulse" />
+        <MobileBottomBar />
+      </div>;
+  }
+  
+  const displayImages = [hotel.image_url, ...(hotel.gallery_images || []), ...(hotel.images || [])].filter(Boolean);
+  
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Header hidden on small screen / PWA mode */}
@@ -348,95 +349,13 @@ const HotelDetail = () => {
       
       {/* Main Content starts here, contained by the max-width wrapper */}
       <main className="container px-4 max-w-6xl mx-auto mt-4 sm:mt-6">
-        <div className="grid lg:grid-cols-[2fr,1fr] gap-6 sm:gap-4">
+        {/* The overall structure now uses flex-col for small screens to enforce the order, 
+            and grid for large screens. */}
+        <div className="flex flex-col lg:grid lg:grid-cols-[2fr,1fr] gap-6 sm:gap-4">
           
-          {/* LEFT COLUMN (Description, Amenities, Facilities, Activities) */}
-          <div className="w-full space-y-4">
-            
-            {/* Location/Distance/Details section (Moved from right column) */}
-            <div>
-              <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <MapPin className="h-4 w-4" style={{ color: TEAL_COLOR }} />
-                <span className="sm:text-sm">{hotel.location}, {hotel.country}</span>
-                {distance !== undefined && (
-                  <span className="text-xs font-medium ml-auto" style={{ color: TEAL_COLOR }}>
-                    {distance < 1 ? `${Math.round(distance * 1000)}m away` : `${distance.toFixed(1)}km away`}
-                  </span>
-                )}
-              </div>
-              {hotel.place && (
-                <p className="text-sm sm:text-xs text-muted-foreground mb-4 sm:mb-2">Place: {hotel.place}</p>
-              )}
-            </div>
-
-            {/* Description Section */}
-            {hotel.description && 
-              <div className="bg-card border rounded-lg p-4 sm:p-3">
-                <h2 className="text-lg sm:text-base font-semibold mb-2 sm:mb-1">About This Hotel</h2>
-                <p className="text-sm text-muted-foreground">{hotel.description}</p>
-              </div>
-            }
-
-            {/* --- Amenities Section (RED) --- */}
-            {hotel.amenities && hotel.amenities.length > 0 && (
-              <div className="p-4 sm:p-3 border bg-card rounded-lg">
-                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Amenities</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {hotel.amenities.map((amenity, idx) => (
-                    <div 
-                      key={idx} 
-                      className="px-3 py-2 text-white rounded-lg text-sm flex items-center justify-center text-center min-h-[44px]"
-                      style={{ backgroundColor: RED_COLOR }}
-                    >
-                      <span className="font-medium">{amenity}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* --- Facilities (Room Types) Section (TEAL) --- */}
-            {hotel.facilities && hotel.facilities.length > 0 && (
-              <div className="p-4 sm:p-3 border bg-card rounded-lg">
-                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Facilities (Room Types)</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {hotel.facilities.map((facility, idx) => (
-                    <div 
-                      key={idx} 
-                      className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
-                      style={{ backgroundColor: TEAL_COLOR }}
-                    >
-                      <span className="font-medium">{facility.name}</span>
-                      <span className="text-xs opacity-90 mt-1">{facility.price === 0 ? 'Free' : `KSh ${facility.price}/day`}</span>
-                      {facility.capacity > 0 && <span className="text-xs opacity-90">Capacity: {facility.capacity}</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* --- Activities Section (ORANGE) --- */}
-            {hotel.activities && hotel.activities.length > 0 && (
-              <div className="p-4 sm:p-3 border bg-card rounded-lg">
-                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Activities</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {hotel.activities.map((activity, idx) => (
-                    <div 
-                      key={idx} 
-                      className="px-3 py-2 text-white rounded-lg text-sm flex flex-col items-center justify-center text-center min-h-[60px]"
-                      style={{ backgroundColor: ORANGE_COLOR }}
-                    >
-                      <span className="font-medium">{activity.name}</span>
-                      <span className="text-xs opacity-90 mt-1">{activity.price === 0 ? 'Free' : `KSh ${activity.price}/person`}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT COLUMN (Booking Card, Contact, Share Buttons) */}
-          <div className="space-y-4 sm:space-y-3">
+          {/* Mobile Order 1: Operating Hours/Availability/Booking Button (Small Screen) 
+              This section is order-1 on small screens, and order-3 on large screens (making it the right column). */}
+          <div className="space-y-4 sm:space-y-3 order-1 lg:order-3">
             
             {/* Operating Hours/Availability Card (Booking Card structure) */}
             <div className="space-y-3 p-4 sm:p-3 border bg-card rounded-lg">
@@ -486,45 +405,165 @@ const HotelDetail = () => {
                 Book Now
               </Button>
             </div>
+            
+            {/* Contact Information Section (Always in the right column / bottom of mobile section) */}
+            {(hotel.phone_numbers || hotel.email) && (
+              <div className="p-4 sm:p-3 border bg-card rounded-lg hidden lg:block"> {/* Hidden on small screen, visible on large */}
+                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Contact Information</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-1 gap-2">
+                  {hotel.phone_numbers?.map((phone, idx) => (
+                    <a 
+                      key={idx} 
+                      href={`tel:${phone}`}
+                      className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                      style={{ borderColor: TEAL_COLOR }}
+                    >
+                      <Phone className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                      <span className="text-sm" style={{ color: TEAL_COLOR }}>{phone}</span>
+                    </a>
+                  ))}
+                  {hotel.email && (
+                    <a 
+                      href={`mailto:${hotel.email}`}
+                      className="flex items-center gap-2 px-4 py-3 border rounded-lg hover:bg-muted transition-colors"
+                      style={{ borderColor: TEAL_COLOR }}
+                    >
+                      <Mail className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                      <span className="text-sm" style={{ color: TEAL_COLOR }}>{hotel.email}</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
-            {/* Action Buttons (Map, Copy, Share) */}
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={openInMaps} 
-                className="flex-1 h-9" 
-                style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}
-              >
-                <MapPin className="h-4 w-4 md:mr-2" style={{ color: TEAL_COLOR }} />
-                <span className="hidden md:inline">Map</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleCopyLink} 
-                className="flex-1 h-9"
-                style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}
-              >
-                <Copy className="h-4 w-4 md:mr-2" style={{ color: TEAL_COLOR }} />
-                <span className="hidden md:inline">Copy Link</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleShare} 
-                className="flex-1 h-9"
-                style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}
-              >
-                <Share2 className="h-4 w-4 md:mr-2" style={{ color: TEAL_COLOR }} />
-                <span className="hidden md:inline">Share</span>
-              </Button>
-              {/* Removed the small save button here as it's now a full overlay button */}
+
+          {/* LEFT COLUMN (The sequentially ordered content) 
+              This section is order-2 on small screens, and order-1 on large screens (making it the left column). 
+              The internal order for mobile is enforced here. */}
+          <div className="w-full space-y-4 order-2 lg:order-1">
+            
+            {/* Mobile Order 2: Location/Distance/Details section (Location link) */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <MapPin className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+                <span className="sm:text-sm">{hotel.location}, {hotel.country}</span>
+                {distance !== undefined && (
+                  <span className="text-xs font-medium ml-auto" style={{ color: TEAL_COLOR }}>
+                    {distance < 1 ? `${Math.round(distance * 1000)}m away` : `${distance.toFixed(1)}km away`}
+                  </span>
+                )}
+              </div>
+              {hotel.place && (
+                <p className="text-sm sm:text-xs text-muted-foreground mb-4 sm:mb-2">Place: {hotel.place}</p>
+              )}
+              
+              {/* Mobile Order 3: Action Buttons (Share, Copy Link) */}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={openInMaps} 
+                  className="flex-1 h-9" 
+                  style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}
+                >
+                  <MapPin className="h-4 w-4 md:mr-2" style={{ color: TEAL_COLOR }} />
+                  <span className="hidden md:inline">Map</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCopyLink} 
+                  className="flex-1 h-9"
+                  style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}
+                >
+                  <Copy className="h-4 w-4 md:mr-2" style={{ color: TEAL_COLOR }} />
+                  <span className="hidden md:inline">Copy Link</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleShare} 
+                  className="flex-1 h-9"
+                  style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}
+                >
+                  <Share2 className="h-4 w-4 md:mr-2" style={{ color: TEAL_COLOR }} />
+                  <span className="hidden md:inline">Share</span>
+                </Button>
+              </div>
             </div>
 
-            {/* --- Contact Information Section --- */}
-            {(hotel.phone_numbers || hotel.email) && (
+            {/* Mobile Order 4: Description Section (About) */}
+            {hotel.description && 
+              <div className="bg-card border rounded-lg p-4 sm:p-3">
+                <h2 className="text-lg sm:text-base font-semibold mb-2 sm:mb-1">About This Hotel</h2>
+                <p className="text-sm text-muted-foreground">{hotel.description}</p>
+              </div>
+            }
+
+            {/* Mobile Order 5: Amenities Section (RED) - Rounded Buttons */}
+            {hotel.amenities && hotel.amenities.length > 0 && (
               <div className="p-4 sm:p-3 border bg-card rounded-lg">
+                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Amenities</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {hotel.amenities.map((amenity, idx) => (
+                    <div 
+                      key={idx} 
+                      // --- ADDED rounded-full for 50% border-radius ---
+                      className="px-3 py-2 text-white rounded-full text-sm flex items-center justify-center text-center min-h-[44px]"
+                      style={{ backgroundColor: RED_COLOR }}
+                    >
+                      <span className="font-medium">{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Order 6: Facilities (Room Types) Section (TEAL) - Rounded Buttons */}
+            {hotel.facilities && hotel.facilities.length > 0 && (
+              <div className="p-4 sm:p-3 border bg-card rounded-lg">
+                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Facilities (Room Types)</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {hotel.facilities.map((facility, idx) => (
+                    <div 
+                      key={idx} 
+                      // --- ADDED rounded-full for 50% border-radius ---
+                      className="px-3 py-2 text-white rounded-full text-sm flex flex-col items-center justify-center text-center min-h-[60px] leading-tight"
+                      style={{ backgroundColor: TEAL_COLOR }}
+                    >
+                      <span className="font-medium">{facility.name}</span>
+                      <span className="text-xs opacity-90 mt-1">{facility.price === 0 ? 'Free' : `KSh ${facility.price}/day`}</span>
+                      {facility.capacity > 0 && <span className="text-xs opacity-90">Capacity: {facility.capacity}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Order 7: Activities Section (ORANGE) - Rounded Buttons */}
+            {hotel.activities && hotel.activities.length > 0 && (
+              <div className="p-4 sm:p-3 border bg-card rounded-lg">
+                <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Activities</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {hotel.activities.map((activity, idx) => (
+                    <div 
+                      key={idx} 
+                      // --- ADDED rounded-full for 50% border-radius ---
+                      className="px-3 py-2 text-white rounded-full text-sm flex flex-col items-center justify-center text-center min-h-[60px] leading-tight"
+                      style={{ backgroundColor: ORANGE_COLOR }}
+                    >
+                      <span className="font-medium">{activity.name}</span>
+                      <span className="text-xs opacity-90 mt-1">{activity.price === 0 ? 'Free' : `KSh ${activity.price}/person`}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Contact Information Section (Always in the right column / bottom of mobile section) */}
+            {(hotel.phone_numbers || hotel.email) && (
+              <div className="p-4 sm:p-3 border bg-card rounded-lg lg:hidden"> {/* Visible on small screen, hidden on large */}
                 <h2 className="text-xl sm:text-lg font-semibold mb-4 sm:mb-3">Contact Information</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-1 gap-2">
                   {hotel.phone_numbers?.map((phone, idx) => (
@@ -554,14 +593,14 @@ const HotelDetail = () => {
           </div>
         </div>
 
-        {/* --- Review Section --- */}
-        <div className="mt-6 sm:mt-4">
-          <ReviewSection itemId={hotel.id} itemType="hotel" />
-        </div>
+        {/* Mobile Order 8: Review Section (Rating) */}
+        <div className="mt-6 sm:mt-4">
+          <ReviewSection itemId={hotel.id} itemType="hotel" />
+        </div>
 
-        {/* --- Similar Items Section --- */}
-        {hotel && <SimilarItems currentItemId={hotel.id} itemType="hotel" country={hotel.country} />}
-      </main>
+        {/* Similar Items Section */}
+        {hotel && <SimilarItems currentItemId={hotel.id} itemType="hotel" country={hotel.country} />}
+      </main>
 
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -578,10 +617,10 @@ const HotelDetail = () => {
             onPaymentSuccess={() => setIsCompleted(true)}
           />
         </DialogContent>
-      </Dialog>
+      </Dialog>
 
-      <MobileBottomBar />
-    </div>
+      <MobileBottomBar />
+    </div>
   );
 };
 export default HotelDetail;
