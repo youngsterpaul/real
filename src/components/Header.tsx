@@ -19,6 +19,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle"; 
 import { NotificationBell } from "./NotificationBell"; 
 
+// Setting the deeper RGBA background color as a constant for clarity
+const MOBILE_ICON_BG = 'rgba(0, 0, 0, 0.5)'; // Deeper semi-transparent black
+
 interface HeaderProps {
   onSearchClick?: () => void;
   showSearchIcon?: boolean;
@@ -31,7 +34,6 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
   const [userRole, setUserRole] = useState<string | null>(null);
 
   // --- Start of unchanged functional code ---
-
   useEffect(() => {
     const checkRole = async () => {
       if (!user) {
@@ -88,18 +90,19 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
   // --- End of unchanged functional code ---
 
   return (
-    // 1. Mobile Header: Changed position from 'absolute' to 'fixed'.
-    // Desktop Header (md:): Revert to sticky, h-16, and background color.
     <header className="fixed top-0 left-0 right-0 z-[100] text-black dark:text-white md:sticky md:h-16 md:border-b md:border-border md:bg-[#008080] md:text-white dark:md:bg-[#008080] dark:md:text-white">
-      {/* Mobile Container: No flex/padding. Desktop Container: Keep standard flex layout for md: */}
       <div className="container md:flex md:h-full md:items-center md:justify-between md:px-4">
         
-        {/* Mobile Left Icons (Menu) - Positioned Fixed */}
+        {/* Mobile Left Icons (Menu) - Fixed Position */}
         <div className="absolute top-4 left-4 flex items-center gap-3 md:relative md:top-auto md:left-auto">
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
-              {/* Menu Icon: Always visible, positioned top-left on mobile */}
-              <button className="inline-flex items-center justify-center h-10 w-10 rounded-md text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors md:text-white md:hover:bg-[#006666]" aria-label="Open navigation menu">
+              {/* Menu Icon: Updated to White Icon and Deeper RGBA Background */}
+              <button 
+                className="inline-flex items-center justify-center h-10 w-10 rounded-full text-white transition-colors md:text-white md:hover:bg-[#006666] hover:bg-white/20"
+                aria-label="Open navigation menu"
+                style={{ backgroundColor: MOBILE_ICON_BG }}
+              >
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
@@ -108,7 +111,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             </SheetContent>
           </Sheet>
           
-          {/* Logo/Description: Always HIDDEN on small screens */}
+          {/* Logo/Description: Hidden on mobile */}
           <Link to="/" className="hidden md:flex items-center gap-3">
              <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-[#0066cc] font-bold text-lg">
                 T
@@ -122,7 +125,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
           </Link>
         </div>
 
-        {/* 2. Desktop Navigation (Centered): Visible from lg: breakpoint up */}
+        {/* Desktop Navigation (Centered) - Visible from lg: breakpoint up */}
         <nav className="hidden lg:flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 font-bold hover:text-muted-foreground transition-colors">
             <Home className="h-4 w-4" />
@@ -145,10 +148,10 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
           </button>
         </nav>
 
-        {/* Mobile Right Icons (Search, Notification) - Positioned Fixed */}
+        {/* Mobile Right Icons (Search, Notification) - Fixed Position */}
         <div className="absolute top-4 right-4 flex items-center gap-2 md:relative md:top-auto md:right-auto md:flex">
           
-          {/* Search Icon Button: Always visible */}
+          {/* Search Icon Button: Updated to White Icon and Deeper RGBA Background */}
           {showSearchIcon && (
             <button 
               onClick={() => {
@@ -159,23 +162,24 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className="rounded-full h-10 w-10 flex items-center justify-center transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 md:bg-white/10 md:hover:bg-white"
+              className="rounded-full h-10 w-10 flex items-center justify-center transition-colors text-white md:bg-white/10 md:hover:bg-white hover:bg-white/20"
               aria-label="Search"
+              style={{ backgroundColor: MOBILE_ICON_BG }}
             >
-              <Search className="h-5 w-5 text-black dark:text-white md:text-white dark:md:text-white md:group-hover:text-[#008080]" />
+              <Search className="h-5 w-5 md:text-white md:group-hover:text-[#008080]" />
             </button>
           )}
           
-          {/* Notification Bell with RGBA Background on Mobile */}
+          {/* Notification Bell with Deeper RGBA Background */}
           <div className="flex items-center gap-2">
-            <div className="rounded-full h-10 w-10 flex items-center justify-center transition-colors md:bg-transparent"
-                 style={{ 
-                    // Apply rgba background color for mobile screens (e.g., semi-transparent black)
-                    backgroundColor: 'rgba(0, 0, 0, 0.1)', 
-                 }}
+            {/* Wrapper: Apply Deeper RGBA background and White Icon Color */}
+            <div 
+                className="rounded-full h-10 w-10 flex items-center justify-center transition-colors md:bg-transparent hover:bg-white/20"
+                style={{ backgroundColor: MOBILE_ICON_BG }}
             >
                 <NotificationBell 
-                    mobileIconClasses="text-black dark:text-white"
+                    // Set mobile icon class to white
+                    mobileIconClasses="text-white"
                     desktopIconClasses="md:text-white md:hover:bg-[#006666]"
                 />
             </div>
