@@ -92,7 +92,6 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
     }
     return "U";
   };
-  // --- End of functional code (omitted for brevity) ---
 
   // Conditional classes for the main header element
   const mobileHeaderClasses = isIndexPage 
@@ -206,7 +205,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             >
               <NotificationBell 
                   mobileIconClasses="text-white"
-                  desktopIconClasses="md:text-white md:hover:bg-[#006666]"
+                  desktopIconClasses="md:text-white md:hover:bg-[#008080]"
               />
             </div>
           </div>
