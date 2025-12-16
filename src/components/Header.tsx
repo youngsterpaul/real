@@ -38,7 +38,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
   const { user, signOut } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  // --- Start of functional code ---
+  // --- Start of functional code (omitted for brevity) ---
   useEffect(() => {
     const checkRole = async () => {
       if (!user) {
@@ -92,13 +92,13 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
     }
     return "U";
   };
-  // --- End of functional code ---
+  // --- End of functional code (omitted for brevity) ---
 
   // Conditional classes for the main header element
   const mobileHeaderClasses = isIndexPage 
-    // Classes for the index page (fixed, hidden background)
+    // Index page: fixed, hidden background
     ? "fixed top-0 left-0 right-0" 
-    // Classes for all other pages (sticky, full background)
+    // Non-index pages: sticky, full background
     : "sticky top-0 left-0 right-0 border-b border-border bg-[#008080] dark:bg-[#008080] text-white dark:text-white";
 
   const nonIndexIconColor = 'text-white'; 
@@ -107,21 +107,21 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
     // 1. Apply conditional classes to the header
     <header className={`z-[100] text-black dark:text-white md:sticky md:h-16 md:text-white dark:md:text-white ${mobileHeaderClasses}`}>
       
-      {/* 2. Main container: Always use flexbox to align items and justify space. */}
+      {/* 2. Main container: Remove horizontal padding on mobile for non-index pages to allow the icons to push to the edge */}
+      {/* Use px-0 on mobile, px-4 on tablet/desktop */}
       <div className={`container md:flex md:h-full md:items-center md:justify-between md:px-4 
-                      flex items-center justify-between h-16`}>
+                      ${isIndexPage ? 'px-0' : 'px-0'} flex items-center justify-between h-16`}>
         
-        {/* 3. Left Icons (Menu & Logo) - Combined Group */}
+        {/* 3. Left Icons (Menu & Logo) - Conditional Positioning and Margin */}
         <div className={`flex items-center gap-3 
-                        ${isIndexPage ? 'absolute top-4 left-4' : 'relative'} 
-                        md:relative md:top-auto md:left-auto`}>
+                        ${isIndexPage ? 'absolute top-4 left-4' : 'relative ml-4'} 
+                        md:relative md:top-auto md:left-auto md:ml-0`}> {/* Added ml-4 for non-index mobile */}
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
               {/* Menu Icon: Conditionally apply RGBA Background on index page */}
               <button 
                 className={`inline-flex items-center justify-center h-10 w-10 rounded-full transition-colors md:text-white md:hover:bg-[#006666] ${isIndexPage ? 'text-white hover:bg-white/20' : 'text-white hover:bg-white/20'}`}
                 aria-label="Open navigation menu"
-                // Apply mobile background style only on the index page
                 style={isIndexPage ? { backgroundColor: MOBILE_ICON_BG } : {}}
               >
                 <Menu className="h-5 w-5" />
@@ -141,7 +141,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
                 <span className="font-bold text-base md:text-lg text-white block">
                   TripTrac
                 </span>
-                <p className="text-xs text-white/90 hidden sm:block">Your journey starts now.</p> {/* Hide description on smallest screen for space */}
+                <p className="text-xs text-white/90 hidden sm:block">Your journey starts now.</p>
               </div>
           </Link>
         </div>
@@ -169,10 +169,10 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
           </button>
         </nav>
 
-        {/* 4. Right Icons (Search, Notification, Theme, Account) */}
+        {/* 4. Right Icons (Search, Notification, Theme, Account) - Conditional Positioning and Margin */}
         <div className={`flex items-center gap-2 
-                        ${isIndexPage ? 'absolute top-4 right-4' : 'relative'}
-                        md:relative md:top-auto md:right-auto md:flex`}>
+                        ${isIndexPage ? 'absolute top-4 right-4' : 'relative mr-4'}
+                        md:relative md:top-auto md:right-auto md:flex md:mr-0`}> {/* Added mr-4 for non-index mobile */}
           
           {/* Search Icon Button: Conditionally apply RGBA Background on index page */}
           {showSearchIcon && (
@@ -193,8 +193,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             </button>
           )}
           
-          {/* Notification Bell (Mobile & Desktop) */}
-          {/* Shows on index mobile page, all desktop, and NOW all non-index mobile pages */}
+          {/* Notification Bell (Always shown on mobile now) */}
           <div className="flex items-center gap-2">
             <div 
                 className="rounded-full h-10 w-10 flex items-center justify-center transition-colors md:bg-transparent hover:bg-white/20"
@@ -221,9 +220,8 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             </button>
           </div>
           
-          {/* Mobile Account Icon for Index Page ONLY */}
-          {/* This ensures the index page retains its original look with Account icon instead of NotificationBell */}
-          {isIndexPage && (
+          {/* Mobile Account Icon for Index Page ONLY - REMOVED per user request */}
+          {/* {isIndexPage && (
             <button 
               onClick={() => user ? navigate('/account') : navigate('/auth')}
               className="md:hidden rounded-full h-10 w-10 flex items-center justify-center transition-colors hover:bg-white/20" 
@@ -232,7 +230,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true }: HeaderProps) =>
             >
               <User className="h-5 w-5 text-white" />
             </button>
-          )}
+          )} */}
 
         </div>
       </div>
