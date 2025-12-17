@@ -357,10 +357,7 @@ const Bookings = () => {
 
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
+          
           <AlertDialogFooter>
             <AlertDialogCancel>No, Keep it</AlertDialogCancel>
             <AlertDialogAction onClick={handleCancelBooking} className="bg-destructive text-white">
