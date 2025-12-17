@@ -228,7 +228,7 @@ const Bookings = () => {
                           <div className="flex items-center gap-3 flex-wrap">
                             <Badge variant="outline" className="capitalize">{booking.booking_type}</Badge>
                             <Badge className={getStatusColor(booking)}>Paid</Badge>
-                            <Badge variant="secondary">{booking.status}</Badge>
+                            
                           </div>
 
                           <h3 className="text-xl font-semibold">{getItemName(booking)}</h3>
