@@ -138,6 +138,7 @@ const Index = () => {
               <SearchBarWithSuggestions 
                 value={searchQuery} 
                 onChange={setSearchQuery} 
+                onSubmit={() => {}}
                 onFocus={() => setIsSearchFocused(true)}
               />
             </div>
@@ -151,6 +152,7 @@ const Index = () => {
            <SearchBarWithSuggestions 
               value={searchQuery} 
               onChange={setSearchQuery} 
+              onSubmit={() => {}}
               onBack={() => setIsSearchFocused(false)} 
               showBackButton={true}
            />
