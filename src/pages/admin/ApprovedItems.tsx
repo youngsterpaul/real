@@ -1,15 +1,35 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Plane, Building, Tent, MapPin, Search, ArrowLeft } from "lucide-react";
+import { 
+  ChevronRight, 
+  Plane, 
+  Building, 
+  Tent, 
+  MapPin, 
+  Search, 
+  ArrowLeft,
+  CheckCircle2,
+  EyeOff
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Consistent Color Palette
+const COLORS = {
+  TEAL: "#008080",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
+  KHAKI_DARK: "#857F3E",
+  RED: "#FF0000",
+  SOFT_GRAY: "#F8F9FA"
+};
 
 interface ListingItem {
   id: string;
@@ -61,103 +81,128 @@ const ApprovedItems = () => {
   };
 
   useEffect(() => {
-    if (searchQuery.trim() === "") {
+    const query = searchQuery.toLowerCase().trim();
+    if (query === "") {
       setFilteredItems(items);
     } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = items.filter(
+      setFilteredItems(items.filter(
         (item) =>
           item.name.toLowerCase().includes(query) ||
           item.location.toLowerCase().includes(query)
-      );
-      setFilteredItems(filtered);
+      ));
     }
   }, [searchQuery, items]);
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "trip": return Plane;
-      case "hotel": return Building;
-      case "adventure": return Tent;
-      default: return MapPin;
+      case "trip": return <Plane className="h-5 w-5" />;
+      case "hotel": return <Building className="h-5 w-5" />;
+      case "adventure": return <Tent className="h-5 w-5" />;
+      default: return <MapPin className="h-5 w-5" />;
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container px-4 py-8">
-          <p className="text-center">Loading...</p>
-        </main>
-        <Footer />
-        <MobileBottomBar />
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen bg-[#F8F9FA] animate-pulse" />;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1 container px-4 py-8 max-w-4xl mx-auto mb-20 md:mb-0">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <h1 className="text-3xl font-bold mb-6">Approved Items</h1>
+    <div className="min-h-screen bg-[#F8F9FA] pb-24">
+      <Header className="hidden md:block" />
 
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Bold Header Section */}
+      <div className="bg-white border-b border-slate-100 pt-10 pb-20 px-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)}
+            className="rounded-full hover:bg-slate-100 p-2 h-auto"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+
+          <div className="space-y-2">
+            <Badge className="bg-[#FF7F50] hover:bg-[#FF7F50] border-none px-3 py-1 uppercase font-black tracking-widest text-[10px] rounded-full">
+              Admin Portal
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-slate-900">
+              Approved <span style={{ color: COLORS.TEAL }}>Directory</span>
+            </h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+              Managing {items.length} verified listings
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <main className="max-w-4xl mx-auto px-4 -mt-10 relative z-10">
+        {/* Styled Search Bar */}
+        <div className="relative mb-8 shadow-2xl rounded-2xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <Input
             type="text"
-            placeholder="Search by name or location..."
+            placeholder="FILTER BY NAME OR LOCATION..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-12 h-16 bg-white border-none rounded-2xl font-black uppercase tracking-wider text-xs placeholder:text-slate-300 focus-visible:ring-2 focus-visible:ring-[#008080]"
           />
         </div>
 
         {filteredItems.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">
-              {searchQuery ? "No items match your search" : "No approved items"}
+          <Card className="p-16 text-center rounded-[32px] border-dashed border-2 border-slate-200 bg-white/50">
+            <p className="font-black uppercase tracking-widest text-slate-400 text-sm">
+              No matching listings found
             </p>
           </Card>
         ) : (
-          <Card>
-            <div className="divide-y divide-border">
-              {filteredItems.map((item) => {
-                const Icon = getIcon(item.type);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => navigate(`/admin/review/${item.type}/${item.id}`)}
-                    className="w-full flex items-center justify-between p-6 hover:bg-accent transition-colors"
+          <div className="space-y-3">
+            {filteredItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => navigate(`/admin/review/${item.type}/${item.id}`)}
+                className="w-full group relative flex items-center justify-between p-5 bg-white hover:bg-slate-50 border border-slate-100 rounded-3xl transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-0.5"
+              >
+                <div className="flex items-center gap-5">
+                  <div 
+                    className="h-14 w-14 rounded-2xl flex items-center justify-center transition-colors group-hover:scale-110 duration-300"
+                    style={{ backgroundColor: `${COLORS.TEAL}10`, color: COLORS.TEAL }}
                   >
-                    <div className="flex items-center gap-4">
-                      <Icon className="h-5 w-5 text-muted-foreground" />
-                      <div className="text-left">
-                        <p className="font-medium text-foreground">{item.name}</p>
-                        <p className="text-sm text-muted-foreground">{item.location}</p>
-                      </div>
+                    {getIcon(item.type)}
+                  </div>
+                  
+                  <div className="text-left space-y-1">
+                    <p className="font-black uppercase tracking-tight text-slate-800 leading-none">
+                      {item.name}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3 w-3 text-[#FF7F50]" />
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        {item.location}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {item.is_hidden && <Badge variant="outline">Hidden</Badge>}
-                      <Badge variant="default">Approved</Badge>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="hidden sm:flex flex-col items-end gap-1">
+                    {item.is_hidden && (
+                      <Badge variant="outline" className="text-[9px] border-slate-200 text-slate-400 font-black uppercase tracking-tighter">
+                        <EyeOff className="h-3 w-3 mr-1" /> Hidden
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-1.5 bg-[#F0E68C]/20 px-3 py-1 rounded-full border border-[#F0E68C]/50">
+                      <CheckCircle2 className="h-3 w-3 text-[#857F3E]" />
+                      <span className="text-[9px] font-black text-[#857F3E] uppercase tracking-widest">Verified</span>
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
+                  </div>
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-slate-50 group-hover:bg-[#008080] group-hover:text-white transition-colors">
+                    <ChevronRight className="h-5 w-5" />
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
         )}
       </main>
-      <Footer />
+
       <MobileBottomBar />
     </div>
   );
