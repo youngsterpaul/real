@@ -470,7 +470,7 @@ const Index = () => {
     <div 
       ref={searchRef}
       // 👇 MODIFIED CLASSES HERE 👇
-      className="relative w-full h-[50vh] lg:h-[65vh]" 
+      className="relative w-full h-[30vh] lg:h-[39vh]" 
       // h-[50vh] sets 50% height for small screens (default).
       // lg:h-[65vh] overrides it to 65% height for large screens (lg breakpoint and up).
       // h-48 md:h-72 lg:h-80 have been removed/replaced.
@@ -535,31 +535,48 @@ const Index = () => {
                 </div>}
 
             <main className="w-full">
-                {/* Categories Section - Full width - Hidden when search focused */}
-                {!isSearchFocused && (
-                  <div className="w-full px-4 md:px-6 lg:px-8 py-4 md:py-6">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 w-full">
-                          {categories.map(cat => (
-                              <div 
-                                  key={cat.title} 
-                                  onClick={() => navigate(cat.path)} 
-                                  className="relative h-24 md:h-40 lg:h-48 cursor-pointer overflow-hidden group"
-                                  style={{
-                                      backgroundImage: `url(${cat.bgImage})`,
-                                      backgroundSize: 'cover',
-                                      backgroundPosition: 'center'
-                                  }}
-                              >
-                                  <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-all text-center p-2 md:p-4 flex-col flex items-center justify-center">
-                                      <cat.icon className="h-5 w-5 md:h-12 md:w-12 lg:h-16 lg:w-16 text-white mb-1 md:mb-3" />
-                                      <span className="font-bold text-white text-xs md:text-base lg:text-lg leading-tight" role="heading" aria-level={3}>{cat.title}</span>
-                                      <p className="text-white/80 text-2xs md:text-sm text-center mt-0.5 md:mt-1 hidden md:block">{cat.description}</p>
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-                )}
+{!isSearchFocused && (
+  <div className="w-full px-4 md:px-6 lg:px-8 py-4 md:py-6">
+    {/* Grid for md and lg, Flex-row with overflow for smallest screens */}
+    <div className="flex flex-row overflow-x-auto no-scrollbar md:grid md:grid-cols-4 gap-4 md:gap-4 w-full">
+      {categories.map(cat => (
+        <div 
+          key={cat.title} 
+          onClick={() => navigate(cat.path)} 
+          className="relative flex-shrink-0 flex flex-col items-center cursor-pointer group 
+                     md:h-40 lg:h-48 md:block" // Reset block behavior for larger screens
+        >
+          {/* ICON CONTAINER: Circle background on mobile, Background image on md+ */}
+          <div 
+            className="flex items-center justify-center transition-all
+                       w-16 h-16 rounded-full bg-[#008080] mb-2 
+                       md:absolute md:inset-0 md:w-full md:h-full md:rounded-none md:mb-0"
+            style={{
+              backgroundImage: window.innerWidth >= 768 ? `url(${cat.bgImage})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {/* Overlay for medium screens and above */}
+            <div className="hidden md:block absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-all" />
+
+            {/* Icon: White on mobile circle, White on dark overlay for md+ */}
+            <cat.icon className="relative z-10 h-8 w-8 text-white md:h-12 md:w-12 lg:h-16 lg:w-16 md:mb-3" />
+          </div>
+
+          {/* TEXT: Below circle on mobile, centered on image for md+ */}
+          <span className="font-bold text-gray-800 text-xs md:text-white md:text-base lg:text-lg leading-tight md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-20 text-center w-full px-2" role="heading" aria-level={3}>
+            {cat.title}
+          </span>
+          
+          <p className="hidden md:block md:absolute md:bottom-4 text-white/80 text-sm text-center z-20 w-full px-4">
+            {cat.description}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
                 
                 {/* Search Results - Show when search is focused */}
                 {isSearchFocused && <div className="w-full px-4 md:px-6 lg:px-8 mt-4">
@@ -637,12 +654,12 @@ const Index = () => {
                     {/* Events */}
                     <section className="mb-2 md:mb-6">
                         <div className="mb-1.5 md:mb-3 flex items-start justify-between">
-                            <h2 className="text-xs md:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
-                                Sports and events.
-                            </h2>
-                            <Link to="/category/events" className="text-primary text-3xs md:text-sm hover:underline">
-                                View All
-                            </Link>
+                         <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
+                          Sports and events.
+                        </h2>
+                     <Link to="/category/events" className="text-primary text-sm hover:underline">
+                          View All
+                     </Link>
                         </div>
                         <div className="relative">
                             {scrollableRows.events.length > 0 && <>
@@ -670,12 +687,12 @@ const Index = () => {
                     {/* Campsite & Experience */}
                     <section className="mb-2 md:mb-6">
                         <div className="mb-1.5 md:mb-3 flex items-start justify-between">
-                            <h2 className="text-xs md:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
-                                Campsite & Experience
-                            </h2>
-                            <Link to="/category/campsite" className="text-primary text-3xs md:text-sm hover:underline">
-                                View All
-                            </Link>
+                         <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
+                             Places to adventure
+                        </h2>
+                       <Link to="/category/campsite" className="text-primary text-sm hover:underline">
+                            View All
+                       </Link>
                         </div>
                         <div className="relative">
                             {scrollableRows.campsites.length > 0 && <>
@@ -709,10 +726,10 @@ const Index = () => {
                     {/* Hotels */}
                     <section className="mb-2 md:mb-6">
                         <div className="mb-1.5 md:mb-3 flex items-start justify-between">
-                            <h2 className="text-xs md:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
+                            <h2 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">
                                 Hotels and accommodations.
                             </h2>
-                            <Link to="/category/hotels" className="text-primary text-3xs md:text-sm hover:underline">
+                            <Link to="/category/hotels" className="text-primary text-sm hover:underline">
                                 View All
                             </Link>
                         </div>
