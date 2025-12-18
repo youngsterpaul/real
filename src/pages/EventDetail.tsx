@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
-import { MapPin, Share2, Heart, Calendar, Phone, Mail, ArrowLeft, Copy, CheckCircle2 } from "lucide-react";
+import { MapPin, Share2, Heart, Calendar, Phone, Mail, ArrowLeft, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,17 +17,36 @@ import { MultiStepBooking, BookingFormData } from "@/components/booking/MultiSte
 import { generateReferralLink, trackReferralClick } from "@/lib/referralUtils";
 import { useBookingSubmit } from "@/hooks/useBookingSubmit";
 import { extractIdFromSlug } from "@/lib/slugUtils";
-import { Badge } from "@/components/ui/badge";
 
-// Color Palette Constants
-const COLORS = {
-  TEAL: "#008080",
-  CORAL: "#FF7F50",
-  KHAKI: "#F0E68C",
-  KHAKI_DARK: "#857F3E",
-  RED: "#FF0000",
-  ORANGE: "#FF9800"
-};
+interface Activity {
+  name: string;
+  price: number;
+}
+interface Event {
+  id: string;
+  name: string;
+  location: string;
+  country: string;
+  place: string;
+  image_url: string;
+  images: string[];
+  description: string;
+  price: number;
+  price_child: number;
+  date: string;
+  is_custom_date: boolean;
+  available_tickets: number;
+  phone_number?: string;
+  email?: string;
+  map_link?: string;
+  activities?: Activity[];
+  type: string;
+  created_by: string | null;
+}
+
+const TEAL_COLOR = "#008080";
+const ORANGE_COLOR = "#FF9800";
+const RED_COLOR = "#FF0000";
 
 const EventDetail = () => {
   const { slug } = useParams();
@@ -35,8 +54,7 @@ const EventDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  const [event, setEvent] = useState<any | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBooking, setShowBooking] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -46,10 +64,14 @@ const EventDetail = () => {
   const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
-    if (id) fetchEvent();
+    if (id) {
+      fetchEvent();
+    }
     const urlParams = new URLSearchParams(window.location.search);
     const refSlug = urlParams.get("ref");
-    if (refSlug && id) trackReferralClick(refSlug, id, "event", "booking");
+    if (refSlug && id) {
+      trackReferralClick(refSlug, id, "event", "booking");
+    }
   }, [id]);
 
   const fetchEvent = async () => {
@@ -58,24 +80,34 @@ const EventDetail = () => {
       let { data, error } = await supabase.from("trips").select("*").eq("id", id).eq("type", "event").single();
       if (error && id.length === 8) {
         const { data: prefixData, error: prefixError } = await supabase.from("trips").select("*").ilike("id", `${id}%`).eq("type", "event").single();
-        if (!prefixError) { data = prefixData; error = null; }
+        if (!prefixError) {
+          data = prefixData;
+          error = null;
+        }
       }
       if (error) throw error;
-      setEvent(data);
+      setEvent(data as any);
     } catch (error) {
+      console.error("Error fetching event:", error);
       toast({ title: "Event not found", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = () => id && handleSaveItem(id, "event");
+  const handleSave = () => {
+    if (id) handleSaveItem(id, "event");
+  };
 
   const handleCopyLink = async () => {
     if (!event) return;
     const refLink = await generateReferralLink(event.id, "event", event.id);
-    await navigator.clipboard.writeText(refLink);
-    toast({ title: "Link Copied!", description: "Share this event with others!" });
+    try {
+      await navigator.clipboard.writeText(refLink);
+      toast({ title: "Link Copied!", description: user ? "Share to earn commission!" : "Share this event!" });
+    } catch (error) {
+      toast({ title: "Copy Failed", variant: "destructive" });
+    }
   };
 
   const handleShare = async () => {
@@ -83,16 +115,20 @@ const EventDetail = () => {
     const refLink = await generateReferralLink(event.id, "event", event.id);
     if (navigator.share) {
       try {
-        await navigator.share({ title: event.name, url: refLink });
-      } catch (e) { console.log(e); }
+        await navigator.share({ title: event.name, text: `Check out: ${event.name}`, url: refLink });
+      } catch (error) { console.log("Share failed", error); }
     } else {
-      handleCopyLink();
+      await handleCopyLink();
     }
   };
 
   const openInMaps = () => {
-    const query = encodeURIComponent(`${event?.name}, ${event?.location}`);
-    window.open(event?.map_link || `https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+    if (event?.map_link) {
+      window.open(event.map_link, "_blank");
+    } else {
+      const query = encodeURIComponent(`${event?.name}, ${event?.location}, ${event?.country}`);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+    }
   };
 
   const { submitBooking } = useBookingSubmit();
@@ -101,202 +137,174 @@ const EventDetail = () => {
     if (!event) return;
     setIsProcessing(true);
     try {
-      const totalAmount = (data.num_adults * event.price) + (data.num_children * event.price_child);
+      const totalPeople = data.num_adults + data.num_children;
+      const totalAmount = data.num_adults * event.price + 
+                           data.num_children * event.price_child + 
+                           data.selectedActivities.reduce((sum, a) => sum + a.price * a.numberOfPeople, 0);
+
       await submitBooking({
         itemId: event.id,
         itemName: event.name,
         bookingType: 'event',
         totalAmount,
-        slotsBooked: data.num_adults + data.num_children,
+        slotsBooked: totalPeople,
         visitDate: event.date,
         guestName: data.guest_name,
         guestEmail: data.guest_email,
         guestPhone: data.guest_phone,
         hostId: event.created_by,
-        bookingDetails: { ...data, event_name: event.name }
+        bookingDetails: {
+          event_name: event.name,
+          date: event.date,
+          adults: data.num_adults,
+          children: data.num_children,
+          activities: data.selectedActivities
+        }
       });
-      setIsCompleted(true);
-      setShowBooking(false);
-      toast({ title: "Success!", description: "Booking confirmed." });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
+
       setIsProcessing(false);
+      setIsCompleted(true);
+      toast({ title: "Booking Submitted" });
+    } catch (error: any) {
+      setIsProcessing(false);
+      toast({ title: "Booking failed", variant: "destructive" });
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-50 animate-pulse" />;
+  if (loading) return <div className="min-h-screen bg-background pb-20"><MobileBottomBar /></div>;
+  if (!event) return <div className="min-h-screen flex items-center justify-center"><p>Event not found</p><MobileBottomBar /></div>;
 
-  const allImages = [event?.image_url, ...(event?.images || [])].filter(Boolean);
+  const allImages = [event.image_url, ...(event.images || [])].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-[#fafafa] pb-24 md:pb-10">
-      <Header className="hidden md:block" />
+    <div className="min-h-screen bg-background pb-32 md:pb-10">
+      <Header className="hidden md:block" /> 
+      
+      {/* HERO SECTION */}
+      <div className="relative w-full overflow-hidden md:max-w-6xl md:mx-auto">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate(-1)} 
+          className="absolute top-4 left-4 z-30 h-10 w-10 p-0 rounded-full text-white"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} 
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
 
-      {/* Hero Section */}
-      <div className="relative w-full overflow-hidden shadow-xl">
-        {/* Navigation Controls */}
-        <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-center max-w-6xl mx-auto px-4 md:px-8">
-          <Button 
-            onClick={() => navigate(-1)} 
-            className="rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white border-none h-10 w-10 p-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <Button 
-            onClick={handleSave} 
-            className={`rounded-full backdrop-blur-md border-none h-10 w-10 p-0 shadow-lg transition-transform active:scale-95 ${isSaved ? "bg-red-500 text-white" : "bg-black/40 text-white"}`}
-          >
-            <Heart className={`h-5 w-5 ${isSaved ? "fill-white" : ""}`} />
-          </Button>
-        </div>
-
+        <Button 
+          variant="ghost" 
+          onClick={handleSave} 
+          className={`absolute top-4 right-4 z-30 h-10 w-10 p-0 rounded-full text-white ${isSaved ? "bg-red-500" : ""}`}
+          style={{ backgroundColor: isSaved ? RED_COLOR : 'rgba(0, 0, 0, 0.5)' }} 
+        >
+          <Heart className={`h-5 w-5 ${isSaved ? "fill-white" : ""}`} />
+        </Button>
+        
         <Carousel 
-          plugins={[Autoplay({ delay: 4000 })]}
+          opts={{ loop: true }} 
+          plugins={[Autoplay({ delay: 3000 })]}
           className="w-full"
           setApi={(api) => api && api.on("select", () => setCurrentImageIndex(api.selectedScrollSnap()))}
         >
           <CarouselContent>
             {allImages.map((img, idx) => (
               <CarouselItem key={idx}>
-                <div className="relative h-[45vh] md:h-[60vh] w-full">
-                  <img src={img} alt={event.name} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                </div>
+                <img src={img} alt={event.name} className="w-full h-[42vh] md:h-96 lg:h-[500px] object-cover" />
               </CarouselItem>
             ))}
           </CarouselContent>
         </Carousel>
 
-        {/* Floating Title Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 text-white max-w-6xl mx-auto">
-          <Badge className="mb-2 bg-[#FF7F50] hover:bg-[#FF7F50] border-none uppercase tracking-wider text-[10px]">
-            Upcoming Event
-          </Badge>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight uppercase drop-shadow-md">
-            {event.name}
-          </h1>
-          <div className="flex items-center gap-2 mt-2 opacity-90">
-            <MapPin className="h-4 w-4" />
-            <span className="text-sm font-medium">{event.place || event.location}</span>
-          </div>
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-20 text-white bg-gradient-to-t from-black/80 to-transparent">
+          <h1 className="text-2xl font-bold uppercase">{event.name}</h1> 
         </div>
       </div>
-
-      <main className="container px-4 max-w-6xl mx-auto -mt-6 relative z-40">
-        <div className="grid lg:grid-cols-[1.8fr,1fr] gap-8">
+      
+      <main className="container px-4 max-w-6xl mx-auto mt-4">
+        <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
           
-          {/* Left Column: Details */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: COLORS.TEAL }}>
-                About the Event
-              </h2>
-              <p className="text-slate-600 leading-relaxed">
-                {event.description || "No description provided for this event."}
-              </p>
+          {/* RIGHT COLUMN (Desktop Only Sidebar) */}
+          <div className="hidden lg:block space-y-4 sticky top-20 h-fit">
+            <div className="p-4 border bg-card rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" style={{ color: TEAL_COLOR }} />
+                <p className="font-semibold">{new Date(event.date).toLocaleDateString()}</p>
+              </div>
+              <div className="border-t pt-3">
+                <p className="text-2xl font-bold" style={{ color: TEAL_COLOR }}>KSh {event.price}</p>
+                <p className="text-sm text-muted-foreground">Available: {event.available_tickets}</p>
+              </div>
+              <Button 
+                className="w-full text-white" 
+                style={{ backgroundColor: TEAL_COLOR }}
+                onClick={() => { setIsCompleted(false); setShowBooking(true); }}
+                disabled={event.available_tickets <= 0}
+              >
+                {event.available_tickets <= 0 ? "Sold Out" : "Book Now"}
+              </Button>
             </div>
+          </div>
+          
+          {/* LEFT COLUMN */}
+          <div className="w-full space-y-6">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="h-4 w-4" style={{ color: TEAL_COLOR }} />
+              <span className="text-sm">{event.location}, {event.country}</span>
+            </div>
+            
+            {event.description && (
+              <div className="bg-card border rounded-lg p-4">
+                <h2 className="font-semibold mb-2">About This Event</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">{event.description}</p>
+              </div>
+            )}
 
-            {event.activities?.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h2 className="text-lg font-bold mb-4" style={{ color: COLORS.TEAL }}>Included Highlights</h2>
-                <div className="flex flex-wrap gap-3">
-                  {event.activities.map((act: any, i: number) => (
-                    <div key={i} className="flex items-center gap-2 bg-[#F0E68C]/20 px-4 py-2 rounded-xl border border-[#F0E68C]">
-                      <CheckCircle2 className="h-4 w-4 text-[#857F3E]" />
-                      <span className="text-sm font-semibold text-[#857F3E]">{act.name}</span>
+            {event.activities && event.activities.length > 0 && (
+              <div className="p-4 border bg-card rounded-lg">
+                <h2 className="font-semibold mb-4">Included Activities</h2>
+                <div className="flex flex-wrap gap-2">
+                  {event.activities.map((activity, idx) => (
+                    <div key={idx} className="px-3 py-1 text-white rounded-full text-xs" style={{ backgroundColor: ORANGE_COLOR }}>
+                      {activity.name} • {activity.price > 0 ? `KSh ${activity.price}` : 'Free'}
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            
-            <ReviewSection itemId={event.id} itemType="event" />
-          </div>
 
-          {/* Right Column: Booking Card */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl p-6 shadow-xl border-t-4 sticky top-24" style={{ borderColor: COLORS.CORAL }}>
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Starts from</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black" style={{ color: COLORS.TEAL }}>KSh {event.price}</span>
-                    <span className="text-slate-400 text-sm">/ adult</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 p-2 rounded-lg text-center">
-                  <Calendar className="h-5 w-5 mx-auto mb-1" style={{ color: COLORS.CORAL }} />
-                  <span className="text-[10px] font-bold block text-slate-500 uppercase">
-                    {new Date(event.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-sm py-2 border-b border-slate-50">
-                  <span className="text-slate-500">Child Price</span>
-                  <span className="font-bold">KSh {event.price_child || 0}</span>
-                </div>
-                <div className="flex justify-between text-sm py-2 border-b border-slate-50">
-                  <span className="text-slate-500">Availability</span>
-                  <span className={`font-bold ${event.available_tickets < 5 ? "text-red-500" : "text-green-600"}`}>
-                    {event.available_tickets} slots left
-                  </span>
-                </div>
-              </div>
-
-              <Button 
-                onClick={() => setShowBooking(true)}
-                disabled={event.available_tickets <= 0}
-                className="w-full py-6 text-lg font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 border-none text-white"
-                style={{ backgroundColor: COLORS.CORAL }}
-              >
-                {event.available_tickets <= 0 ? "Fully Booked" : "Reserve Your Spot"}
-              </Button>
-              
-              <p className="text-[10px] text-center text-slate-400 mt-4 uppercase font-semibold">
-                Instant confirmation • Secure payment
-              </p>
-            </div>
-
-            {/* Quick Actions Card */}
-            <div className="grid grid-cols-3 gap-2">
-              <Button 
-                variant="outline" 
-                onClick={openInMaps}
-                className="flex-col h-auto py-3 rounded-xl border-[#F0E68C] bg-[#F0E68C]/10 text-[#857F3E] hover:bg-[#F0E68C]/30"
-              >
-                <MapPin className="h-5 w-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase">Map</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleCopyLink}
-                className="flex-col h-auto py-3 rounded-xl border-[#F0E68C] bg-[#F0E68C]/10 text-[#857F3E] hover:bg-[#F0E68C]/30"
-              >
-                <Copy className="h-5 w-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase">Copy</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleShare}
-                className="flex-col h-auto py-3 rounded-xl border-[#F0E68C] bg-[#F0E68C]/10 text-[#857F3E] hover:bg-[#F0E68C]/30"
-              >
-                <Share2 className="h-5 w-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase">Share</span>
-              </Button>
+            <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={openInMaps} className="flex-1" style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}><MapPin className="h-4 w-4 mr-2" /> Map</Button>
+                <Button variant="outline" size="sm" onClick={handleShare} className="flex-1" style={{ borderColor: TEAL_COLOR, color: TEAL_COLOR }}><Share2 className="h-4 w-4 mr-2" /> Share</Button>
             </div>
           </div>
         </div>
 
-        <div className="mt-12">
-           <SimilarItems currentItemId={event.id} itemType="trip" location={event.location} country={event.country} />
+        <div className="mt-8">
+          <ReviewSection itemId={event.id} itemType="event" />
+          <SimilarItems currentItemId={event.id} itemType="trip" location={event.location} country={event.country} />
         </div>
       </main>
 
+      {/* FLOATING MOBILE BOTTOM BAR */}
+      <div className="fixed bottom-[64px] left-0 right-0 z-40 bg-background/80 backdrop-blur-lg border-t p-4 lg:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground leading-none mb-1">Total from</p>
+            <p className="text-xl font-bold leading-none" style={{ color: TEAL_COLOR }}>KSh {event.price}</p>
+          </div>
+          <Button 
+            className="flex-1 h-12 text-white font-bold rounded-xl" 
+            style={{ backgroundColor: TEAL_COLOR }}
+            onClick={() => { setIsCompleted(false); setShowBooking(true); }}
+            disabled={event.available_tickets <= 0}
+          >
+            {event.available_tickets <= 0 ? "Sold Out" : "Book Now"}
+          </Button>
+        </div>
+      </div>
+
       <Dialog open={showBooking} onOpenChange={setShowBooking}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-3xl border-none">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <MultiStepBooking 
             onSubmit={handleBookingSubmit} 
             activities={event.activities || []} 
