@@ -11,13 +11,23 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, MapPin, DollarSign, Users, Upload, Navigation } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Users, Upload, Navigation, ArrowLeft, Camera, CheckCircle2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CountrySelector } from "@/components/creation/CountrySelector";
 import { PageHeader } from "@/components/creation/PageHeader";
 import { PhoneInput } from "@/components/creation/PhoneInput";
 import { approvalStatusSchema } from "@/lib/validation";
 import { EmailVerification } from "@/components/creation/EmailVerification";
+
+const COLORS = {
+  TEAL: "#008080",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
+  KHAKI_DARK: "#857F3E",
+  RED: "#FF0000",
+  SOFT_GRAY: "#F8F9FA"
+};
 
 const CreateTripEvent = () => {
   const navigate = useNavigate();
@@ -46,7 +56,6 @@ const CreateTripEvent = () => {
   const [uploading, setUploading] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
-  // Fetch user profile and set country and email
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
@@ -67,11 +76,9 @@ const CreateTripEvent = () => {
         }
       }
     };
-    
     fetchUserProfile();
   }, [user]);
 
-  // Auto-fill location with geolocation
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -80,14 +87,13 @@ const CreateTripEvent = () => {
           const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
           setFormData(prev => ({ ...prev, map_link: mapUrl }));
         },
-        () => {} // Silent fail
+        () => {}
       );
     }
   }, []);
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files) return;
-    
     const newFiles = Array.from(files).slice(0, 5 - galleryImages.length);
     setGalleryImages(prev => [...prev, ...newFiles].slice(0, 5));
   };
@@ -103,67 +109,24 @@ const CreateTripEvent = () => {
           const { latitude, longitude } = position.coords;
           const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
           setFormData({...formData, map_link: mapUrl});
-          toast({
-            title: "Location Added",
-            description: "Your current location has been added to the map link.",
-          });
+          toast({ title: "Location Added", description: "Current location pinned." });
         },
-        (error) => {
-          toast({
-            title: "Location Error",
-            description: "Unable to get your location. Please add the link manually.",
-            variant: "destructive"
-          });
+        () => {
+          toast({ title: "Error", description: "Unable to get location.", variant: "destructive" });
         }
       );
-    } else {
-      toast({
-        title: "Not Supported",
-        description: "Geolocation is not supported by your browser.",
-        variant: "destructive"
-      });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to create content.",
-        variant: "destructive"
-      });
-      navigate("/auth");
+    if (!user) { navigate("/auth"); return; }
+    if (!formData.phone_number || !formData.map_link) {
+      toast({ title: "Missing Info", description: "Phone and Location are required.", variant: "destructive" });
       return;
     }
-
-    // Validate required fields
-    if (!formData.phone_number) {
-      toast({
-        title: "Phone Number Required",
-        description: "Please provide a contact phone number",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!formData.map_link) {
-      toast({
-        title: "Location Required",
-        description: "Please click the button to access your current location",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Verify email if provided
     if (formData.email && !emailVerified) {
-      toast({
-        title: "Email Verification Required",
-        description: "Please verify your email address before submitting",
-        variant: "destructive"
-      });
+      toast({ title: "Verify Email", description: "Please verify your email address.", variant: "destructive" });
       return;
     }
 
@@ -171,65 +134,32 @@ const CreateTripEvent = () => {
     setUploading(true);
 
     try {
-      // Upload gallery images
       const uploadedUrls: string[] = [];
       for (const file of galleryImages) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Math.random()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('user-content-images')
-          .upload(fileName, file);
-
+        const fileName = `${user.id}/${Math.random()}.${file.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage.from('user-content-images').upload(fileName, file);
         if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('user-content-images')
-          .getPublicUrl(fileName);
-          
+        const { data: { publicUrl } } = supabase.storage.from('user-content-images').getPublicUrl(fileName);
         uploadedUrls.push(publicUrl);
       }
 
-      const table = "trips";
-      const insertData: any = {
-        name: formData.name,
-        description: formData.description,
-        location: formData.location,
-        place: formData.place,
-        country: formData.country,
+      const { error } = await supabase.from("trips").insert([{
+        ...formData,
         date: formData.is_custom_date ? new Date().toISOString().split('T')[0] : formData.date,
-        is_custom_date: formData.is_custom_date,
-        type: formData.type,
         image_url: uploadedUrls[0] || "",
         gallery_images: uploadedUrls,
         price: parseFloat(formData.price),
         price_child: parseFloat(formData.price_child) || 0,
         available_tickets: parseInt(formData.available_tickets) || 0,
-        email: formData.email || null,
-        phone_number: formData.phone_number || null,
-        map_link: formData.map_link || null,
         created_by: user.id,
         approval_status: approvalStatusSchema.parse("pending")
-      };
-
-      const { error } = await supabase
-        .from(table)
-        .insert([insertData]);
+      }]);
 
       if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: `Your tour has been submitted for approval.`,
-      });
-
+      toast({ title: "Success!", description: "Submitted for approval." });
       navigate("/become-host");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
       setUploading(false);
@@ -237,61 +167,85 @@ const CreateTripEvent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header />
       
       <main className="container px-4 py-8 max-w-4xl mx-auto">
-        <PageHeader 
-          title="Create Tour" 
-          backgroundImage="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200"
-        />
-        <h1 className="md:hidden text-3xl font-bold mb-8">Create Trip,event or a sport activities</h1>
+        <div className="relative rounded-[40px] overflow-hidden mb-10 shadow-2xl h-[250px] md:h-[350px]">
+          <img 
+            src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200" 
+            className="w-full h-full object-cover" 
+            alt="Header"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+            <Button 
+                onClick={() => navigate(-1)} 
+                className="absolute top-6 left-6 rounded-full bg-white/20 backdrop-blur-md border-none w-10 h-10 p-0 hover:bg-white/40 text-white"
+            >
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <p className="text-[#FF7F50] font-black uppercase tracking-[0.3em] text-[10px] mb-2">Host Center</p>
+            <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-tight">
+              Create <span style={{ color: COLORS.TEAL }}>New</span> Experience
+            </h1>
+          </div>
+        </div>
         
-        <Card className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Trip/Event Type Selector */}
-            <div className="space-y-2">
-              <Label>Listing Type </Label>
-              <div className="flex gap-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Listing Type Selection */}
+          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+            <h2 className="text-xs font-black uppercase tracking-widest mb-6" style={{ color: COLORS.TEAL }}>Select Listing Type</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { id: 'trip', label: 'Trip / Tour', sub: 'Flexible or fixed multi-day adventures' },
+                { id: 'event', label: 'Event / Sport', sub: 'Fixed date single sessions or matches' }
+              ].map((type) => (
+                <label 
+                  key={type.id}
+                  className={`relative p-6 rounded-[24px] border-2 cursor-pointer transition-all ${
+                    formData.type === type.id 
+                    ? 'border-[#008080] bg-[#008080]/5' 
+                    : 'border-slate-100 bg-slate-50 hover:bg-white'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="type"
-                    value="trip"
-                    checked={formData.type === "trip"}
-                    onChange={(e) => setFormData({...formData, type: e.target.value as "trip" | "event"})}
-                    className="w-4 h-4"
+                    value={type.id}
+                    className="hidden"
+                    onChange={(e) => setFormData({...formData, type: e.target.value as any})}
                   />
-                  <span>Trip (Flexible Dates or fixed)</span>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className={`block font-black uppercase tracking-tight text-sm ${formData.type === type.id ? 'text-[#008080]' : 'text-slate-600'}`}>
+                        {type.label}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 block leading-tight">{type.sub}</span>
+                    </div>
+                    {formData.type === type.id && <CheckCircle2 className="h-5 w-5 text-[#008080]" />}
+                  </div>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="type"
-                    value="event"
-                    checked={formData.type === "event"}
-                    onChange={(e) => setFormData({...formData, type: e.target.value as "trip" | "event", is_custom_date: false})}
-                    className="w-4 h-4"
-                  />
-                  <span>Event or Sports (Fixed Date)</span>
-                </label>
-              </div>
+              ))}
             </div>
+          </div>
 
+          {/* Core Details */}
+          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6">
+            <h2 className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: COLORS.TEAL }}>Experience Details</h2>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Name </Label>
-                <Input
-                  id="name"
+                <CustomLabel>Experience Name</CustomLabel>
+                <StyledInput
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Enter name"
+                  placeholder="e.g. Hiking in the Clouds"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="country">Country </Label>
+                <CustomLabel>Country</CustomLabel>
                 <CountrySelector
                   value={formData.country}
                   onChange={(value) => setFormData({...formData, country: value})}
@@ -299,119 +253,114 @@ const CreateTripEvent = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="place">Place </Label>
+                <CustomLabel>Region / Place</CustomLabel>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="place"
+                  <MapPin className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                  <StyledInput
+                    className="pl-11"
                     required
-                    className="pl-10"
                     value={formData.place}
                     onChange={(e) => setFormData({...formData, place: e.target.value})}
-                    placeholder="Enter place"
+                    placeholder="e.g. Mt. Kenya Region"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location Details</Label>
-                <Input
-                  id="location"
+                <CustomLabel>Specific Location</CustomLabel>
+                <StyledInput
                   required
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  placeholder="Enter location details"
+                  placeholder="e.g. Nanyuki Main Gate"
                 />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="date">Date {!formData.is_custom_date && "*"}</Label>
-                <div className="space-y-3">
-                  {formData.type === "trip" && (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="custom_date"
-                        checked={formData.is_custom_date}
-                        onCheckedChange={(checked) => setFormData({...formData, is_custom_date: checked as boolean, date: checked ? "" : formData.date})}
-                      />
-                      <label
-                        htmlFor="custom_date"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Custom tour - Available for 30 days from approval
-                      </label>
-                    </div>
-                  )}
-                  {!formData.is_custom_date && (
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="date"
-                        type="date"
-                        required
-                        min={new Date().toISOString().split('T')[0]}
-                        className="pl-10"
-                        value={formData.date}
-                        onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      />
-                    </div>
-                  )}
-                  {formData.type === "event" && formData.is_custom_date && (
-                    <p className="text-sm text-destructive">Events must have a fixed date</p>
-                  )}
+            <div className="space-y-4 pt-4 border-t border-slate-50">
+              <CustomLabel>Date Settings</CustomLabel>
+              {formData.type === "trip" && (
+                <div className="flex items-center space-x-3 bg-slate-50 p-4 rounded-2xl">
+                  <Checkbox 
+                    id="custom_date"
+                    checked={formData.is_custom_date}
+                    onCheckedChange={(checked) => setFormData({...formData, is_custom_date: checked as boolean})}
+                  />
+                  <label htmlFor="custom_date" className="text-[11px] font-black uppercase tracking-tight text-slate-500 cursor-pointer">
+                    Custom tour - Open availability for 30 days
+                  </label>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="price">Price (Adult)</Label>
+              )}
+              
+              {!formData.is_custom_date && (
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
+                  <Calendar className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                  <StyledInput
+                    type="date"
                     required
-                    className="pl-10"
+                    className="pl-11"
+                    min={new Date().toISOString().split('T')[0]}
+                    value={formData.date}
+                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Pricing and Capacity */}
+          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+            <h2 className="text-xs font-black uppercase tracking-widest mb-6" style={{ color: COLORS.TEAL }}>Pricing & Logistics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <CustomLabel>Adult Price (KSh)</CustomLabel>
+                <div className="relative">
+                  <DollarSign className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                  <StyledInput
+                    type="number"
+                    className="pl-11"
+                    required
                     value={formData.price}
                     onChange={(e) => setFormData({...formData, price: e.target.value})}
-                    placeholder="0.00"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="price_child">Price (Child) </Label>
+                <CustomLabel>Child Price (KSh)</CustomLabel>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="price_child"
+                  <DollarSign className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                  <StyledInput
                     type="number"
-                    step="0.01"
+                    className="pl-11"
                     required
-                    className="pl-10"
                     value={formData.price_child}
                     onChange={(e) => setFormData({...formData, price_child: e.target.value})}
-                    placeholder="0.00"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="available_tickets">Available Tickets </Label>
+                <CustomLabel>Max Slots</CustomLabel>
                 <div className="relative">
-                  <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="available_tickets"
+                  <Users className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                  <StyledInput
                     type="number"
+                    className="pl-11"
                     required
-                    className="pl-10"
                     value={formData.available_tickets}
                     onChange={(e) => setFormData({...formData, available_tickets: e.target.value})}
-                    placeholder="0"
                   />
                 </div>
               </div>
+            </div>
+          </div>
 
+          {/* Contact & Map */}
+          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6">
+            <h2 className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: COLORS.TEAL }}>Host Contact & Location</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <EmailVerification
                 email={formData.email}
                 onEmailChange={(email) => setFormData({...formData, email})}
@@ -420,99 +369,101 @@ const CreateTripEvent = () => {
               />
 
               <div className="space-y-2">
-                <Label htmlFor="phone_number">Contact Phone </Label>
+                <CustomLabel>Contact Phone</CustomLabel>
                 <PhoneInput
                   value={formData.phone_number}
                   onChange={(value) => setFormData({...formData, phone_number: value})}
                   country={formData.country}
-                  placeholder="758800117"
+                  placeholder="712345678"
                 />
-                <p className="text-sm text-muted-foreground">Enter number without leading zero</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description </Label>
-              <Textarea
-                id="description"
-                required
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="Describe your tour..."
-                rows={5}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="map_link">Map Location Link </Label>
+              <CustomLabel>Map Link (GPS Point)</CustomLabel>
               <div className="flex gap-2">
-                <Input
-                  id="map_link"
-                  required
-                  disabled
+                <StyledInput
+                  className="bg-slate-50"
+                  readOnly
                   value={formData.map_link}
-                  placeholder="Click button to access your current location"
-                  className="cursor-not-allowed"
+                  placeholder="Tap the icon to pin your location"
                 />
-                <Button type="button" variant="outline" onClick={getCurrentLocation}>
-                  <Navigation className="h-4 w-4" />
+                <Button 
+                  type="button" 
+                  onClick={getCurrentLocation}
+                  className="h-[52px] w-[52px] rounded-2xl bg-[#008080] hover:bg-[#008080]/90 shadow-lg"
+                >
+                  <Navigation className="h-5 w-5 text-white" />
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">Use the button to access your current location</p>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Gallery Images (Max 5) </Label>
-              <Label htmlFor="gallery-images-trip" className="cursor-pointer">
-                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-accent/50 transition-colors">
-                  <div className="mx-auto h-12 w-12 text-muted-foreground mb-2">📁</div>
-                  <p className="text-sm font-medium">Click to upload photos</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {galleryImages.length}/5 images uploaded
-                  </p>
+          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+            <CustomLabel className="mb-4">Experience Description</CustomLabel>
+            <Textarea
+              className="rounded-[24px] border-slate-100 bg-slate-50 p-6 min-h-[150px] focus:ring-[#008080] text-sm"
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="Tell travelers what makes this experience special..."
+            />
+          </div>
+
+          {/* Gallery Upload */}
+          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+            <h2 className="text-xs font-black uppercase tracking-widest mb-6" style={{ color: COLORS.TEAL }}>Gallery (Max 5)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {galleryImages.map((file, index) => (
+                <div key={index} className="relative group aspect-square rounded-[20px] overflow-hidden border-2 border-slate-100">
+                  <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="Preview" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
                 </div>
-              </Label>
-              <Input
-                id="gallery-images-trip"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => handleImageUpload(e.target.files)}
-                disabled={galleryImages.length >= 5}
-                className="hidden"
-              />
-              {galleryImages.length > 0 && (
-                <div className="grid grid-cols-5 gap-2">
-                  {galleryImages.map((file, index) => (
-                    <div key={index} className="relative">
-                      <img 
-                        src={URL.createObjectURL(file)} 
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-20 object-cover rounded"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-0 right-0 h-6 w-6 p-0"
-                        onClick={() => removeImage(index)}
-                      >×</Button>
-                    </div>
-                  ))}
-                </div>
+              ))}
+              
+              {galleryImages.length < 5 && (
+                <label className="aspect-square flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors">
+                  <Camera className="h-6 w-6 text-slate-400 mb-2" />
+                  <span className="text-[10px] font-black text-slate-400 uppercase">Add Photo</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e.target.files)}
+                  />
+                </label>
               )}
             </div>
+          </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={loading || uploading || galleryImages.length === 0} className="flex-1">
-                {uploading ? "Uploading Images..." : loading ? "Submitting..." : "Submit for Approval"}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
+          <div className="flex flex-col md:flex-row gap-4">
+            <Button 
+              type="submit" 
+              disabled={loading || uploading || galleryImages.length === 0}
+              className="flex-1 py-8 rounded-[24px] text-sm font-black uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 border-none"
+              style={{ 
+                background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
+              }}
+            >
+              {uploading ? "Uploading..." : loading ? "Processing..." : "Submit Experience"}
+            </Button>
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={() => navigate(-1)}
+              className="py-8 rounded-[24px] uppercase font-black text-slate-400 tracking-widest"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
       </main>
 
       <Footer />
@@ -520,5 +471,19 @@ const CreateTripEvent = () => {
     </div>
   );
 };
+
+// Sub-components for styling consistency
+const CustomLabel = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <Label className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ${className}`}>
+    {children}
+  </Label>
+);
+
+const StyledInput = (props: any) => (
+  <Input 
+    {...props} 
+    className={`h-[52px] rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-[#008080] transition-all font-bold text-sm ${props.className}`}
+  />
+);
 
 export default CreateTripEvent;
