@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
-import { MapPin, Share2, Heart, Calendar, Copy, CheckCircle2, Star, ArrowLeft } from "lucide-react";
+import { MapPin, Share2, Heart, Calendar, Copy, CheckCircle2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -114,24 +114,6 @@ const EventDetail = () => {
 
   const allImages = [event?.image_url, ...(event?.images || [])].filter(Boolean);
 
-  // Updated Star Rating Summary Helper
-  const RatingSummary = () => (
-    <div className="flex items-center gap-3">
-      <div className="flex items-center bg-yellow-400/10 px-3 py-1.5 rounded-xl border border-yellow-200/50">
-        <Star className="h-4 w-4 fill-yellow-500 text-yellow-500 mr-1.5" />
-        <span className="text-lg font-black text-slate-800">
-          {event.average_rating ? event.average_rating.toFixed(1) : "New"}
-        </span>
-      </div>
-      <div className="flex flex-col justify-center">
-        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Average Rating</span>
-        <span className="text-[11px] text-slate-700 font-black uppercase">
-          ({event.total_reviews || 0} Ratings)
-        </span>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header className="hidden md:block" />
@@ -169,6 +151,12 @@ const EventDetail = () => {
             <MapPin className="h-4 w-4 text-[#FF7F50]" />
             <span className="text-sm font-bold uppercase tracking-wider">{event.location}</span>
           </div>
+          {/* Rating logic added here in hero for visibility */}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-sm font-bold">
+              {event.average_rating > 0 ? `${event.average_rating.toFixed(1)} ★` : `${event.total_reviews || 0} Reviews`}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -176,14 +164,9 @@ const EventDetail = () => {
         <div className="grid lg:grid-cols-[1.7fr,1fr] gap-6">
           
           <div className="space-y-4">
-            {/* About Card */}
+            {/* About Card - Rating Summary Removed */}
             <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>About</h2>
-                <div className="lg:hidden">
-                    <RatingSummary />
-                </div>
-              </div>
+              <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>About</h2>
               <p className="text-slate-500 text-sm leading-relaxed">{event.description}</p>
             </div>
 
@@ -202,8 +185,7 @@ const EventDetail = () => {
               </div>
             )}
 
-            {/* Desktop Ratings - Hidden on Mobile */}
-            <div className="hidden lg:block">
+            <div className="block">
               <ReviewSection itemId={event.id} itemType="event" />
             </div>
           </div>
@@ -212,16 +194,7 @@ const EventDetail = () => {
           <div className="space-y-4">
             <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100 lg:sticky lg:top-24">
               
-              {/* Guest Experience Rating Box */}
-              <div className="mb-8 p-5 bg-slate-50 rounded-[24px] border border-slate-100">
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Guest Experience</p>
-                <div className="flex justify-between items-center">
-                  <RatingSummary />
-                  <Badge variant="secondary" className="bg-white text-[9px] font-black uppercase border-slate-200 text-slate-500">
-                    Verified
-                  </Badge>
-                </div>
-              </div>
+              {/* Guest Experience/Verified Sections Removed */}
 
               <div className="flex justify-between items-end mb-8">
                 <div>
@@ -268,11 +241,6 @@ const EventDetail = () => {
                 <UtilityButton icon={<MapPin className="h-5 w-5" />} label="Map" onClick={openInMaps} />
                 <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={handleCopyLink} />
                 <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={handleShare} />
-              </div>
-
-              {/* Mobile Ratings Section */}
-              <div className="lg:hidden mt-10 pt-10 border-t border-slate-100">
-                <ReviewSection itemId={event.id} itemType="event" />
               </div>
             </div>
           </div>
