@@ -7,15 +7,26 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, Users, CalendarClock, ChevronDown, ChevronUp, WifiOff } from "lucide-react";
+import { Calendar, DollarSign, Users, CalendarClock, ChevronDown, ChevronUp, WifiOff, MapPin, CheckCircle2, XCircle } from "lucide-react";
 import { RescheduleBookingDialog } from "@/components/booking/RescheduleBookingDialog";
 import { BookingDownloadButton } from "@/components/booking/BookingDownloadButton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useOfflineBookings } from "@/hooks/useOfflineBookings";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+const COLORS = {
+  TEAL: "#008080",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
+  KHAKI_DARK: "#857F3E",
+  RED: "#FF0000",
+  SOFT_GRAY: "#F8F9FA"
+};
+
 interface Booking {
   id: string;
   booking_type: string;
@@ -35,10 +46,12 @@ interface Booking {
   pendingPaymentId?: string;
   result_code?: string | null;
 }
+
 interface ItemDetails {
   name: string;
   type: string;
 }
+
 const Bookings = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -51,31 +64,26 @@ const Bookings = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
+
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
+    if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
+
   useEffect(() => {
     if (user) {
       if (isOnline) {
         fetchBookings();
         const channel = supabase.channel('payments-updates').on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'payments',
-          filter: `user_id=eq.${user.id}`
+          event: '*', schema: 'public', table: 'payments', filter: `user_id=eq.${user.id}`
         }, () => fetchBookings()).subscribe();
-        return () => {
-          supabase.removeChannel(channel);
-        };
+        return () => { supabase.removeChannel(channel); };
       } else {
-        // Use cached bookings when offline
         setBookings(cachedBookings as Booking[]);
         setLoading(false);
       }
     }
   }, [user, isOnline]);
+
   const fetchBookings = async () => {
     try {
       const { data: confirmedBookings, error: bookingsError } = await supabase
@@ -89,17 +97,14 @@ const Bookings = () => {
       if (bookingsError) throw bookingsError;
       setBookings(confirmedBookings || []);
       
-      // Cache bookings for offline use
       if (confirmedBookings) {
         cacheBookings(confirmedBookings.map(b => ({
-          ...b,
-          item_name: itemDetails[b.item_id]?.name
+          ...b, item_name: itemDetails[b.item_id]?.name
         })));
       }
 
       const itemIds = [...new Set((confirmedBookings || []).map(b => ({
-        id: b.item_id,
-        type: b.booking_type
+        id: b.item_id, type: b.booking_type
       })))];
       await fetchItemDetails(itemIds);
     } catch (error) {
@@ -108,60 +113,35 @@ const Bookings = () => {
       setLoading(false);
     }
   };
-  const fetchItemDetails = async (items: {
-    id: string;
-    type: string;
-  }[]) => {
+
+  const fetchItemDetails = async (items: { id: string; type: string; }[]) => {
     const details: Record<string, ItemDetails> = {};
     for (const item of items) {
       try {
         let data: any = null;
         if (item.type === "trip" || item.type === "event") {
-          const {
-            data: tripData
-          } = await supabase.from("trips").select("name").eq("id", item.id).maybeSingle();
+          const { data: tripData } = await supabase.from("trips").select("name").eq("id", item.id).maybeSingle();
           data = tripData;
         } else if (item.type === "hotel") {
-          const {
-            data: hotelData
-          } = await supabase.from("hotels").select("name").eq("id", item.id).maybeSingle();
+          const { data: hotelData } = await supabase.from("hotels").select("name").eq("id", item.id).maybeSingle();
           data = hotelData;
         } else if (item.type === "adventure" || item.type === "adventure_place") {
-          const {
-            data: adventureData
-          } = await supabase.from("adventure_places").select("name").eq("id", item.id).maybeSingle();
+          const { data: adventureData } = await supabase.from("adventure_places").select("name").eq("id", item.id).maybeSingle();
           data = adventureData;
         }
-        if (data) {
-          details[item.id] = {
-            name: data.name,
-            type: item.type
-          };
-        }
-      } catch (error) {
-        console.error("Error fetching item details:", error);
-      }
+        if (data) details[item.id] = { name: data.name, type: item.type };
+      } catch (error) { console.error("Error:", error); }
     }
     setItemDetails(details);
   };
-  const getStatusColor = (booking: Booking) => {
-    const {
-      payment_status
-    } = booking;
-    switch (payment_status) {
-      case "paid":
-      case "completed":
-        return "bg-green-500/10 text-green-500";
-      default:
-        return "bg-gray-500/10 text-gray-500";
-    }
-  };
+
   const canReschedule = (booking: Booking) => {
     if (!['paid', 'completed'].includes(booking.payment_status)) return false;
     if (booking.status === 'cancelled') return false;
     if (booking.booking_type === 'event') return false;
     return true;
   };
+
   const canCancel = (booking: Booking) => {
     if (!['paid', 'completed'].includes(booking.payment_status)) return false;
     if (booking.status === 'cancelled') return false;
@@ -173,14 +153,12 @@ const Bookings = () => {
     }
     return true;
   };
+
   const handleCancelBooking = async () => {
     if (!bookingToCancel) return;
     try {
-      const {
-        error
-      } = await supabase.from('bookings').update({
-        status: 'cancelled',
-        updated_at: new Date().toISOString()
+      const { error } = await supabase.from('bookings').update({
+        status: 'cancelled', updated_at: new Date().toISOString()
       }).eq('id', bookingToCancel.id);
       if (error) throw error;
       toast.success("Booking cancelled successfully");
@@ -192,198 +170,226 @@ const Bookings = () => {
       setBookingToCancel(null);
     }
   };
+
   const toggleExpanded = (bookingId: string) => {
     setExpandedBookings(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(bookingId)) {
-        newSet.delete(bookingId);
-      } else {
-        newSet.add(bookingId);
-      }
+      newSet.has(bookingId) ? newSet.delete(bookingId) : newSet.add(bookingId);
       return newSet;
     });
   };
+
   const getItemName = (booking: Booking) => {
     return itemDetails[booking.item_id]?.name || booking.booking_details?.trip_name || booking.booking_details?.hotel_name || booking.booking_details?.place_name || booking.booking_details?.event_name || 'Booking';
   };
+
   if (authLoading || loading) {
-    return <div className="min-h-screen flex flex-col">
+    return (
+      <div className="min-h-screen bg-[#F8F9FA]">
         <Header />
-        <main className="flex-1 container px-4 py-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-muted rounded w-48"></div>
-            {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted rounded"></div>)}
-          </div>
+        <main className="container px-4 py-8 animate-pulse space-y-6">
+          <div className="h-10 bg-slate-200 rounded-full w-48" />
+          {[1, 2, 3].map(i => <div key={i} className="h-40 bg-white rounded-[28px] border border-slate-100" />)}
         </main>
         <MobileBottomBar />
-      </div>;
+      </div>
+    );
   }
-  return <div className="min-h-screen flex flex-col bg-background">
+
+  return (
+    <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header />
       
-      <main className="flex-1 container px-4 py-8 pb-24 md:pb-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">My Bookings</h1>
-        <p className="text-muted-foreground mb-4">Your completed and confirmed bookings</p>
+      <main className="container px-4 py-12 max-w-4xl mx-auto">
+        <header className="mb-10">
+          <Button 
+            className="mb-4 bg-[#FF7F50] hover:bg-[#FF7F50] border-none px-4 py-1 h-auto uppercase font-black tracking-[0.15em] text-[10px] rounded-full shadow-lg"
+          >
+            Manage Trips
+          </Button>
+          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-900 drop-shadow-sm">
+            My Bookings
+          </h1>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Verified Reservations & History</p>
+        </header>
         
         {!isOnline && (
-          <Card className="mb-6 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
-            <div className="p-3 flex items-center gap-2 text-sm">
-              <WifiOff className="h-4 w-4 text-yellow-600" />
-              <span>You're offline. Showing cached bookings. Some features may be limited.</span>
-            </div>
-          </Card>
+          <div className="mb-8 p-4 rounded-2xl bg-[#F0E68C]/20 border border-[#F0E68C] flex items-center gap-3">
+            <WifiOff className="h-5 w-5 text-[#857F3E]" />
+            <span className="text-xs font-black uppercase tracking-tight text-[#857F3E]">
+              Offline Mode: Showing cached data
+            </span>
+          </div>
         )}
         
-        {bookings.length === 0 ? <Card className="p-12 text-center">
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-xl text-muted-foreground">No bookings yet</p>
-            <p className="text-sm text-muted-foreground mt-2">Your confirmed bookings will appear here</p>
-          </Card> : <div className="space-y-4">
+        {bookings.length === 0 ? (
+          <div className="bg-white rounded-[32px] p-16 text-center border border-slate-100 shadow-sm">
+            <Calendar className="h-16 w-16 text-slate-200 mx-auto mb-6" />
+            <h2 className="text-xl font-black uppercase tracking-tight text-slate-400">No active bookings</h2>
+          </div>
+        ) : (
+          <div className="space-y-6">
             {bookings.map(booking => {
-          const isExpanded = expandedBookings.has(booking.id);
-          const details = booking.booking_details as Record<string, any> | null;
-          return <Card key={booking.id} className="overflow-hidden">
+              const isExpanded = expandedBookings.has(booking.id);
+              const details = booking.booking_details as Record<string, any> | null;
+              
+              return (
+                <Card key={booking.id} className="overflow-hidden bg-white rounded-[28px] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
                   <Collapsible open={isExpanded} onOpenChange={() => toggleExpanded(booking.id)}>
-                    {/* Header - Always Visible */}
-                    <div className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <Badge variant="outline" className="capitalize">{booking.booking_type}</Badge>
-                            <Badge className={getStatusColor(booking)}>Paid</Badge>
-                            
+                    <div className="p-6 md:p-8">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-[#008080]/10 text-[#008080] border-none font-black uppercase text-[9px] tracking-widest px-3 py-1">
+                              {booking.booking_type}
+                            </Badge>
+                            <Badge className="bg-green-500/10 text-green-600 border-none font-black uppercase text-[9px] tracking-widest px-3 py-1">
+                              Confirmed
+                            </Badge>
                           </div>
 
-                          <h3 className="text-xl font-semibold">{getItemName(booking)}</h3>
+                          <h3 className="text-2xl font-black uppercase tracking-tight leading-tight text-slate-800">
+                            {getItemName(booking)}
+                          </h3>
                           
-                          <p className="text-xs text-muted-foreground font-mono">Booking ID: {booking.id}</p>
-
-                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                            {booking.visit_date && <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{format(new Date(booking.visit_date), 'PPP')}</span>
-                              </div>}
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              <span>{booking.slots_booked || 1} People</span>
+                          <div className="flex flex-wrap gap-4">
+                            {booking.visit_date && (
+                              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                                <Calendar className="h-3.5 w-3.5" style={{ color: COLORS.CORAL }} />
+                                <span className="text-[10px] font-black text-slate-600 uppercase">
+                                  {format(new Date(booking.visit_date), 'dd MMM yyyy')}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                              <Users className="h-3.5 w-3.5" style={{ color: COLORS.CORAL }} />
+                              <span className="text-[10px] font-black text-slate-600 uppercase">
+                                {booking.slots_booked || 1} Guests
+                              </span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-3 items-end">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-5 w-5 text-primary" />
-                            <span className="text-2xl font-bold">KES {booking.total_amount.toLocaleString()}</span>
+                        <div className="flex flex-col items-start md:items-end gap-4">
+                          <div className="text-right">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Paid</p>
+                            <div className="flex items-center gap-1">
+                              <span className="text-3xl font-black" style={{ color: COLORS.RED }}>KSh {booking.total_amount.toLocaleString()}</span>
+                            </div>
                           </div>
                           
                           <div className="flex flex-wrap gap-2">
                             <BookingDownloadButton booking={{
-                        bookingId: booking.id,
-                        guestName: booking.guest_name || 'Guest',
-                        guestEmail: booking.guest_email || '',
-                        guestPhone: booking.guest_phone || undefined,
-                        itemName: getItemName(booking),
-                        bookingType: booking.booking_type,
-                        visitDate: booking.visit_date || booking.created_at,
-                        totalAmount: booking.total_amount,
-                        slotsBooked: booking.slots_booked || 1,
-                        adults: details?.adults,
-                        children: details?.children,
-                        paymentStatus: booking.payment_status,
-                        facilities: details?.facilities,
-                        activities: details?.activities
-                      }} />
+                              bookingId: booking.id,
+                              guestName: booking.guest_name || 'Guest',
+                              guestEmail: booking.guest_email || '',
+                              itemName: getItemName(booking),
+                              bookingType: booking.booking_type,
+                              visitDate: booking.visit_date || booking.created_at,
+                              totalAmount: booking.total_amount,
+                              slotsBooked: booking.slots_booked || 1,
+                              adults: details?.adults,
+                              children: details?.children,
+                              paymentStatus: booking.payment_status,
+                            }} />
 
-                            {canReschedule(booking) && <Button variant="outline" size="sm" onClick={() => setRescheduleBooking(booking)}>
-                                <CalendarClock className="h-4 w-4 mr-2" />
+                            {canReschedule(booking) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setRescheduleBooking(booking)}
+                                className="rounded-xl border-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50"
+                              >
+                                <CalendarClock className="h-3.5 w-3.5 mr-2" />
                                 Reschedule
-                              </Button>}
+                              </Button>
+                            )}
 
-                            {canCancel(booking) && <Button variant="destructive" size="sm" onClick={() => {
-                        setBookingToCancel(booking);
-                        setShowCancelDialog(true);
-                      }}>
-                                
+                            {canCancel(booking) && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => { setBookingToCancel(booking); setShowCancelDialog(true); }}
+                                className="rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 text-[10px] font-black uppercase tracking-widest"
+                              >
+                                <XCircle className="h-3.5 w-3.5 mr-2" />
                                 Cancel
-                              </Button>}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Expandable Details */}
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full rounded-none border-t h-10">
-                        {isExpanded ? <>
-                            <ChevronUp className="h-4 w-4 mr-2" />
-                            Hide Details
-                          </> : <>
-                            <ChevronDown className="h-4 w-4 mr-2" />
-                            View Details
-                          </>}
+                      <Button variant="ghost" className="w-full rounded-none border-t border-slate-50 h-12 bg-slate-50/30 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {isExpanded ? <><ChevronUp className="h-3 w-3" /> Hide Details</> : <><ChevronDown className="h-3 w-3" /> View Summary</>}
+                        </div>
                       </Button>
                     </CollapsibleTrigger>
 
                     <CollapsibleContent>
-                      <div className="p-6 pt-0 border-t bg-muted/30">
-                        <div className="grid md:grid-cols-2 gap-6 mt-4">
+                      <div className="p-8 pt-6 border-t border-slate-50 bg-[#F8F9FA]/50">
+                        <div className="grid md:grid-cols-2 gap-8">
                           {/* Guest Info */}
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-sm text-muted-foreground uppercase">Guest Information</h4>
-                            <div className="space-y-2 text-sm">
-                              <p><span className="text-muted-foreground">Name:</span> {booking.guest_name || 'N/A'}</p>
-                              <p><span className="text-muted-foreground">Email:</span> {booking.guest_email || 'N/A'}</p>
-                              <p><span className="text-muted-foreground">Phone:</span> {booking.guest_phone || 'N/A'}</p>
+                          <div className="space-y-4">
+                            <h4 className="text-[10px] font-black text-[#008080] uppercase tracking-widest flex items-center gap-2">
+                              <CheckCircle2 className="h-3 w-3" /> Guest Details
+                            </h4>
+                            <div className="space-y-3">
+                              <InfoRow label="Name" value={booking.guest_name} />
+                              <InfoRow label="Email" value={booking.guest_email} />
+                              <InfoRow label="Phone" value={booking.guest_phone} />
                             </div>
                           </div>
 
-                          {/* Booking Breakdown */}
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-sm text-muted-foreground uppercase">Booking Breakdown</h4>
-                            <div className="space-y-2 text-sm">
-                              {details?.adults !== undefined && <p><span className="text-muted-foreground">Adults:</span> {details.adults}</p>}
-                              {details?.children !== undefined && details.children > 0 && <p><span className="text-muted-foreground">Children:</span> {details.children}</p>}
-                              <p><span className="text-muted-foreground">Total People:</span> {booking.slots_booked || 1}</p>
+                          {/* Breakdown */}
+                          <div className="space-y-4">
+                            <h4 className="text-[10px] font-black text-[#008080] uppercase tracking-widest flex items-center gap-2">
+                              <CheckCircle2 className="h-3 w-3" /> Booking Info
+                            </h4>
+                            <div className="space-y-3">
+                              <InfoRow label="Adults" value={details?.adults} />
+                              {details?.children > 0 && <InfoRow label="Children" value={details?.children} />}
+                              <InfoRow label="Booking ID" value={booking.id} isMono />
                             </div>
                           </div>
-
-                          {/* Facilities */}
-                          {details?.facilities && details.facilities.length > 0 && <div className="space-y-3">
-                              <h4 className="font-semibold text-sm text-muted-foreground uppercase">Facilities</h4>
-                              <div className="space-y-1 text-sm">
-                                {details.facilities.map((f: any, idx: number) => <p key={idx}>
-                                    {f.name} - {f.price === 0 ? 'Free' : `KES ${f.price}`}
-                                  </p>)}
-                              </div>
-                            </div>}
-
-                          {/* Activities */}
-                          {details?.activities && details.activities.length > 0 && <div className="space-y-3">
-                              <h4 className="font-semibold text-sm text-muted-foreground uppercase">Activities</h4>
-                              <div className="space-y-1 text-sm">
-                                {details.activities.map((a: any, idx: number) => <p key={idx}>
-                                    {a.name} - {a.price === 0 ? 'Free' : `KES ${a.price}`}
-                                    {a.numberOfPeople && ` (${a.numberOfPeople} people)`}
-                                  </p>)}
-                              </div>
-                            </div>}
                         </div>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
-                </Card>;
-        })}
-          </div>}
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </main>
 
-      <RescheduleBookingDialog booking={rescheduleBooking!} open={!!rescheduleBooking} onOpenChange={open => !open && setRescheduleBooking(null)} onSuccess={fetchBookings} />
+      {/* Dialogs */}
+      {rescheduleBooking && (
+        <RescheduleBookingDialog 
+          booking={rescheduleBooking} 
+          open={!!rescheduleBooking} 
+          onOpenChange={open => !open && setRescheduleBooking(null)} 
+          onSuccess={fetchBookings} 
+        />
+      )}
 
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          
-          <AlertDialogFooter>
-            <AlertDialogCancel>No, Keep it</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelBooking} className="bg-destructive text-white">
+        <AlertDialogContent className="rounded-[32px] border-none p-8">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-black uppercase tracking-tighter">Cancel Reservation?</AlertDialogTitle>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Are you sure you want to cancel? This action cannot be undone. Cancellations within 48 hours of the visit may not be eligible for a full refund.
+            </p>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 gap-3">
+            <AlertDialogCancel className="rounded-2xl border-slate-100 font-bold uppercase text-xs">Keep Booking</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelBooking} 
+              className="rounded-2xl bg-red-500 hover:bg-red-600 font-black uppercase text-xs tracking-widest px-8"
+            >
               Yes, Cancel
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -391,6 +397,15 @@ const Bookings = () => {
       </AlertDialog>
 
       <MobileBottomBar />
-    </div>;
+    </div>
+  );
 };
+
+const InfoRow = ({ label, value, isMono }: { label: string, value: any, isMono?: boolean }) => (
+  <div className="flex flex-col gap-1">
+    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight">{label}</span>
+    <span className={`text-xs font-bold text-slate-700 ${isMono ? 'font-mono' : ''}`}>{value || 'N/A'}</span>
+  </div>
+);
+
 export default Bookings;

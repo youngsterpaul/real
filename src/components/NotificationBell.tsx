@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Bell } from "lucide-react";
+import { Bell, CheckCircle2, Trash2, Clock } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -25,40 +25,31 @@ interface Notification {
   created_at: string;
 }
 
-// Notification sound URL (using a free notification sound)
+const COLORS = {
+  TEAL: "#008080",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
+  KHAKI_DARK: "#857F3E",
+  RED: "#FF0000",
+  SOFT_GRAY: "#F8F9FA"
+};
+
 const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
-// Custom Tailwind Classes for Teal (#008080)
-const TEAL_HOVER_10 = 'hover:bg-[#008080]/10'; // Read/Bell hover (lighter)
-const TEAL_BG_20_HOVER_30 = 'bg-[#008080]/20 hover:bg-[#008080]/30'; // Unread background/hover (darker)
-
-// Utility function to categorize notifications
 const categorizeNotifications = (notifications: Notification[]) => {
   const groups: Record<string, Notification[]> = {};
-
   notifications.forEach(notification => {
     const date = new Date(notification.created_at);
     let category: string;
+    if (isToday(date)) category = 'Today';
+    else if (isYesterday(date)) category = 'Yesterday';
+    else category = format(date, 'MMMM dd, yyyy');
 
-    if (isToday(date)) {
-      category = 'Today';
-    } else if (isYesterday(date)) {
-      category = 'Yesterday';
-    } else {
-      category = format(date, 'MMMM dd, yyyy'); // e.g., July 15, 2024
-    }
-
-    if (!groups[category]) {
-      groups[category] = [];
-    }
+    if (!groups[category]) groups[category] = [];
     groups[category].push(notification);
   });
-
-  // Convert to an array of { title, notifications } for easier mapping
-  return Object.keys(groups).map(title => ({
-    title,
-    notifications: groups[title],
-  }));
+  return Object.keys(groups).map(title => ({ title, notifications: groups[title] }));
 };
 
 export const NotificationBell = () => {
@@ -66,22 +57,14 @@ export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize audio element
   useEffect(() => {
     audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
     audioRef.current.volume = 0.5;
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
+    return () => { audioRef.current = null; };
   }, []);
 
-  // Play notification sound
   const playNotificationSound = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
@@ -89,202 +72,156 @@ export const NotificationBell = () => {
     }
   }, []);
 
-  // Show in-app toast notification
   const showInAppNotification = useCallback((notification: Notification) => {
-    toast({
-      title: notification.title,
-      description: notification.message,
-    });
+    toast({ title: notification.title, description: notification.message });
   }, []);
 
   const fetchNotifications = async () => {
     if (!user) return;
-
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50);
-
-    if (error) {
-      console.error("Error fetching notifications:", error);
-      return;
+    if (!error) {
+      setNotifications(data || []);
+      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
     }
-
-    setNotifications(data || []);
-    setUnreadCount(data?.filter(n => !n.is_read).length || 0);
   };
 
   useEffect(() => {
-    if (!user) {
-      setNotifications([]);
-      setUnreadCount(0);
-      return;
-    }
-
+    if (!user) return;
     fetchNotifications();
-
-    // Subscribe to real-time notifications
-    const channel = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
+    const channel = supabase.channel('notifications-changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, 
         (payload) => {
-          // Play sound and show toast for new notifications
           playNotificationSound();
-          if (payload.new) {
-            showInAppNotification(payload.new as Notification);
-          }
+          if (payload.new) showInAppNotification(payload.new as Notification);
           fetchNotifications();
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchNotifications)
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user, playNotificationSound, showInAppNotification]);
 
-
   const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', notificationId);
-
-    if (error) {
-      console.error("Error marking notification as read:", error);
-      return;
-    }
-
+    await supabase.from('notifications').update({ is_read: true }).eq('id', notificationId);
     fetchNotifications();
   };
 
   const markAllAsRead = async () => {
     if (!user) return;
-
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to mark all as read",
-        variant: "destructive",
-      });
-      return;
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+    if (!error) {
+      fetchNotifications();
+      toast({ title: "CLEARED!", description: "All notifications marked as read." });
     }
-
-    fetchNotifications();
-    toast({
-      title: "Success",
-      description: "All notifications marked as read",
-    });
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
-    await markAsRead(notification.id);
-    // Navigation removed as per requirements - notifications no longer navigate to pages
-  };
-
-  // Memoized categorized notifications
-  const categorizedNotifications = useMemo(() => {
-    return categorizeNotifications(notifications);
-  }, [notifications]);
+  const categorizedNotifications = useMemo(() => categorizeNotifications(notifications), [notifications]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <button className={`rounded-full h-10 w-10 flex items-center justify-center transition-colors bg-header-foreground/10 ${TEAL_HOVER_10} group relative`} aria-label="Notifications">
-          <Bell className="h-5 w-5 text-header-foreground group-hover:text-header" />
+        <button 
+          className="rounded-xl h-12 w-12 flex items-center justify-center transition-all bg-white shadow-sm border border-slate-100 hover:scale-105 active:scale-95 group relative" 
+          aria-label="Notifications"
+        >
+          <Bell className="h-5 w-5 transition-colors group-hover:text-[#008080]" style={{ color: COLORS.TEAL }} />
           {unreadCount > 0 && (
             <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center border-2 border-white text-[10px] font-black"
+              style={{ backgroundColor: COLORS.RED }}
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md">
-        <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle>Notifications</SheetTitle>
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={markAllAsRead}
-                className="text-xs"
-              >
-                Mark all as read
-              </Button>
-            )}
-          </div>
-        </SheetHeader>
+      
+      <SheetContent className="w-full sm:max-w-md p-0 border-none bg-[#F8F9FA]">
+        <div className="p-6 bg-white border-b border-slate-100">
+          <SheetHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-[#FF7F50] uppercase tracking-[0.2em] mb-1">Stay Updated</p>
+                <SheetTitle className="text-2xl font-black uppercase tracking-tighter" style={{ color: COLORS.TEAL }}>
+                  Inbox
+                </SheetTitle>
+              </div>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={markAllAsRead}
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#008080] hover:bg-[#008080]/10"
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+          </SheetHeader>
+        </div>
 
-        {/* Removed the unread count note/header text here */}
-
-        <ScrollArea className="h-[calc(100vh-120px)] mt-4"> {/* Adjusted height calculation for removed element */}
+        <ScrollArea className="h-[calc(100vh-100px)] p-6">
           {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No notifications yet</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="bg-white p-6 rounded-[28px] shadow-sm mb-4">
+                <Bell className="h-10 w-10 text-slate-200" />
+              </div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">All caught up!</p>
             </div>
           ) : (
-            <div className="space-y-4"> {/* Increased space for groups */}
+            <div className="space-y-8">
               {categorizedNotifications.map(group => (
-                <div key={group.title}>
-                  <h3 className="text-sm font-semibold sticky top-0 bg-white/90 dark:bg-gray-900/90 z-10 py-1 -mt-1 backdrop-blur-sm">
-                    {group.title}
-                  </h3>
-                  <div className="space-y-2 pt-1">
+                <div key={group.title} className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 whitespace-nowrap">
+                      {group.title}
+                    </h3>
+                    <div className="h-[1px] w-full bg-slate-100" />
+                  </div>
+                  
+                  <div className="space-y-3">
                     {group.notifications.map((notification) => (
                       <button
                         key={notification.id}
-                        onClick={() => handleNotificationClick(notification)}
-                        className={`w-full text-left p-4 rounded-lg border transition-colors ${
+                        onClick={() => markAsRead(notification.id)}
+                        className={`w-full text-left p-5 rounded-[24px] border transition-all duration-300 group relative overflow-hidden ${
                           notification.is_read
-                            ? `bg-background ${TEAL_HOVER_10}` // Read state: background with teal hover
-                            : TEAL_BG_20_HOVER_30 // Unread state: teal background with darker teal hover
+                            ? "bg-white border-slate-100 hover:border-[#008080]/30"
+                            : "bg-white border-transparent shadow-md"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-semibold text-sm">{notification.title}</h4>
-                          {!notification.is_read && (
-                            <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1" />
-                          )}
+                        {!notification.is_read && (
+                          <div 
+                            className="absolute top-0 left-0 w-1.5 h-full" 
+                            style={{ background: `linear-gradient(to bottom, ${COLORS.CORAL}, ${COLORS.RED})` }}
+                          />
+                        )}
+                        
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <h4 className={`text-sm font-black uppercase tracking-tight ${notification.is_read ? 'text-slate-600' : 'text-[#008080]'}`}>
+                              {notification.title}
+                            </h4>
+                            <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                              {notification.message}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">
+                              {format(new Date(notification.created_at), 'h:mm a')}
+                            </span>
+                            {!notification.is_read && (
+                              <div className="p-1.5 rounded-lg bg-[#FF7F50]/10 text-[#FF7F50]">
+                                <Clock className="h-3 w-3" />
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {/* Format time for Today/Yesterday/Date groups */}
-                          {format(new Date(notification.created_at), group.title === 'Today' || group.title === 'Yesterday' ? 'h:mm a' : 'h:mm a')}
-                        </p>
                       </button>
                     ))}
                   </div>
