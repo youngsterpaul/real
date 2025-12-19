@@ -2,8 +2,20 @@ import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Calendar as CalendarIcon, Info, Ticket } from "lucide-react";
+
+// Use the brand color constant from your main components
+const COLORS = {
+  TEAL: "#008080",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
+  KHAKI_DARK: "#857F3E",
+  RED: "#FF0000",
+  SOFT_GRAY: "#F8F9FA"
+};
 
 interface AvailabilityData {
   date: Date;
@@ -14,7 +26,7 @@ interface AvailabilityData {
 
 interface AvailabilityCalendarProps {
   itemId: string;
-  itemType: 'trip' | 'hotel' | 'adventure';
+  itemType: 'trip' | 'hotel' | 'adventure' | 'event'; // Added event to match your other files
   onDateSelect?: (date: Date) => void;
   selectedDate?: Date;
 }
@@ -33,65 +45,37 @@ export function AvailabilityCalendar({
     loadAvailability();
   }, [itemId, itemType, currentMonth]);
 
-  // Real-time subscription for booking changes
   useEffect(() => {
     const channel = supabase
       .channel('booking-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'bookings',
-          filter: `item_id=eq.${itemId}`
-        },
-        (payload) => {
-          console.log('Booking changed:', payload);
-          // Reload availability when bookings change
-          loadAvailability();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `item_id=eq.${itemId}` }, 
+      () => loadAvailability())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [itemId, itemType, currentMonth]);
+    return () => { supabase.removeChannel(channel); };
+  }, [itemId, itemType]);
 
   const loadAvailability = async () => {
     setIsLoading(true);
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const days = eachDayOfInterval({ start, end });
-
     const availabilityMap = new Map<string, AvailabilityData>();
 
-    // Get total capacity
     let totalCapacity = 0;
-    if (itemType === 'trip') {
-      const { data: trip } = await supabase
-        .from('trips')
-        .select('available_tickets')
-        .eq('id', itemId)
-        .single();
-      totalCapacity = trip?.available_tickets || 0;
-    } else if (itemType === 'hotel') {
-      const { data: hotel } = await supabase
-        .from('hotels')
-        .select('available_rooms')
-        .eq('id', itemId)
-        .single();
-      totalCapacity = hotel?.available_rooms || 0;
-    } else if (itemType === 'adventure') {
-      const { data: adventure } = await supabase
-        .from('adventure_places')
-        .select('available_slots')
-        .eq('id', itemId)
-        .single();
-      totalCapacity = adventure?.available_slots || 0;
+    // Normalized the fetching logic to match your DB structure
+    const tableMap: Record<string, { table: string, field: string }> = {
+      trip: { table: 'trips', field: 'available_tickets' },
+      event: { table: 'trips', field: 'available_tickets' },
+      hotel: { table: 'hotels', field: 'available_rooms' },
+      adventure: { table: 'adventure_places', field: 'available_slots' }
+    };
+
+    const config = tableMap[itemType];
+    if (config) {
+      const { data } = await supabase.from(config.table).select(config.field).eq('id', itemId).single();
+      totalCapacity = data?.[config.field] || 0;
     }
 
-    // Get bookings for the month
     const { data: bookings } = await supabase
       .from('bookings')
       .select('visit_date, slots_booked')
@@ -101,136 +85,127 @@ export function AvailabilityCalendar({
       .neq('status', 'cancelled')
       .neq('status', 'rejected');
 
-    // Calculate availability for each day
     const bookingsByDate = new Map<string, number>();
-    bookings?.forEach(booking => {
-      if (booking.visit_date) {
-        const dateKey = booking.visit_date;
-        const current = bookingsByDate.get(dateKey) || 0;
-        bookingsByDate.set(dateKey, current + (booking.slots_booked || 1));
-      }
+    bookings?.forEach(b => {
+      const dateKey = b.visit_date;
+      bookingsByDate.set(dateKey, (bookingsByDate.get(dateKey) || 0) + (b.slots_booked || 1));
     });
 
     days.forEach(day => {
       const dateKey = format(day, 'yyyy-MM-dd');
-      const bookedSlots = bookingsByDate.get(dateKey) || 0;
-      const availableSlots = Math.max(0, totalCapacity - bookedSlots);
+      const booked = bookingsByDate.get(dateKey) || 0;
+      const left = Math.max(0, totalCapacity - booked);
       
       let status: 'available' | 'partially_booked' | 'fully_booked' = 'available';
-      if (availableSlots === 0) {
-        status = 'fully_booked';
-      } else if (bookedSlots / totalCapacity > 0.7) {
-        status = 'partially_booked';
-      }
+      if (left <= 0) status = 'fully_booked';
+      else if (booked / totalCapacity > 0.7) status = 'partially_booked';
 
-      availabilityMap.set(dateKey, {
-        date: day,
-        status,
-        availableSlots,
-        totalCapacity
-      });
+      availabilityMap.set(dateKey, { date: day, status, availableSlots: left, totalCapacity });
     });
 
     setAvailability(availabilityMap);
     setIsLoading(false);
   };
 
-  const getDateAvailability = (date: Date) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    return availability.get(dateKey);
-  };
+  const getDateAvailability = (date: Date) => availability.get(format(date, 'yyyy-MM-dd'));
 
+  // CUSTOM STYLING MODIFIERS
   const modifiers = {
-    available: (date: Date) => {
-      const avail = getDateAvailability(date);
-      return avail?.status === 'available';
-    },
-    partiallyBooked: (date: Date) => {
-      const avail = getDateAvailability(date);
-      return avail?.status === 'partially_booked';
-    },
-    fullyBooked: (date: Date) => {
-      const avail = getDateAvailability(date);
-      return avail?.status === 'fully_booked';
-    }
+    available: (date: Date) => getDateAvailability(date)?.status === 'available',
+    partiallyBooked: (date: Date) => getDateAvailability(date)?.status === 'partially_booked',
+    fullyBooked: (date: Date) => getDateAvailability(date)?.status === 'fully_booked'
   };
 
   const modifiersStyles = {
-    available: {
-      backgroundColor: 'hsl(var(--success) / 0.2)',
-      color: 'hsl(var(--success-foreground))'
-    },
-    partiallyBooked: {
-      backgroundColor: 'hsl(var(--warning) / 0.2)',
-      color: 'hsl(var(--warning-foreground))'
-    },
-    fullyBooked: {
-      backgroundColor: 'hsl(var(--destructive) / 0.2)',
-      color: 'hsl(var(--destructive-foreground))'
-    }
+    available: { color: COLORS.TEAL, fontWeight: '900' },
+    partiallyBooked: { color: COLORS.CORAL, fontWeight: '900' },
+    fullyBooked: { color: '#cbd5e1', textDecoration: 'line-through' }
   };
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Availability Calendar</h3>
-          <div className="flex gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--success) / 0.2)' }} />
-              <span>Available</span>
+    <Card className="p-8 rounded-[32px] border-slate-100 shadow-sm bg-white overflow-hidden relative">
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarIcon className="h-4 w-4" style={{ color: COLORS.TEAL }} />
+              <h3 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>
+                Select Dates
+              </h3>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--warning) / 0.2)' }} />
-              <span>Limited</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--destructive) / 0.2)' }} />
-              <span>Fully Booked</span>
-            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check Real-time availability</p>
+          </div>
+          
+          <div className="flex flex-wrap gap-3">
+            <LegendItem color={COLORS.TEAL} label="Open" />
+            <LegendItem color={COLORS.CORAL} label="Limited" />
+            <LegendItem color="#cbd5e1" label="Full" />
           </div>
         </div>
         
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={(date) => {
-            if (date) {
-              const avail = getDateAvailability(date);
-              if (avail?.status !== 'fully_booked') {
+        <div className={cn(
+          "rounded-3xl p-4 border border-slate-50 bg-[#F8F9FA] transition-opacity duration-500",
+          isLoading ? "opacity-50" : "opacity-100"
+        )}>
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              if (date && getDateAvailability(date)?.status !== 'fully_booked') {
                 onDateSelect?.(date);
               }
-            }
-          }}
-          onMonthChange={setCurrentMonth}
-          disabled={(date) => {
-            const avail = getDateAvailability(date);
-            return date < new Date() || avail?.status === 'fully_booked';
-          }}
-          modifiers={modifiers}
-          modifiersStyles={modifiersStyles}
-          className="pointer-events-auto"
-        />
+            }}
+            onMonthChange={setCurrentMonth}
+            disabled={(date) => {
+              const avail = getDateAvailability(date);
+              return date < new Date() || avail?.status === 'fully_booked';
+            }}
+            modifiers={modifiers}
+            modifiersStyles={modifiersStyles}
+            className="w-full pointer-events-auto font-black"
+            classNames={{
+                day_selected: "bg-[#008080] text-white hover:bg-[#008080] hover:text-white focus:bg-[#008080] focus:text-white rounded-xl",
+                day_today: "bg-slate-200 text-slate-900 rounded-xl"
+            }}
+          />
+        </div>
 
         {selectedDate && (
-          <div className="pt-4 border-t">
-            <p className="text-sm">
-              <span className="font-semibold">Selected Date:</span> {format(selectedDate, 'PPP')}
-            </p>
-            {(() => {
-              const avail = getDateAvailability(selectedDate);
-              if (avail) {
+          <div className="p-5 rounded-2xl border border-[#F0E68C]/50 bg-[#F0E68C]/10 flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                <Ticket className="h-5 w-5" style={{ color: COLORS.KHAKI_DARK }} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-[#857F3E] uppercase tracking-widest">Your Selection</p>
+                <p className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                  {format(selectedDate, 'dd MMMM yyyy')}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              {(() => {
+                const avail = getDateAvailability(selectedDate);
                 return (
-                  <p className="text-sm text-muted-foreground">
-                    {avail.availableSlots} of {avail.totalCapacity} slots available
-                  </p>
+                  <>
+                    <p className="text-lg font-black" style={{ color: COLORS.TEAL }}>
+                      {avail?.availableSlots || 0}
+                    </p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Slots Left</p>
+                  </>
                 );
-              }
-              return null;
-            })()}
+              })()}
+            </div>
           </div>
         )}
       </div>
     </Card>
   );
 }
+
+const LegendItem = ({ color, label }: { color: string, label: string }) => (
+  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-100 shadow-sm">
+    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</span>
+  </div>
+);

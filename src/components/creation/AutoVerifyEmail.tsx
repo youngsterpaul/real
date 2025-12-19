@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, CheckCircle2 } from "lucide-react";
+import { Mail, CheckCircle2, AlertCircle } from "lucide-react";
+
+// Using the project color palette for consistency
+const COLORS = {
+  TEAL: "#008080",
+  CORAL: "#FF7F50",
+  SOFT_GRAY: "#F8F9FA"
+};
 
 interface AutoVerifyEmailProps {
   email: string;
@@ -11,10 +18,6 @@ interface AutoVerifyEmailProps {
   required?: boolean;
 }
 
-/**
- * Auto-verify email component for creation pages.
- * Automatically marks email as verified when a valid email format is entered.
- */
 export const AutoVerifyEmail = ({
   email,
   onEmailChange,
@@ -25,12 +28,10 @@ export const AutoVerifyEmail = ({
   const [isValid, setIsValid] = useState(false);
 
   useEffect(() => {
-    // Auto-verify when email is valid format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const valid = emailRegex.test(email);
     setIsValid(valid);
     
-    // Auto-verify valid emails
     if (valid && !isVerified) {
       onVerificationChange(true);
     } else if (!valid && isVerified) {
@@ -38,35 +39,60 @@ export const AutoVerifyEmail = ({
     }
   }, [email, isVerified, onVerificationChange]);
 
-  const handleEmailChange = (newEmail: string) => {
-    onEmailChange(newEmail);
-  };
-
   return (
-    <div className="space-y-2">
-      <Label htmlFor="email">
-        Email {required && "*"}
+    <div className="space-y-3">
+      <div className="flex justify-between items-end px-1">
+        <Label 
+          htmlFor="email" 
+          className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400"
+        >
+          Contact Email {required && <span style={{ color: COLORS.CORAL }}>*</span>}
+        </Label>
+        
         {isVerified && (
-          <span className="ml-2 text-green-600 text-sm inline-flex items-center gap-1">
-            <CheckCircle2 className="h-4 w-4" />
-            Valid
-          </span>
+          <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2 duration-300">
+            <CheckCircle2 className="h-3.5 w-3.5" style={{ color: COLORS.TEAL }} />
+            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: COLORS.TEAL }}>
+              Verified
+            </span>
+          </div>
         )}
-      </Label>
-      <div className="relative">
-        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+      </div>
+
+      <div className="relative group">
+        <div 
+          className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 z-10
+            ${isVerified ? "text-[#008080]" : "text-slate-400 group-focus-within:text-[#FF7F50]"}`}
+        >
+          <Mail className="h-4.5 w-4.5" />
+        </div>
+
         <Input
           id="email"
           type="email"
           required={required}
-          className="pl-10"
           value={email}
-          onChange={(e) => handleEmailChange(e.target.value)}
-          placeholder="contact@example.com"
+          onChange={(e) => onEmailChange(e.target.value)}
+          placeholder="e.g. hello@adventure.com"
+          className={`
+            h-14 pl-12 pr-4 rounded-[20px] border-2 transition-all duration-200
+            font-bold text-slate-700 placeholder:text-slate-300 placeholder:font-medium
+            bg-white shadow-sm
+            ${isVerified 
+              ? "border-[#008080]/20 bg-[#008080]/5 focus-visible:ring-0 focus-visible:border-[#008080]" 
+              : "border-slate-100 focus-visible:ring-0 focus-visible:border-[#FF7F50] focus-visible:shadow-md"
+            }
+          `}
         />
       </div>
+
       {email && !isValid && (
-        <p className="text-xs text-destructive">Please enter a valid email address</p>
+        <div className="flex items-center gap-2 px-2 animate-in zoom-in-95 duration-200">
+          <AlertCircle className="h-3 w-3 text-red-500" />
+          <p className="text-[9px] font-black uppercase tracking-tighter text-red-500">
+            Please enter a valid email address
+          </p>
+        </div>
       )}
     </div>
   );

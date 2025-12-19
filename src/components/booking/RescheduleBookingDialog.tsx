@@ -5,8 +5,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInHours, isBefore, startOfDay } from "date-fns";
 import { toast } from "sonner";
-import { CalendarIcon, AlertCircle } from "lucide-react";
+import { CalendarIcon, AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const COLORS = {
+  TEAL: "#008080",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
+  KHAKI_DARK: "#857F3E",
+  RED: "#FF0000",
+  SOFT_GRAY: "#F8F9FA"
+};
 
 interface RescheduleBookingDialogProps {
   booking: {
@@ -48,14 +58,12 @@ export function RescheduleBookingDialog({
   }, [open, booking]);
 
   const checkEligibility = async () => {
-    // Check if booking type is event - events with fixed dates cannot be rescheduled
     if (booking.booking_type === 'event') {
       setIsEligible(false);
       setEligibilityMessage("Events with fixed dates cannot be rescheduled.");
       return;
     }
 
-    // Check if trip is flexible
     if (booking.booking_type === 'trip') {
       const { data: trip } = await supabase
         .from('trips')
@@ -71,7 +79,6 @@ export function RescheduleBookingDialog({
       }
     }
 
-    // Check 48-hour constraint only if there's an existing visit date
     if (booking.visit_date) {
       const bookingDate = new Date(booking.visit_date);
       const now = new Date();
@@ -91,32 +98,13 @@ export function RescheduleBookingDialog({
   const loadWorkingDays = async () => {
     try {
       let data: any = null;
-      
-      if (booking.booking_type === 'trip') {
-        const result = await supabase
-          .from('trips')
-          .select('date')
-          .eq('id', booking.item_id)
-          .single();
-        // Trips don't have days_opened, they have specific dates
-        return;
-      } else if (booking.booking_type === 'hotel') {
-        const result = await supabase
-          .from('hotels')
-          .select('days_opened')
-          .eq('id', booking.item_id)
-          .single();
+      if (booking.booking_type === 'trip') return;
+      else if (booking.booking_type === 'hotel') {
+        const result = await supabase.from('hotels').select('days_opened').eq('id', booking.item_id).single();
         data = result.data;
       } else if (booking.booking_type === 'adventure' || booking.booking_type === 'adventure_place') {
-        const result = await supabase
-          .from('adventure_places')
-          .select('days_opened')
-          .eq('id', booking.item_id)
-          .single();
+        const result = await supabase.from('adventure_places').select('days_opened').eq('id', booking.item_id).single();
         data = result.data;
-      } else if (booking.booking_type === 'attraction') {
-        // Attractions table doesn't exist - use empty working days
-        data = null;
       }
       
       if (data?.days_opened && Array.isArray(data.days_opened)) {
@@ -128,7 +116,6 @@ export function RescheduleBookingDialog({
   };
 
   const loadBookedDates = async () => {
-    // Get total capacity
     let capacity = 0;
     if (booking.booking_type === 'trip') {
       const { data } = await supabase.from('trips').select('available_tickets').eq('id', booking.item_id).single();
@@ -142,16 +129,14 @@ export function RescheduleBookingDialog({
     }
     setTotalCapacity(capacity);
 
-    // Get all bookings for this item (excluding cancelled/rejected)
     const { data: bookings } = await supabase
       .from('bookings')
       .select('visit_date, slots_booked')
       .eq('item_id', booking.item_id)
-      .neq('id', booking.id) // Exclude current booking
+      .neq('id', booking.id)
       .neq('status', 'cancelled')
       .neq('status', 'rejected');
 
-    // Calculate which dates are fully booked
     const bookingsByDate = new Map<string, number>();
     bookings?.forEach(b => {
       if (b.visit_date) {
@@ -160,7 +145,6 @@ export function RescheduleBookingDialog({
       }
     });
 
-    // Find dates where adding our booking would exceed capacity
     const fullyBooked = new Set<string>();
     bookingsByDate.forEach((booked, date) => {
       if (booked + (booking.slots_booked || 1) > capacity) {
@@ -174,16 +158,9 @@ export function RescheduleBookingDialog({
   const isDayDisabled = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayName = format(date, 'EEEE');
-    
-    // Disable past dates
     if (isBefore(date, startOfDay(new Date()))) return true;
-    
-    // Disable non-working days
     if (workingDays.length > 0 && !workingDays.includes(dayName)) return true;
-    
-    // Disable fully booked dates
     if (bookedDates.has(dateStr)) return true;
-    
     return false;
   };
 
@@ -193,7 +170,6 @@ export function RescheduleBookingDialog({
       return;
     }
 
-    // Verify the new date is valid
     const newDateStr = format(selectedDate, 'yyyy-MM-dd');
     const dayName = format(selectedDate, 'EEEE');
     
@@ -209,190 +185,154 @@ export function RescheduleBookingDialog({
 
     setLoading(true);
     try {
-      // Get user ID
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Update booking with new date
       const { error: updateError } = await supabase
         .from('bookings')
-        .update({ 
-          visit_date: newDateStr,
-          updated_at: new Date().toISOString()
-        })
+        .update({ visit_date: newDateStr, updated_at: new Date().toISOString() })
         .eq('id', booking.id);
 
       if (updateError) throw updateError;
 
-      // Create reschedule log only if it was a reschedule (had previous date)
       if (booking.visit_date) {
-        const { error: logError } = await supabase
-          .from('reschedule_log')
-          .insert({
-            booking_id: booking.id,
-            user_id: user.id,
-            old_date: booking.visit_date,
-            new_date: newDateStr
-          });
-
-        if (logError) throw logError;
+        await supabase.from('reschedule_log').insert({
+          booking_id: booking.id, user_id: user.id, old_date: booking.visit_date, new_date: newDateStr
+        });
       }
 
-      // Get item name for notification
       let itemName = booking.booking_details.trip_name || 
                      booking.booking_details.event_name || 
                      booking.booking_details.hotel_name ||
                      booking.booking_details.place_name ||
                      'Your booking';
 
-      // Create notification for user
       const notificationMessage = isNewSchedule 
         ? `Your visit date for ${itemName} has been set to ${format(selectedDate, 'PPP')}.`
-        : `Your booking for ${itemName} has been successfully moved to ${format(selectedDate, 'PPP')}.`;
+        : `Your booking for ${itemName} has been moved to ${format(selectedDate, 'PPP')}.`;
 
       await supabase.from('notifications').insert({
         user_id: user.id,
         type: isNewSchedule ? 'visit_date_set' : 'booking_rescheduled',
         title: isNewSchedule ? 'Visit Date Set' : 'Booking Rescheduled',
         message: notificationMessage,
-        data: {
-          booking_id: booking.id,
-          old_date: booking.visit_date,
-          new_date: newDateStr
-        }
+        data: { booking_id: booking.id, old_date: booking.visit_date, new_date: newDateStr }
       });
-
-      // Get item creator and send notification to host
-      let creatorId = null;
-      if (booking.booking_type === 'trip') {
-        const { data } = await supabase.from('trips').select('created_by').eq('id', booking.item_id).single();
-        creatorId = data?.created_by;
-      } else if (booking.booking_type === 'hotel') {
-        const { data } = await supabase.from('hotels').select('created_by').eq('id', booking.item_id).single();
-        creatorId = data?.created_by;
-      } else if (booking.booking_type === 'adventure' || booking.booking_type === 'adventure_place') {
-        const { data } = await supabase.from('adventure_places').select('created_by').eq('id', booking.item_id).single();
-        creatorId = data?.created_by;
-      } else if (booking.booking_type === 'attraction') {
-        // Attractions table doesn't exist - skip
-        creatorId = null;
-      }
-
-      if (creatorId) {
-        const hostMessage = isNewSchedule
-          ? `Booking #${booking.id.substring(0, 8)} for ${itemName} has a visit date set to ${format(selectedDate, 'PPP')}.`
-          : `Booking #${booking.id.substring(0, 8)} for ${itemName} has been rescheduled to ${format(selectedDate, 'PPP')} by the user.`;
-
-        await supabase.from('notifications').insert({
-          user_id: creatorId,
-          type: isNewSchedule ? 'visit_date_set_host' : 'booking_rescheduled_host',
-          title: isNewSchedule ? 'Visit Date Set' : 'Booking Date Changed',
-          message: hostMessage,
-          data: {
-            booking_id: booking.id,
-            old_date: booking.visit_date,
-            new_date: newDateStr
-          }
-        });
-      }
 
       toast.success(isNewSchedule ? "Visit date set successfully" : "Booking rescheduled successfully");
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Reschedule error:', error);
       toast.error(error.message || "Failed to update booking");
     } finally {
       setLoading(false);
     }
   };
 
-  // Guard against null booking
-  if (!booking) {
-    return null;
-  }
+  if (!booking) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isNewSchedule ? 'Set Visit Date' : 'Reschedule Booking'}</DialogTitle>
-          <DialogDescription>
-            {isNewSchedule 
-              ? 'Select a visit date for your booking. You must schedule at least 48 hours in advance.'
-              : 'Select a new date for your booking. Changes must be made at least 48 hours before your scheduled date.'}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-[40px] border-none shadow-2xl bg-white">
+        <div className="p-8">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>
+              {isNewSchedule ? 'Set Visit Date' : 'Reschedule Booking'}
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2">
+              {isNewSchedule 
+                ? 'Select a visit date. Schedule at least 48 hours in advance.'
+                : 'Move your booking to a new date.'}
+            </DialogDescription>
+          </DialogHeader>
 
-        {!isEligible ? (
-          <div className="flex items-start gap-3 p-4 bg-destructive/10 rounded-lg">
-            <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-            <div>
-              <p className="font-medium text-destructive">Cannot {isNewSchedule ? 'Schedule' : 'Reschedule'}</p>
-              <p className="text-sm text-muted-foreground mt-1">{eligibilityMessage}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              {booking.visit_date && (
-                <div className="flex items-center gap-2 text-sm">
-                  <CalendarIcon className="h-4 w-4" />
-                  <span className="font-medium">Current Date:</span>
-                  <span>{format(new Date(booking.visit_date), 'PPP')}</span>
-                </div>
-              )}
-              {selectedDate && (
-                <div className="flex items-center gap-2 text-sm text-primary">
-                  <CalendarIcon className="h-4 w-4" />
-                  <span className="font-medium">{isNewSchedule ? 'Selected Date:' : 'New Date:'}</span>
-                  <span>{format(selectedDate, 'PPP')}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="border rounded-lg p-4">
-              <p className="text-sm font-medium mb-3">Select {isNewSchedule ? 'Visit' : 'New'} Date</p>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={isDayDisabled}
-                className={cn("pointer-events-auto mx-auto")}
-              />
-              <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                <p>• Dates in gray are not available (non-working days or fully booked)</p>
-                <p>• You must schedule at least 48 hours in advance</p>
-                {workingDays.length > 0 && (
-                  <p>• Working days: {workingDays.join(', ')}</p>
-                )}
+          {!isEligible ? (
+            <div className="flex items-start gap-4 p-6 bg-red-50 rounded-3xl border border-red-100">
+              <div className="bg-white p-2 rounded-xl shadow-sm">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+              </div>
+              <div>
+                <p className="font-black text-red-600 uppercase text-xs tracking-widest">Action Restricted</p>
+                <p className="text-sm text-red-500/80 leading-relaxed mt-1 font-bold">{eligibilityMessage}</p>
               </div>
             </div>
-
-            {selectedDate && (
-              <div className="p-4 bg-primary/5 rounded-lg space-y-2">
-                <p className="font-medium">Confirm {isNewSchedule ? 'Visit Date' : 'Reschedule'}</p>
+          ) : (
+            <div className="space-y-6">
+              {/* Status Header */}
+              <div className="grid grid-cols-2 gap-4">
                 {booking.visit_date && (
-                  <p className="text-sm">
-                    From: <span className="font-medium">{format(new Date(booking.visit_date), 'PPP')}</span>
-                  </p>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Date</p>
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-slate-400" />
+                      <span className="text-xs font-black text-slate-600">{format(new Date(booking.visit_date), 'dd MMM yyyy')}</span>
+                    </div>
+                  </div>
                 )}
-                <p className="text-sm">
-                  {isNewSchedule ? 'Date:' : 'To:'} <span className="font-medium text-primary">{format(selectedDate, 'PPP')}</span>
-                </p>
+                {selectedDate && (
+                  <div className="p-4 rounded-2xl border border-[#008080]/20" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: COLORS.TEAL }}>Selected Date</p>
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" style={{ color: COLORS.TEAL }} />
+                      <span className="text-xs font-black" style={{ color: COLORS.TEAL }}>{format(selectedDate, 'dd MMM yyyy')}</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-                Cancel
-              </Button>
-              <Button onClick={handleReschedule} disabled={!selectedDate || loading}>
-                {loading ? "Processing..." : (isNewSchedule ? "Confirm Date" : "Confirm Reschedule")}
-              </Button>
+              {/* Calendar Section */}
+              <div className="bg-white rounded-[28px] p-4 shadow-sm border border-slate-100">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  disabled={isDayDisabled}
+                  className="mx-auto"
+                />
+                
+                <div className="mt-6 pt-6 border-t border-slate-50 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Info className="h-3 w-3 text-slate-400" />
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Policy & Availability</p>
+                  </div>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <li className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                      <CheckCircle2 className="h-3 w-3 text-green-500" /> 48H ADVANCE NOTICE REQUIRED
+                    </li>
+                    {workingDays.length > 0 && (
+                      <li className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" /> {workingDays.length} WORKING DAYS PER WEEK
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => onOpenChange(false)} 
+                  disabled={loading}
+                  className="flex-1 py-7 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-slate-400 hover:bg-slate-50"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleReschedule} 
+                  disabled={!selectedDate || loading}
+                  className="flex-[2] py-7 rounded-2xl text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl transition-all active:scale-95 border-none"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
+                    boxShadow: `0 12px 24px -8px ${COLORS.CORAL}88`
+                  }}
+                >
+                  {loading ? "Processing..." : (isNewSchedule ? "Set Visit Date" : "Confirm Move")}
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
