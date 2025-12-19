@@ -574,47 +574,58 @@ const Index = () => {
 
             <main className="w-full">
 {!isSearchFocused && (
-  <div className="w-full px-4 md:px-6 lg:px-8 py-6 overflow-hidden">
-    {/* MOBILE: Horizontal scroll with "Glass-Circle" icons
-      DESKTOP: 4-column grid with "Bold-Image-Cards" 
+  <div className="w-full px-4 md:px-6 lg:px-8 py-6 md:py-10 overflow-hidden">
+    {/* MOBILE: Smooth horizontal scroll with snap alignment
+        DESKTOP: Clean 4-column grid with increased spacing
     */}
-    <div className="flex flex-row overflow-x-auto scrollbar-hide md:grid md:grid-cols-4 gap-4 md:gap-8 w-full">
+    <div className="flex flex-row overflow-x-auto scrollbar-hide md:grid md:grid-cols-4 gap-4 md:gap-8 w-full snap-x">
       {categories.map((cat) => (
-        <div 
-          key={cat.title} 
-          onClick={() => navigate(cat.path)} 
-          className="flex-shrink-0 flex flex-col items-center cursor-pointer group w-[22%] min-w-[85px] md:w-full"
+        <div
+          key={cat.title}
+          onClick={() => navigate(cat.path)}
+          className="flex-shrink-0 flex flex-col items-center cursor-pointer group w-24 md:w-full snap-center"
         >
-          {/* ICON / IMAGE CONTAINER */}
-          <div 
-            className="flex items-center justify-center transition-all duration-300 relative
-                       w-16 h-16 rounded-[22px] md:w-full md:h-48 lg:h-56 md:rounded-[32px] 
-                       shadow-lg md:shadow-xl overflow-hidden"
+          {/* ICON CONTAINER */}
+          <div
+            className="flex items-center justify-center transition-all duration-300 relative overflow-hidden
+                       w-16 h-16 rounded-[22px] shadow-lg
+                       md:w-full md:h-44 lg:h-52 md:rounded-[32px] md:shadow-xl
+                       group-hover:translate-y-[-4px] group-active:scale-95"
             style={{
-              backgroundColor: COLORS.TEAL,
               backgroundImage: `url(${cat.bgImage})`,
               backgroundSize: 'cover',
-              backgroundPosition: 'center'
+              backgroundPosition: 'center',
+              backgroundColor: COLORS.TEAL, // Fallback
             }}
           >
-            {/* Dark Overlay for Desktop & Subtle Glow for Mobile */}
-            <div className="absolute inset-0 bg-black/40 group-hover:bg-[#008080]/60 transition-all duration-500" />
-            
-            {/* Desktop-only: subtle inner border for premium look */}
-            <div className="hidden md:block absolute inset-4 border border-white/20 rounded-[24px] pointer-events-none" />
+            {/* Dynamic Overlay: Matches the branding colors on hover */}
+            <div className="absolute inset-0 bg-black/40 group-hover:bg-[#008080]/60 transition-colors duration-300" />
 
-            {/* Icon: Using high-contrast white */}
-            <cat.icon className="relative z-10 h-6 w-6 text-white md:h-12 md:w-12 lg:h-14 lg:w-14 drop-shadow-md" />
+            {/* Icon: Using white for high contrast against the overlays */}
+            <cat.icon 
+              className="relative z-10 transition-transform duration-300 group-hover:scale-110
+                         h-7 w-7 text-white md:h-12 md:w-12 lg:h-16 lg:w-16" 
+            />
+            
+            {/* Desktop-only subtle border light effect */}
+            <div className="hidden md:block absolute inset-0 border border-white/10 rounded-[32px] pointer-events-none" />
           </div>
 
-          {/* TEXT LABEL */}
-          <div className="mt-3 text-center">
-            <span className="font-black text-[#008080] text-[10px] md:text-lg uppercase tracking-widest block leading-tight">
+          {/* TEXT CONTENT */}
+          <div className="mt-3 md:mt-5 text-center px-1">
+            <span 
+              className="font-black uppercase tracking-[0.1em] leading-tight block
+                         text-[10px] md:text-sm lg:text-base transition-colors duration-300
+                         group-hover:text-[#FF7F50]" 
+              style={{ color: COLORS.TEAL }}
+              role="heading" 
+              aria-level={3}
+            >
               {cat.title}
             </span>
             
-            {/* Description: High scannability with subtle grey */}
-            <p className="hidden md:block text-slate-400 font-bold text-xs uppercase tracking-tighter mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {/* Description: High-end look using the Khaki Dark for subtle text */}
+            <p className="hidden md:block text-[#857F3E] text-[11px] font-bold uppercase tracking-wider mt-1 opacity-70">
               {cat.description}
             </p>
           </div>
