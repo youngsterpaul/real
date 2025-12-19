@@ -27,14 +27,12 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, hideIc
   const isIndexPage = location.pathname === '/';
   const { user } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: profile } = await supabase.from('profiles').select('name').eq('id', session.user.id).single();
-        if (profile?.name) setUserName(profile.name);
+        await supabase.from('profiles').select('name').eq('id', session.user.id).single();
       }
     };
     fetchUserProfile();
@@ -44,8 +42,16 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, hideIc
     ? "fixed top-0 left-0 right-0 bg-transparent flex" 
     : "hidden md:flex sticky top-0 left-0 right-0 border-b border-white/10 shadow-lg";
 
-  // Reusable style for the square icon buttons on desktop
-  const iconButtonClasses = "h-11 w-11 rounded-2xl flex items-center justify-center transition-all active:scale-90 md:shadow-none md:bg-white/10 md:hover:bg-white/20";
+  /**
+   * SHARED ICON STYLING
+   * Applies the same background, hover, and transition to all header icons
+   */
+  const headerIconStyles = `
+    h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-200 
+    active:scale-90 shadow-md md:shadow-none text-white
+    ${isIndexPage ? 'bg-[rgba(0,0,0,0.5)]' : 'bg-white/10'} 
+    md:bg-white/15 md:hover:bg-white/25
+  `;
 
   return (
     <header 
@@ -62,13 +68,8 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, hideIc
         <div className={`flex items-center gap-4 ${isIndexPage && 'mt-4 md:mt-0'}`}>
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
-              <button 
-                className={iconButtonClasses}
-                style={{ 
-                  backgroundColor: isIndexPage && window.innerWidth < 768 ? COLORS.DARK_BG : undefined 
-                }}
-              >
-                <Menu className="h-5 w-5 text-white" />
+              <button className={headerIconStyles}>
+                <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 h-screen border-none">
@@ -117,29 +118,21 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, hideIc
           {showSearchIcon && (
             <button 
               onClick={() => onSearchClick ? onSearchClick() : navigate('/')}
-              className={iconButtonClasses}
-              style={{ 
-                backgroundColor: isIndexPage && window.innerWidth < 768 ? COLORS.DARK_BG : undefined 
-              }}
+              className={headerIconStyles}
             >
-              <Search className="h-5 w-5 text-white" />
+              <Search className="h-5 w-5" />
             </button>
           )}
           
-          <div 
-            className={iconButtonClasses}
-            style={{ 
-              backgroundColor: isIndexPage && window.innerWidth < 768 ? COLORS.DARK_BG : undefined 
-            }}
-          >
+          {/* Notification Bell with identical wrapper styling */}
+          <div className={headerIconStyles}>
             <NotificationBell />
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            {/* ThemeToggle Removed */}
             <button 
               onClick={() => user ? navigate('/account') : navigate('/auth')}
-              className="h-11 px-6 rounded-2xl flex items-center gap-3 transition-all font-black text-[10px] uppercase tracking-widest shadow-lg border-none text-white hover:opacity-90 active:scale-95"
+              className="h-11 px-6 rounded-2xl flex items-center gap-3 transition-all font-black text-[10px] uppercase tracking-widest shadow-lg border-none text-white hover:brightness-110 active:scale-95"
               style={{ 
                 background: `linear-gradient(135deg, ${COLORS.CORAL} 0%, #FF6B35 100%)`
               }}
