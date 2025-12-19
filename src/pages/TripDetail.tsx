@@ -108,14 +108,126 @@ const TripDetail = () => {
   const isExpired = !trip.is_custom_date && tripDate && tripDate < today;
   const isSoldOut = trip.available_tickets <= 0;
   const canBook = !isExpired && !isSoldOut;
-
   const allImages = [trip.image_url, ...(trip.gallery_images || []), ...(trip.images || [])].filter(Boolean);
+
+  // SECTION COMPONENTS
+  const OverviewSection = () => (
+    <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-1">
+      <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>Overview</h2>
+      <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{trip.description}</p>
+    </div>
+  );
+
+  const ActivitiesSection = () => trip.activities?.length > 0 && (
+    <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-3">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 rounded-xl bg-orange-50"><Zap className="h-5 w-5 text-[#FF9800]" /></div>
+        <div>
+          <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.ORANGE }}>Included Activities</h2>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Experiences in this package</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        {trip.activities.map((act: any, i: number) => (
+          <div key={i} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100/50">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#FF9800]" />
+            <div className="flex flex-col">
+              <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide">{act.name}</span>
+              <span className="text-[10px] font-bold text-[#FF9800]">{act.price === 0 ? "Included" : `Value: KSh ${act.price}`}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const BookingCard = () => (
+    <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100 lg:sticky lg:top-24">
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Price</p>
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-black" style={{ color: COLORS.RED }}>KSh {trip.price}</span>
+            <span className="text-slate-400 text-[10px] font-bold uppercase">/ adult</span>
+          </div>
+        </div>
+        <div className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 flex items-center gap-2">
+          <Clock className="h-4 w-4" style={{ color: COLORS.TEAL }} />
+          <span className={`text-xs font-black uppercase ${isSoldOut ? "text-red-500" : "text-slate-600"}`}>
+            {isSoldOut ? "Full" : `${trip.available_tickets} Left`}
+          </span>
+        </div>
+      </div>
+
+      <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+            <Users className="h-3 w-3" /> Booking Availability
+          </span>
+          <span className={`text-[10px] font-black uppercase ${trip.available_tickets < 5 ? 'text-red-500' : 'text-emerald-600'}`}>
+            {isSoldOut ? "Sold Out" : `${trip.available_tickets} Tickets Remaining`}
+          </span>
+        </div>
+        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+           <div 
+            className={`h-full transition-all duration-500 ${trip.available_tickets < 5 ? 'bg-red-500' : 'bg-emerald-500'}`}
+            style={{ width: `${Math.min((trip.available_tickets / 50) * 100, 100)}%` }}
+           />
+        </div>
+      </div>
+
+      <div className="space-y-4 mb-8">
+        <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
+          <span className="text-slate-400 flex items-center gap-1"><Calendar className="h-3 w-3" /> Trip Date</span>
+          <span className={isExpired ? "text-red-500" : "text-slate-700"}>
+            {trip.is_custom_date ? "Flexible" : new Date(trip.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {isExpired && " (Past)"}
+          </span>
+        </div>
+        <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
+           <span className="text-slate-400">Child Rate</span>
+           <span className="text-slate-700">KSh {trip.price_child || 'N/A'}</span>
+        </div>
+      </div>
+
+      <Button 
+        onClick={() => setBookingOpen(true)}
+        disabled={!canBook}
+        className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl transition-all active:scale-95 border-none mb-6"
+        style={{ 
+            background: !canBook 
+                ? "#cbd5e1" 
+                : `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
+        }}
+      >
+        {isSoldOut ? "Fully Booked" : isExpired ? "Trip Expired" : "Secure My Spot"}
+      </Button>
+
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        <UtilityButton icon={<MapPin className="h-5 w-5" />} label="Map" onClick={openInMaps} />
+        <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={handleCopyLink} />
+        <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={handleShare} />
+      </div>
+
+      <div className="space-y-4 pt-6 border-t border-slate-50">
+        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Organizer Contact</h3>
+        {trip.phone_number && (
+          <a href={`tel:${trip.phone_number}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
+            <div className="p-2 rounded-lg bg-slate-50">
+              <Phone className="h-4 w-4 text-[#008080]" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-tight">{trip.phone_number}</span>
+          </a>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header className="hidden md:block" />
 
-      {/* 1. HERO SECTION - FIXED FOR FULL IMAGE COVERAGE */}
+      {/* HERO SECTION */}
       <div className="relative w-full overflow-hidden h-[55vh] md:h-[65vh] bg-slate-900">
         <div className="absolute top-4 left-4 right-4 z-50 flex justify-between">
           <Button onClick={() => navigate(-1)} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0 hover:bg-black/50">
@@ -127,16 +239,11 @@ const TripDetail = () => {
         </div>
 
         <Carousel plugins={[Autoplay({ delay: 4000 })]} className="w-full h-full p-0">
-          <CarouselContent className="h-full ml-0"> {/* Removed ml-4/default gap */}
+          <CarouselContent className="h-full ml-0">
             {allImages.map((img, idx) => (
-              <CarouselItem key={idx} className="h-full pl-0 basis-full"> {/* pl-0 ensures no slide padding */}
+              <CarouselItem key={idx} className="h-full pl-0 basis-full">
                 <div className="relative h-full w-full">
-                  <img 
-                    src={img} 
-                    alt={trip.name} 
-                    className="w-full h-full object-cover object-center" 
-                  />
-                  {/* Enhanced dark gradient for better text contrast */}
+                  <img src={img} alt={trip.name} className="w-full h-full object-cover object-center" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent z-10" />
                 </div>
               </CarouselItem>
@@ -144,202 +251,78 @@ const TripDetail = () => {
           </CarouselContent>
         </Carousel>
 
-        <div className="absolute bottom-10 left-0 z-40 w-full md:w-3/4 lg:w-1/2 p-8 pointer-events-none">
+        <div className="absolute bottom-10 left-0 z-40 w-full p-8 pointer-events-none">
           <div className="relative z-10 space-y-4 pointer-events-auto">
-            <Button className="bg-[#FF7F50] hover:bg-[#FF7F50] border-none px-4 py-1.5 h-auto uppercase font-black tracking-[0.15em] text-[10px] rounded-full shadow-lg">Scheduled Trip</Button>
-            <div>
-              <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none text-white drop-shadow-2xl mb-3">{trip.name}</h1>
-              <div className="flex flex-wrap items-center gap-3 cursor-pointer group w-fit" onClick={openInMaps}>
-                <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl group-hover:bg-[#008080] transition-all duration-300">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-[#FF7F50] uppercase tracking-widest">Destination</span>
-                  <span className="text-sm font-black text-white uppercase tracking-wider group-hover:text-[#008080] transition-colors">{trip.location}, {trip.country}</span>
-                </div>
-              </div>
+            <Button className="bg-[#FF7F50] border-none px-4 py-1.5 h-auto uppercase font-black tracking-[0.15em] text-[10px] rounded-full shadow-lg">Scheduled Trip</Button>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none text-white drop-shadow-2xl mb-3">{trip.name}</h1>
+            <div className="flex items-center gap-3 group w-fit cursor-pointer" onClick={openInMaps}>
+               <MapPin className="h-5 w-5 text-white" />
+               <span className="text-sm font-black text-white uppercase tracking-wider">{trip.location}, {trip.country}</span>
             </div>
           </div>
         </div>
       </div>
 
       <main className="container px-4 max-w-6xl mx-auto -mt-10 relative z-50">
-        <div className="grid lg:grid-cols-[1.7fr,1fr] gap-6 items-start">
+        <div className="flex flex-col lg:grid lg:grid-cols-[1.7fr,1fr] gap-6">
           
-          {/* CONTENT COLUMN (LEFT) */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-              <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>Overview</h2>
-              <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{trip.description}</p>
+          <div className="flex flex-col gap-6">
+            <OverviewSection />
+
+            {/* Mobile Only Booking Card (Order 2) */}
+            <div className="block lg:hidden order-2">
+              <BookingCard />
             </div>
 
-            {trip.activities?.length > 0 && (
-              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-xl bg-orange-50"><Zap className="h-5 w-5 text-[#FF9800]" /></div>
-                  <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.ORANGE }}>Included Activities</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Experiences in this package</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {trip.activities.map((act: any, i: number) => (
-                    <div key={i} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100/50">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#FF9800]" />
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide">{act.name}</span>
-                        <span className="text-[10px] font-bold text-[#FF9800]">{act.price === 0 ? "Included" : `Value: KSh ${act.price}`}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <ActivitiesSection />
 
-            <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-                <div className="flex justify-between items-center mb-8">
-                  <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Trip Reviews</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Feedback from travelers</p>
-                  </div>
-                  <div className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 flex items-center gap-2">
-                    <Star className="h-4 w-4 fill-[#FF7F50] text-[#FF7F50]" />
-                  </div>
-                </div>
+            {/* Mobile Only: Reviews and Similar (Order 6+) */}
+            <div className="block lg:hidden space-y-6 order-6">
+              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
                 <ReviewSection itemId={trip.id} itemType="trip" />
+              </div>
+              <div className="mt-8">
+                <SimilarItems currentItemId={trip.id} itemType="trip" country={trip.country} />
+              </div>
             </div>
           </div>
 
-          {/* BOOKING SIDEBAR (RIGHT) */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100 lg:sticky lg:top-24">
-              <div className="flex justify-between items-end mb-8">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Price</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black" style={{ color: COLORS.RED }}>KSh {trip.price}</span>
-                    <span className="text-slate-400 text-[10px] font-bold uppercase">/ adult</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 flex items-center gap-2">
-                  <Clock className="h-4 w-4" style={{ color: COLORS.TEAL }} />
-                  <span className={`text-xs font-black uppercase ${isSoldOut ? "text-red-500" : "text-slate-600"}`}>
-                    {isSoldOut ? "Full" : `${trip.available_tickets} Left`}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <Users className="h-3 w-3" /> Booking Availability
-                  </span>
-                  <span className={`text-[10px] font-black uppercase ${trip.available_tickets < 5 ? 'text-red-500' : 'text-emerald-600'}`}>
-                    {isSoldOut ? "Sold Out" : `${trip.available_tickets} Tickets Remaining`}
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                   <div 
-                    className={`h-full transition-all duration-500 ${trip.available_tickets < 5 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min((trip.available_tickets / 50) * 100, 100)}%` }}
-                   />
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
-                  <span className="text-slate-400 flex items-center gap-1"><Calendar className="h-3 w-3" /> Trip Date</span>
-                  <span className={isExpired ? "text-red-500" : "text-slate-700"}>
-                    {trip.is_custom_date ? "Flexible" : new Date(trip.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    {isExpired && " (Past)"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
-                   <span className="text-slate-400">Child Rate</span>
-                   <span className="text-slate-700">KSh {trip.price_child || 'N/A'}</span>
-                </div>
-              </div>
-
-              <Button 
-                onClick={() => setBookingOpen(true)}
-                disabled={!canBook}
-                className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl transition-all active:scale-95 border-none mb-6"
-                style={{ 
-                    background: !canBook 
-                        ? "#cbd5e1" 
-                        : `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
-                    boxShadow: !canBook ? "none" : `0 12px 24px -8px ${COLORS.TEAL}88`
-                }}
-              >
-                {isSoldOut ? "Fully Booked" : isExpired ? "Trip Expired" : "Secure My Spot"}
-              </Button>
-
-              <div className="grid grid-cols-3 gap-3 mb-8">
-                <UtilityButton icon={<MapPin className="h-5 w-5" />} label="Map" onClick={openInMaps} />
-                <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={handleCopyLink} />
-                <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={handleShare} />
-              </div>
-
-              <div className="space-y-4 pt-6 border-t border-slate-50">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Organizer Contact</h3>
-                {trip.phone_number && (
-                  <a href={`tel:${trip.phone_number}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
-                    <div className="p-2 rounded-lg bg-slate-50 group-hover:bg-teal-50">
-                      <Phone className="h-4 w-4 text-[#008080]" />
-                    </div>
-                    <span className="text-xs font-bold uppercase tracking-tight">{trip.phone_number}</span>
-                  </a>
-                )}
-                {trip.email && (
-                  <a href={`mailto:${trip.email}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
-                    <div className="p-2 rounded-lg bg-slate-50 group-hover:bg-teal-50">
-                      <Mail className="h-4 w-4 text-[#008080]" />
-                    </div>
-                    <span className="text-xs font-bold uppercase tracking-tight truncate">{trip.email}</span>
-                  </a>
-                )}
-              </div>
-            </div>
+          {/* Desktop Only Sidebar */}
+          <div className="hidden lg:block">
+            <BookingCard />
           </div>
         </div>
 
-        <div className="mt-16">
-            <SimilarItems currentItemId={trip.id} itemType="trip" country={trip.country} />
+        {/* Desktop Only Bottom Sections (Maintains full container width logic) */}
+        <div className="hidden lg:block space-y-12">
+            <div className="mt-12 bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+                <ReviewSection itemId={trip.id} itemType="trip" />
+            </div>
+            <div className="mt-16">
+                <SimilarItems currentItemId={trip.id} itemType="trip" country={trip.country} />
+            </div>
         </div>
       </main>
 
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[95vh] p-0 overflow-hidden rounded-[32px] border-none shadow-2xl">
           <MultiStepBooking 
-            onSubmit={handleBookingSubmit} 
-            activities={trip.activities || []} 
-            priceAdult={trip.price} 
-            priceChild={trip.price_child} 
-            isProcessing={isProcessing} 
-            isCompleted={isCompleted} 
-            itemName={trip.name}
-            itemId={trip.id}
-            bookingType="trip"
-            hostId={trip.created_by || ""}
-            onPaymentSuccess={() => setIsCompleted(true)}
-            onCancel={() => setBookingOpen(false)}
-            primaryColor={COLORS.TEAL}
-            accentColor={COLORS.CORAL}
+            onSubmit={handleBookingSubmit} activities={trip.activities || []} 
+            priceAdult={trip.price} priceChild={trip.price_child} 
+            isProcessing={isProcessing} isCompleted={isCompleted} 
+            itemName={trip.name} itemId={trip.id} bookingType="trip"
+            hostId={trip.created_by || ""} onPaymentSuccess={() => setIsCompleted(true)}
+            onCancel={() => setBookingOpen(false)} primaryColor={COLORS.TEAL} accentColor={COLORS.CORAL}
           />
         </DialogContent>
       </Dialog>
-
       <MobileBottomBar />
     </div>
   );
 };
 
 const UtilityButton = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
-  <Button 
-    variant="ghost" 
-    onClick={onClick} 
-    className="flex-col h-auto py-3 bg-[#F8F9FA] text-slate-500 rounded-2xl hover:bg-slate-100 transition-colors border border-slate-100 flex-1"
-  >
+  <Button variant="ghost" onClick={onClick} className="flex-col h-auto py-3 bg-[#F8F9FA] text-slate-500 rounded-2xl hover:bg-slate-100 transition-colors border border-slate-100 flex-1">
     <div className="mb-1">{icon}</div>
     <span className="text-[10px] font-black uppercase tracking-tighter">{label}</span>
   </Button>
