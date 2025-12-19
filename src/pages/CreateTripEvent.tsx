@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,29 +10,27 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, MapPin, DollarSign, Users, Upload, Navigation, ArrowLeft, Camera, CheckCircle2 } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Users, Navigation, ArrowLeft, ArrowRight, Camera, CheckCircle2, X, Plus, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CountrySelector } from "@/components/creation/CountrySelector";
-import { PageHeader } from "@/components/creation/PageHeader";
 import { PhoneInput } from "@/components/creation/PhoneInput";
 import { approvalStatusSchema } from "@/lib/validation";
-import { EmailVerification } from "@/components/creation/EmailVerification";
 
 const COLORS = {
   TEAL: "#008080",
   CORAL: "#FF7F50",
   CORAL_LIGHT: "#FF9E7A",
-  KHAKI: "#F0E68C",
-  KHAKI_DARK: "#857F3E",
-  RED: "#FF0000",
   SOFT_GRAY: "#F8F9FA"
 };
+
+const TOTAL_STEPS = 5;
 
 const CreateTripEvent = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -49,28 +46,19 @@ const CreateTripEvent = () => {
     phone_number: "",
     map_link: "",
     is_custom_date: false,
-    type: "trip" as "trip" | "event"
+    type: "trip" as "trip" | "event",
+    latitude: null as number | null,
+    longitude: null as number | null
   });
   
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('country, email')
-          .eq('id', user.id)
-          .single();
-        
+        const { data: profile } = await supabase.from('profiles').select('country, email').eq('id', user.id).single();
         if (profile?.country) {
-          setFormData(prev => ({ 
-            ...prev, 
-            country: profile.country,
-            email: profile.email || user.email || ''
-          }));
+          setFormData(prev => ({ ...prev, country: profile.country, email: profile.email || user.email || '' }));
         } else if (user.email) {
           setFormData(prev => ({ ...prev, email: user.email || '' }));
         }
@@ -79,20 +67,21 @@ const CreateTripEvent = () => {
     fetchUserProfile();
   }, [user]);
 
-  useEffect(() => {
+  const getCurrentLocation = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-          setFormData(prev => ({ ...prev, map_link: mapUrl }));
+          setFormData(prev => ({ ...prev, map_link: mapUrl, latitude, longitude }));
+          toast({ title: "Location Added", description: "Current location pinned." });
         },
-        () => {}
+        () => toast({ title: "Error", description: "Unable to get location.", variant: "destructive" })
       );
     }
-  }, []);
+  };
 
-  const handleImageUpload = async (files: FileList | null) => {
+  const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
     const newFiles = Array.from(files).slice(0, 5 - galleryImages.length);
     setGalleryImages(prev => [...prev, ...newFiles].slice(0, 5));
@@ -102,37 +91,80 @@ const CreateTripEvent = () => {
     setGalleryImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const getCurrentLocation = () => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-          setFormData({...formData, map_link: mapUrl});
-          toast({ title: "Location Added", description: "Current location pinned." });
-        },
-        () => {
-          toast({ title: "Error", description: "Unable to get location.", variant: "destructive" });
+  // Step validation
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        // Type selection - always valid
+        return true;
+      case 2:
+        if (!formData.name.trim()) {
+          toast({ title: "Required", description: "Experience name is required", variant: "destructive" });
+          return false;
         }
-      );
+        if (!formData.country) {
+          toast({ title: "Required", description: "Country is required", variant: "destructive" });
+          return false;
+        }
+        if (!formData.place.trim()) {
+          toast({ title: "Required", description: "Region/Place is required", variant: "destructive" });
+          return false;
+        }
+        if (!formData.location.trim()) {
+          toast({ title: "Required", description: "Specific location is required", variant: "destructive" });
+          return false;
+        }
+        if (!formData.is_custom_date && !formData.date) {
+          toast({ title: "Required", description: "Date is required (or select custom tour)", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 3:
+        if (!formData.price || parseFloat(formData.price) < 0) {
+          toast({ title: "Required", description: "Adult price is required", variant: "destructive" });
+          return false;
+        }
+        if (!formData.available_tickets || parseInt(formData.available_tickets) <= 0) {
+          toast({ title: "Required", description: "Max slots must be greater than 0", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 4:
+        if (!formData.phone_number) {
+          toast({ title: "Required", description: "Phone number is required", variant: "destructive" });
+          return false;
+        }
+        if (!formData.map_link) {
+          toast({ title: "Required", description: "GPS location is required", variant: "destructive" });
+          return false;
+        }
+        return true;
+      case 5:
+        if (!formData.description.trim()) {
+          toast({ title: "Required", description: "Description is required", variant: "destructive" });
+          return false;
+        }
+        return true;
+      default:
+        return true;
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS));
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleSubmit = async () => {
     if (!user) { navigate("/auth"); return; }
-    if (!formData.phone_number || !formData.map_link) {
-      toast({ title: "Missing Info", description: "Phone and Location are required.", variant: "destructive" });
-      return;
-    }
-    if (!formData.phone_number || !formData.map_link) {
-      toast({ title: "Missing Info", description: "Phone and Location are required.", variant: "destructive" });
-      return;
-    }
+    if (!validateStep(currentStep)) return;
 
     setLoading(true);
-    setUploading(true);
-
     try {
       const uploadedUrls: string[] = [];
       for (const file of galleryImages) {
@@ -144,13 +176,23 @@ const CreateTripEvent = () => {
       }
 
       const { error } = await supabase.from("trips").insert([{
-        ...formData,
+        name: formData.name,
+        description: formData.description,
+        location: formData.location,
+        place: formData.place,
+        country: formData.country,
         date: formData.is_custom_date ? new Date().toISOString().split('T')[0] : formData.date,
+        is_custom_date: formData.is_custom_date,
+        is_flexible_date: formData.is_custom_date,
+        type: formData.type,
         image_url: uploadedUrls[0] || "",
         gallery_images: uploadedUrls,
         price: parseFloat(formData.price),
         price_child: parseFloat(formData.price_child) || 0,
         available_tickets: parseInt(formData.available_tickets) || 0,
+        email: formData.email,
+        phone_number: formData.phone_number,
+        map_link: formData.map_link,
         created_by: user.id,
         approval_status: approvalStatusSchema.parse("pending")
       }]);
@@ -162,38 +204,46 @@ const CreateTripEvent = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
-      setUploading(false);
     }
   };
+
+  const StepIndicator = () => (
+    <div className="flex items-center gap-2 mb-8">
+      {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((step) => (
+        <div key={step} className="h-2 flex-1 rounded-full transition-all duration-300"
+          style={{ backgroundColor: step <= currentStep ? COLORS.TEAL : '#e2e8f0' }}
+        />
+      ))}
+    </div>
+  );
+
+  const StyledInput = ({ className = "", ...props }: React.ComponentProps<typeof Input>) => (
+    <Input className={`rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all h-12 font-bold ${className}`} {...props} />
+  );
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header />
       
       <main className="container px-4 py-8 max-w-4xl mx-auto">
-        <div className="relative rounded-[40px] overflow-hidden mb-10 shadow-2xl h-[250px] md:h-[350px]">
-          <img 
-            src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200" 
-            className="w-full h-full object-cover" 
-            alt="Header"
-          />
+        <div className="relative rounded-[40px] overflow-hidden mb-8 shadow-2xl h-[200px] md:h-[280px]">
+          <img src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200" className="w-full h-full object-cover" alt="Header" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
-            <Button 
-                onClick={() => navigate(-1)} 
-                className="absolute top-6 left-6 rounded-full bg-white/20 backdrop-blur-md border-none w-10 h-10 p-0 hover:bg-white/40 text-white"
-            >
-                <ArrowLeft className="h-5 w-5" />
+            <Button onClick={() => navigate(-1)} className="absolute top-6 left-6 rounded-full bg-white/20 backdrop-blur-md border-none w-10 h-10 p-0 text-white">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <p className="text-[#FF7F50] font-black uppercase tracking-[0.3em] text-[10px] mb-2">Host Center</p>
-            <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-tight">
-              Create <span style={{ color: COLORS.TEAL }}>New</span> Experience
+            <p className="text-[#FF7F50] font-black uppercase tracking-[0.2em] text-[10px] mb-2">Step {currentStep} of {TOTAL_STEPS}</p>
+            <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter">
+              Create <span style={{ color: COLORS.TEAL }}>Experience</span>
             </h1>
           </div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Listing Type Selection */}
-          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+        <StepIndicator />
+
+        {/* Step 1: Type Selection */}
+        {currentStep === 1 && (
+          <Card className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-right-4">
             <h2 className="text-xs font-black uppercase tracking-widest mb-6" style={{ color: COLORS.TEAL }}>Select Listing Type</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
@@ -203,16 +253,10 @@ const CreateTripEvent = () => {
                 <label 
                   key={type.id}
                   className={`relative p-6 rounded-[24px] border-2 cursor-pointer transition-all ${
-                    formData.type === type.id 
-                    ? 'border-[#008080] bg-[#008080]/5' 
-                    : 'border-slate-100 bg-slate-50 hover:bg-white'
+                    formData.type === type.id ? 'border-[#008080] bg-[#008080]/5' : 'border-slate-100 bg-slate-50 hover:bg-white'
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="type"
-                    value={type.id}
-                    className="hidden"
+                  <input type="radio" name="type" value={type.id} className="hidden"
                     onChange={(e) => setFormData({...formData, type: e.target.value as any})}
                   />
                   <div className="flex justify-between items-start">
@@ -220,74 +264,55 @@ const CreateTripEvent = () => {
                       <span className={`block font-black uppercase tracking-tight text-sm ${formData.type === type.id ? 'text-[#008080]' : 'text-slate-600'}`}>
                         {type.label}
                       </span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 block leading-tight">{type.sub}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase mt-1 block">{type.sub}</span>
                     </div>
                     {formData.type === type.id && <CheckCircle2 className="h-5 w-5 text-[#008080]" />}
                   </div>
                 </label>
               ))}
             </div>
-          </div>
+          </Card>
+        )}
 
-          {/* Core Details */}
-          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6">
-            <h2 className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: COLORS.TEAL }}>Experience Details</h2>
+        {/* Step 2: Experience Details */}
+        {currentStep === 2 && (
+          <Card className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6 animate-in fade-in slide-in-from-right-4">
+            <h2 className="text-xs font-black uppercase tracking-widest" style={{ color: COLORS.TEAL }}>Experience Details</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <CustomLabel>Experience Name</CustomLabel>
-                <StyledInput
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="e.g. Hiking in the Clouds"
-                />
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Experience Name *</Label>
+                <StyledInput value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Hiking in the Clouds" />
               </div>
 
               <div className="space-y-2">
-                <CustomLabel>Country</CustomLabel>
-                <CountrySelector
-                  value={formData.country}
-                  onChange={(value) => setFormData({...formData, country: value})}
-                />
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Country *</Label>
+                <CountrySelector value={formData.country} onChange={(value) => setFormData({...formData, country: value})} />
               </div>
 
               <div className="space-y-2">
-                <CustomLabel>Region / Place</CustomLabel>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Region / Place *</Label>
                 <div className="relative">
                   <MapPin className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
-                  <StyledInput
-                    className="pl-11"
-                    required
-                    value={formData.place}
-                    onChange={(e) => setFormData({...formData, place: e.target.value})}
-                    placeholder="e.g. Mt. Kenya Region"
-                  />
+                  <StyledInput className="pl-11" value={formData.place} onChange={(e) => setFormData({...formData, place: e.target.value})} placeholder="e.g. Mt. Kenya Region" />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <CustomLabel>Specific Location</CustomLabel>
-                <StyledInput
-                  required
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  placeholder="e.g. Nanyuki Main Gate"
-                />
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Specific Location *</Label>
+                <StyledInput value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} placeholder="e.g. Nanyuki Main Gate" />
               </div>
             </div>
 
             <div className="space-y-4 pt-4 border-t border-slate-50">
-              <CustomLabel>Date Settings</CustomLabel>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date Settings *</Label>
               {formData.type === "trip" && (
                 <div className="flex items-center space-x-3 bg-slate-50 p-4 rounded-2xl">
-                  <Checkbox 
-                    id="custom_date"
-                    checked={formData.is_custom_date}
+                  <Checkbox id="custom_date" checked={formData.is_custom_date}
                     onCheckedChange={(checked) => setFormData({...formData, is_custom_date: checked as boolean})}
                   />
                   <label htmlFor="custom_date" className="text-[11px] font-black uppercase tracking-tight text-slate-500 cursor-pointer">
-                    Custom tour - Open availability for 30 days
+                    Flexible dates - Open availability
                   </label>
                 </div>
               )}
@@ -295,198 +320,158 @@ const CreateTripEvent = () => {
               {!formData.is_custom_date && (
                 <div className="relative">
                   <Calendar className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
-                  <StyledInput
-                    type="date"
-                    required
-                    className="pl-11"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  <StyledInput type="date" className="pl-11" min={new Date().toISOString().split('T')[0]}
+                    value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})}
                   />
                 </div>
               )}
             </div>
-          </div>
+          </Card>
+        )}
 
-          {/* Pricing and Capacity */}
-          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+        {/* Step 3: Pricing & Capacity */}
+        {currentStep === 3 && (
+          <Card className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-right-4">
             <h2 className="text-xs font-black uppercase tracking-widest mb-6" style={{ color: COLORS.TEAL }}>Pricing & Logistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <CustomLabel>Adult Price (KSh)</CustomLabel>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Adult Price (KSh) *</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
-                  <StyledInput
-                    type="number"
-                    className="pl-11"
-                    required
-                    value={formData.price}
+                  <StyledInput type="number" className="pl-11" value={formData.price}
                     onChange={(e) => setFormData({...formData, price: e.target.value})}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <CustomLabel>Child Price (KSh)</CustomLabel>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Child Price (KSh)</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
-                  <StyledInput
-                    type="number"
-                    className="pl-11"
-                    required
-                    value={formData.price_child}
+                  <StyledInput type="number" className="pl-11" value={formData.price_child}
                     onChange={(e) => setFormData({...formData, price_child: e.target.value})}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <CustomLabel>Max Slots</CustomLabel>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Max Slots *</Label>
                 <div className="relative">
                   <Users className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
-                  <StyledInput
-                    type="number"
-                    className="pl-11"
-                    required
-                    value={formData.available_tickets}
+                  <StyledInput type="number" className="pl-11" value={formData.available_tickets}
                     onChange={(e) => setFormData({...formData, available_tickets: e.target.value})}
                   />
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
+        )}
 
-          {/* Contact & Map */}
-          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6">
-            <h2 className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: COLORS.TEAL }}>Host Contact & Location</h2>
+        {/* Step 4: Contact & Location */}
+        {currentStep === 4 && (
+          <Card className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6 animate-in fade-in slide-in-from-right-4">
+            <h2 className="text-xs font-black uppercase tracking-widest" style={{ color: COLORS.TEAL }}>Contact & GPS Location</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <CustomLabel>Contact Email</CustomLabel>
-                <StyledInput
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  placeholder="contact@example.com"
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Email</Label>
+                <StyledInput type="email" value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="contact@example.com"
                 />
               </div>
 
               <div className="space-y-2">
-                <CustomLabel>Contact Phone</CustomLabel>
-                <PhoneInput
-                  value={formData.phone_number}
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Phone *</Label>
+                <PhoneInput value={formData.phone_number}
                   onChange={(value) => setFormData({...formData, phone_number: value})}
-                  country={formData.country}
-                  placeholder="712345678"
+                  country={formData.country} placeholder="712345678"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <CustomLabel>Map Link (GPS Point)</CustomLabel>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">GPS Location *</Label>
               <div className="flex gap-2">
-                <StyledInput
-                  className="bg-slate-50"
-                  readOnly
-                  value={formData.map_link}
-                  placeholder="Tap the icon to pin your location"
-                />
-                <Button 
-                  type="button" 
-                  onClick={getCurrentLocation}
-                  className="h-[52px] w-[52px] rounded-2xl bg-[#008080] hover:bg-[#008080]/90 shadow-lg"
+                <StyledInput className="bg-slate-50 flex-1" readOnly value={formData.map_link} placeholder="Tap the icon to pin your location" />
+                <Button type="button" onClick={getCurrentLocation}
+                  className="h-12 w-12 rounded-2xl shadow-lg"
+                  style={{ background: formData.map_link ? COLORS.TEAL : COLORS.CORAL }}
                 >
                   <Navigation className="h-5 w-5 text-white" />
                 </Button>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
-            <CustomLabel className="mb-4">Experience Description</CustomLabel>
+            {/* Gallery Upload */}
+            <div className="pt-6 border-t border-slate-100">
+              <h3 className="text-xs font-black uppercase tracking-widest mb-4" style={{ color: COLORS.TEAL }}>Gallery (Max 5)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {galleryImages.map((file, index) => (
+                  <div key={index} className="relative aspect-square rounded-[20px] overflow-hidden border-2 border-slate-100">
+                    <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="Preview" />
+                    <button type="button" onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {galleryImages.length < 5 && (
+                  <Label className="aspect-square rounded-[20px] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50">
+                    <Camera className="h-6 w-6 text-slate-400" />
+                    <span className="text-[9px] font-black uppercase text-slate-400 mt-1">Add</span>
+                    <Input type="file" multiple className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files)} />
+                  </Label>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Step 5: Description */}
+        {currentStep === 5 && (
+          <Card className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-right-4">
+            <Label className="text-xs font-black uppercase tracking-widest mb-4 block" style={{ color: COLORS.TEAL }}>Experience Description *</Label>
             <Textarea
-              className="rounded-[24px] border-slate-100 bg-slate-50 p-6 min-h-[150px] focus:ring-[#008080] text-sm"
-              required
+              className="rounded-[24px] border-slate-100 bg-slate-50 p-6 min-h-[200px] focus:ring-[#008080] text-sm"
               value={formData.description}
               onChange={(e) => setFormData({...formData, description: e.target.value})}
               placeholder="Tell travelers what makes this experience special..."
             />
-          </div>
+          </Card>
+        )}
 
-          {/* Gallery Upload */}
-          <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
-            <h2 className="text-xs font-black uppercase tracking-widest mb-6" style={{ color: COLORS.TEAL }}>Gallery (Max 5)</h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {galleryImages.map((file, index) => (
-                <div key={index} className="relative group aspect-square rounded-[20px] overflow-hidden border-2 border-slate-100">
-                  <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="Preview" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              
-              {galleryImages.length < 5 && (
-                <label className="aspect-square flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors">
-                  <Camera className="h-6 w-6 text-slate-400 mb-2" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase">Add Photo</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e.target.files)}
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4">
-            <Button 
-              type="submit" 
-              disabled={loading || uploading || galleryImages.length === 0}
-              className="flex-1 py-8 rounded-[24px] text-sm font-black uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 border-none"
-              style={{ 
-                background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
-              }}
+        {/* Navigation Buttons */}
+        <div className="flex gap-4 mt-8">
+          {currentStep > 1 && (
+            <Button type="button" onClick={handlePrevious} variant="outline"
+              className="flex-1 py-6 rounded-2xl font-black uppercase tracking-widest text-sm"
             >
-              {uploading ? "Uploading..." : loading ? "Processing..." : "Submit Experience"}
+              <ArrowLeft className="h-4 w-4 mr-2" /> Previous
             </Button>
-            <Button 
-              type="button" 
-              variant="ghost" 
-              onClick={() => navigate(-1)}
-              className="py-8 rounded-[24px] uppercase font-black text-slate-400 tracking-widest"
+          )}
+          
+          {currentStep < TOTAL_STEPS ? (
+            <Button type="button" onClick={handleNext}
+              className="flex-1 py-6 rounded-2xl font-black uppercase tracking-widest text-sm text-white"
+              style={{ background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)` }}
             >
-              Cancel
+              Next <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
-          </div>
-        </form>
+          ) : (
+            <Button type="button" onClick={handleSubmit} disabled={loading}
+              className="flex-1 py-6 rounded-2xl font-black uppercase tracking-widest text-sm text-white"
+              style={{ background: `linear-gradient(135deg, ${COLORS.TEAL} 0%, #006666 100%)` }}
+            >
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : "Submit for Approval"}
+            </Button>
+          )}
+        </div>
       </main>
-
-      <Footer />
+      
       <MobileBottomBar />
     </div>
   );
 };
-
-// Sub-components for styling consistency
-const CustomLabel = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <Label className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 ${className}`}>
-    {children}
-  </Label>
-);
-
-const StyledInput = (props: any) => (
-  <Input 
-    {...props} 
-    className={`h-[52px] rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-[#008080] transition-all font-bold text-sm ${props.className}`}
-  />
-);
 
 export default CreateTripEvent;
