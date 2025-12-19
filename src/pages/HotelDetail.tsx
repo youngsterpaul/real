@@ -25,7 +25,11 @@ import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
 
 const COLORS = {
   TEAL: "#008080",
-  RED: "#EF4444",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
+  KHAKI_DARK: "#857F3E",
+  RED: "#FF0000",
   ORANGE: "#FF9800",
   SOFT_GRAY: "#F8F9FA"
 };
