@@ -25,6 +25,9 @@ import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
 
 const COLORS = {
   TEAL: "#008080",
+  CORAL: "#FF7F50",
+  CORAL_LIGHT: "#FF9E7A",
+  KHAKI: "#F0E68C",
   RED: "#FF0000",
   ORANGE: "#FF9800",
   SOFT_GRAY: "#F8F9FA"
@@ -168,7 +171,7 @@ const AdventurePlaceDetail = () => {
           
           <div className="relative z-10 space-y-4 pointer-events-auto">
             <Button 
-              className="bg-[#008080] hover:bg-[#008080] border-none px-4 py-1.5 h-auto uppercase font-black tracking-[0.15em] text-[10px] rounded-full shadow-lg text-white"
+              className="bg-[#FF7F50] hover:bg-[#FF7F50] border-none px-4 py-1.5 h-auto uppercase font-black tracking-[0.15em] text-[10px] rounded-full shadow-lg text-white"
             >
               Adventure Place
             </Button>
@@ -179,11 +182,11 @@ const AdventurePlaceDetail = () => {
               </h1>
               
               <div className="flex flex-wrap items-center gap-3 cursor-pointer group w-fit" onClick={openInMaps}>
-                <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl group-hover:bg-[#008080] transition-all duration-300">
+                <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl group-hover:bg-[#FF7F50] transition-all duration-300">
                   <MapPin className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-[#008080] uppercase tracking-widest">Location</span>
+                  <span className="text-[10px] font-bold text-[#FF7F50] uppercase tracking-widest">Location</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-black text-white uppercase tracking-wider group-hover:text-[#008080] transition-colors">
                       {place.location}, {place.country}
@@ -333,8 +336,8 @@ const AdventurePlaceDetail = () => {
                 disabled={place.available_slots <= 0}
                 className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl transition-all active:scale-95 border-none mb-6"
                 style={{ 
-                    background: `linear-gradient(135deg, #00A3A3 0%, ${COLORS.TEAL} 100%)`,
-                    boxShadow: `0 12px 24px -8px ${COLORS.TEAL}88`
+                    background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
+                    boxShadow: `0 12px 24px -8px ${COLORS.CORAL}88`
                 }}
               >
                 {place.available_slots <= 0 ? "Fully Booked" : "Book Adventure"}
@@ -410,6 +413,7 @@ const AdventurePlaceDetail = () => {
     </div>
   );
 };
+
 
 const UtilityButton = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
   <Button 
