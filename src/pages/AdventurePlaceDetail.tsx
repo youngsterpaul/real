@@ -58,9 +58,10 @@ const AdventurePlaceDetail = () => {
       fetchLiveRating();
     }
     requestLocation();
-  }, [id]);
+    window.scrollTo(0, 0); // Reset scroll on load
+  }, [id, slug]);
 
-  // Real-time Status Calculation
+  // Real-time Status Logic
   useEffect(() => {
     if (!place) return;
     const checkOpenStatus = () => {
@@ -113,6 +114,18 @@ const AdventurePlaceDetail = () => {
     }
   };
 
+  const openInMaps = () => {
+    const query = encodeURIComponent(`${place?.name}, ${place?.location}`);
+    window.open(place?.map_link || `https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+  };
+
+  const handleCopyLink = async () => {
+    if (!id) return;
+    const refLink = await generateReferralLink(id, "adventure_place", id);
+    await navigator.clipboard.writeText(refLink);
+    toast({ title: "Link Copied!" });
+  };
+
   const { submitBooking } = useBookingSubmit();
 
   const handleBookingSubmit = async (data: BookingFormData) => {
@@ -126,7 +139,6 @@ const AdventurePlaceDetail = () => {
         hostId: place.created_by, bookingDetails: { ...data, place_name: place.name }
       });
       setIsCompleted(true);
-      toast({ title: "Booking successful!" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally { setIsProcessing(false); }
@@ -180,13 +192,13 @@ const AdventurePlaceDetail = () => {
         <div className="flex flex-col lg:grid lg:grid-cols-[1.7fr,1fr] gap-6">
           
           <div className="space-y-6">
-            {/* 1. DESCRIPTION */}
+            {/* Description */}
             <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
               <h2 className="text-xl font-black uppercase tracking-tight mb-4 text-[#008080]">Description</h2>
               <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{place.description}</p>
             </section>
 
-            {/* 2. FACILITIES - FULL LIST */}
+            {/* Facilities */}
             {place.facilities?.length > 0 && (
               <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-3 mb-6"><Tent className="h-5 w-5 text-[#008080]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#008080]">Facilities</h2></div>
@@ -198,7 +210,7 @@ const AdventurePlaceDetail = () => {
               </section>
             )}
 
-            {/* 3. ACTIVITIES - FULL LIST */}
+            {/* Activities */}
             {place.activities?.length > 0 && (
               <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-3 mb-6"><Zap className="h-5 w-5 text-[#FF9800]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#FF9800]">Activities</h2></div>
@@ -213,7 +225,7 @@ const AdventurePlaceDetail = () => {
               </section>
             )}
 
-            {/* 4. AMENITIES - FULL LIST */}
+            {/* Amenities */}
             {place.amenities && (
               <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-3 mb-6"><ShieldCheck className="h-5 w-5 text-red-600" /><h2 className="text-xl font-black uppercase tracking-tight text-red-600">Amenities</h2></div>
@@ -221,7 +233,7 @@ const AdventurePlaceDetail = () => {
                   {(Array.isArray(place.amenities) ? place.amenities : place.amenities.split(',')).map((item: string, i: number) => (
                     <div key={i} className="flex items-center gap-2 bg-red-50/50 px-4 py-2.5 rounded-2xl border border-red-100">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      <span className="text-[11px] font-black text-red-700 uppercase tracking-wide">{item.trim()}</span>
+                      <span className="text-[11px] font-black text-red-700 uppercase">{item.trim()}</span>
                     </div>
                   ))}
                 </div>
@@ -229,7 +241,7 @@ const AdventurePlaceDetail = () => {
             )}
           </div>
 
-          {/* SIDEBAR */}
+          {/* Sidebar */}
           <div className="lg:sticky lg:top-24 h-fit">
             <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100">
               <div className="flex justify-between items-end mb-8">
@@ -238,15 +250,11 @@ const AdventurePlaceDetail = () => {
                   <span className="text-4xl font-black text-red-600">{entryPrice === 0 ? "FREE" : `KSh ${entryPrice}`}</span>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-center gap-1 justify-end text-amber-500 font-black text-lg">
-                    <Star className="h-4 w-4 fill-current" />
-                    <span>{liveRating.avg}</span>
-                  </div>
+                  <div className="flex items-center gap-1 justify-end text-amber-500 font-black text-lg"><Star className="h-4 w-4 fill-current" />{liveRating.avg}</div>
                   <p className="text-[8px] font-black text-slate-400 uppercase">{liveRating.count} reviews</p>
                 </div>
               </div>
 
-              {/* OPERATING INFO */}
               <div className="space-y-3 mb-6 bg-slate-50 p-5 rounded-2xl border border-dashed border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-400"><Clock className="h-4 w-4 text-[#008080]" /><span className="text-[10px] font-black uppercase tracking-tight">hours</span></div>
@@ -267,16 +275,29 @@ const AdventurePlaceDetail = () => {
               >
                 Book Adventure
               </Button>
+
+              <div className="grid grid-cols-3 gap-3 mb-8">
+                <UtilityButton icon={<MapPin className="h-5 w-5" />} label="Map" onClick={openInMaps} />
+                <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={handleCopyLink} />
+                <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={() => { if(navigator.share) navigator.share({title: place.name, url: window.location.href}) }} />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 5. RATING & REVIEW SECTION */}
+        {/* Reviews Section */}
         <div className="mt-12 bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
           <ReviewSection itemId={place.id} itemType="adventure_place" />
         </div>
+
+        {/* Similar Items Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-black uppercase tracking-tighter mb-8 text-slate-800">Explore Similar Adventures</h2>
+          <SimilarItems currentItemId={place.id} itemType="adventure" country={place.country} />
+        </div>
       </main>
 
+      {/* Booking Dialog */}
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
         <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-[40px] border-none shadow-2xl bg-white">
           <MultiStepBooking 
@@ -300,5 +321,12 @@ const AdventurePlaceDetail = () => {
     </div>
   );
 };
+
+const UtilityButton = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
+  <Button variant="ghost" onClick={onClick} className="flex-col h-auto py-3 bg-[#F8F9FA] text-slate-500 rounded-2xl border border-slate-100 flex-1 hover:bg-slate-100 transition-colors">
+    <div className="mb-1">{icon}</div>
+    <span className="text-[10px] font-black uppercase tracking-tighter">{label}</span>
+  </Button>
+);
 
 export default AdventurePlaceDetail;
