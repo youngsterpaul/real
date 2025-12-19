@@ -6,9 +6,8 @@ import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  MapPin, Phone, Share2, Mail, Clock, ArrowLeft, 
-  Heart, Copy, Star, CheckCircle2, BedDouble, Wind, Wifi, Coffee, Utensils,
-  Car, ShieldCheck, Waves, Dumbbell, Calendar, Circle, Zap, Tent
+  MapPin, Share2, Clock, ArrowLeft, 
+  Heart, Star, Circle, ShieldCheck, Tent, Zap, Calendar
 } from "lucide-react";
 import { SimilarItems } from "@/components/SimilarItems";
 import { useToast } from "@/hooks/use-toast";
@@ -39,9 +38,39 @@ const HotelDetail = () => {
   const { savedItems, handleSave: handleSaveItem } = useSavedItems();
   const isSaved = savedItems.has(id || "");
 
+  // Distance Calculation
   const distance = position && hotel?.latitude && hotel?.longitude
     ? calculateDistance(position.latitude, position.longitude, hotel.latitude, hotel.longitude)
     : undefined;
+
+  // 1. DYNAMIC STARTING PRICE CALCULATION
+  const getStartingPrice = () => {
+    if (!hotel) return 0;
+    const prices: number[] = [];
+    
+    // Check base hotel price
+    if (hotel.price_per_night) prices.push(Number(hotel.price_per_night));
+
+    // Check Facilities for prices
+    if (hotel.facilities && Array.isArray(hotel.facilities)) {
+      hotel.facilities.forEach((f: any) => {
+        const p = typeof f === 'object' ? f.price : null;
+        if (p) prices.push(Number(p));
+      });
+    }
+
+    // Check Activities for prices
+    if (hotel.activities && Array.isArray(hotel.activities)) {
+      hotel.activities.forEach((act: any) => {
+        const p = typeof act === 'object' ? act.price : null;
+        if (p) prices.push(Number(p));
+      });
+    }
+
+    return prices.length > 0 ? Math.min(...prices) : 0;
+  };
+
+  const startingPrice = getStartingPrice();
 
   useEffect(() => {
     if (id) {
@@ -52,7 +81,7 @@ const HotelDetail = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
-  // REAL-TIME STATUS LOGIC (Match Adventure Place)
+  // Real-time Status Logic
   useEffect(() => {
     if (!hotel) return;
     const checkOpenStatus = () => {
@@ -108,7 +137,8 @@ const HotelDetail = () => {
     try {
       await submitBooking({
         itemId: hotel.id, itemName: hotel.name, bookingType: 'hotel', 
-        totalAmount: hotel.price_per_night, visitDate: data.visit_date,
+        totalAmount: startingPrice, // Uses the lowest found price for entry
+        visitDate: data.visit_date,
         guestName: data.guest_name, guestEmail: data.guest_email, guestPhone: data.guest_phone,
         hostId: hotel.created_by, bookingDetails: { ...data, hotel_name: hotel.name }
       });
@@ -146,7 +176,6 @@ const HotelDetail = () => {
         </Carousel>
 
         <div className="absolute bottom-8 left-0 w-full p-5 z-20">
-          {/* LIVE RATING & STATUS BADGES */}
           <div className="flex flex-wrap gap-2 mb-3">
                <Badge className="bg-amber-400 text-black border-none px-3 py-1 text-[10px] font-black uppercase rounded-full flex items-center gap-1 shadow-lg">
                  <Star className="h-3 w-3 fill-current" />
@@ -169,18 +198,18 @@ const HotelDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-[1.8fr,1fr] gap-4">
           
           <div className="space-y-4">
-            {/* 1. DESCRIPTION (TOP) */}
+            {/* DESCRIPTION */}
             <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
               <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 text-slate-400">Description</h2>
               <p className="text-slate-500 text-sm leading-relaxed">{hotel.description}</p>
             </section>
 
-            {/* 2. PRICE CARD (INCLUDES HOURS & DAYS) */}
+            {/* PRICE CARD */}
             <div className="bg-white rounded-[32px] p-6 shadow-xl border border-slate-100">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nightly Price</p>
-                  <span className="text-4xl font-black text-red-600">KSh {hotel.price_per_night}</span>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Starting Price</p>
+                  <span className="text-4xl font-black text-red-600">KSh {startingPrice}</span>
                 </div>
                 <div className="text-right">
                     <div className="flex items-center gap-1 text-amber-500 font-black text-lg">
@@ -207,10 +236,10 @@ const HotelDetail = () => {
                 </div>
               </div>
 
-              <Button onClick={() => setBookingOpen(true)} className="w-full py-7 rounded-2xl text-md font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-lg transition-all active:scale-95">Reserve Room</Button>
+              <Button onClick={() => setBookingOpen(true)} className="w-full py-7 rounded-2xl text-md font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-lg transition-all active:scale-95">Book Now</Button>
             </div>
 
-            {/* 3. AMENITIES (RED) */}
+            {/* AMENITIES */}
             <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
               <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck className="h-5 w-5 text-red-600" />
@@ -226,34 +255,38 @@ const HotelDetail = () => {
               </div>
             </section>
 
-            {/* 4. FACILITIES (TEAL) */}
+            {/* FACILITIES WITH PRICING */}
             {hotel.facilities?.length > 0 && (
               <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-2 mb-4">
                   <Tent className="h-5 w-5 text-[#008080]" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#008080]">Facilities</h2>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-[#008080]">Facilities & Pricing</h2>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {hotel.facilities.map((f: any, i: number) => (
                     <div key={i} className="p-3 rounded-xl bg-teal-50/50 border border-teal-100 flex justify-between items-center">
                       <span className="text-[10px] font-black uppercase text-[#008080]">{f.name || f}</span>
+                      {f.price && (
+                        <span className="text-[10px] font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded-lg">KSh {f.price}</span>
+                      )}
                     </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* 5. ACTIVITIES (ORANGE) */}
+            {/* ACTIVITIES WITH PRICING */}
             {hotel.activities?.length > 0 && (
               <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-2 mb-4">
                   <Zap className="h-5 w-5 text-orange-500" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-orange-500">Activities</h2>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-orange-500">Available Activities</h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {hotel.activities.map((act: any, i: number) => (
-                    <Badge key={i} className="bg-orange-50 text-orange-600 border-orange-100 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase">
+                    <Badge key={i} className="bg-orange-50 text-orange-600 border-orange-100 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase flex items-center gap-2">
                       {act.name || act}
+                      {act.price && <span className="text-orange-400">| KSh {act.price}</span>}
                     </Badge>
                   ))}
                 </div>
@@ -265,24 +298,25 @@ const HotelDetail = () => {
           <div className="hidden lg:block">
             <div className="sticky top-24 bg-white rounded-[40px] p-8 shadow-2xl border border-slate-100 text-center">
                <p className="text-xs font-black uppercase text-slate-400 mb-2">Starting from</p>
-               <h3 className="text-5xl font-black text-red-600 mb-6">KSh {hotel.price_per_night}</h3>
-               <Button onClick={() => setBookingOpen(true)} className="w-full py-8 rounded-3xl text-lg font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none">Reserve Now</Button>
+               <h3 className="text-5xl font-black text-red-600 mb-6">KSh {startingPrice}</h3>
+               <Button onClick={() => setBookingOpen(true)} className="w-full py-8 rounded-3xl text-lg font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-xl hover:scale-[1.02] transition-transform">Reserve Now</Button>
             </div>
           </div>
         </div>
 
-        {/* 6. REVIEW SECTION */}
+        {/* REVIEW SECTION */}
         <div className="mt-8">
           <ReviewSection itemId={hotel.id} itemType="hotel" />
         </div>
 
-        {/* 7. SIMILAR ITEMS */}
+        {/* SIMILAR ITEMS */}
         <div className="mt-12">
           <h2 className="text-xl font-black uppercase tracking-tighter mb-6">Explore Similar Stays</h2>
           <SimilarItems currentItemId={hotel.id} itemType="hotel" country={hotel.country} />
         </div>
       </main>
 
+      {/* BOOKING MODAL */}
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
         <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-[40px] border-none shadow-2xl">
           <MultiStepBooking 
@@ -290,7 +324,7 @@ const HotelDetail = () => {
             itemName={hotel.name}
             itemId={hotel.id}
             bookingType="hotel"
-            priceAdult={hotel.price_per_night}
+            priceAdult={startingPrice} // Injects the lowest entry price into the booking flow
             isProcessing={isProcessing} 
             isCompleted={isCompleted} 
             hostId={hotel.created_by}
