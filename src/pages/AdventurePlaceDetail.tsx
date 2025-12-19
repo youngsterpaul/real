@@ -48,10 +48,6 @@ const AdventurePlaceDetail = () => {
   const { savedItems, handleSave: handleSaveItem } = useSavedItems();
   const isSaved = savedItems.has(id || "");
 
-  const distance = position && place?.latitude && place?.longitude
-    ? calculateDistance(position.latitude, position.longitude, place.latitude, place.longitude)
-    : undefined;
-
   useEffect(() => {
     if (id) {
       fetchPlace();
@@ -149,7 +145,14 @@ const AdventurePlaceDetail = () => {
   const allImages = [place.image_url, ...(place.gallery_images || []), ...(place.images || [])].filter(Boolean);
   const entryPrice = place.entry_fee || 0;
 
-  // Extracted Sidebar/Price Card component for reuse
+  // Components for sections to maintain clean code
+  const DescriptionSection = () => (
+    <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-1">
+      <h2 className="text-xl font-black uppercase tracking-tight mb-4 text-[#008080]">Description</h2>
+      <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{place.description}</p>
+    </section>
+  );
+
   const PriceCard = () => (
     <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100">
       <div className="flex justify-between items-end mb-8">
@@ -176,15 +179,11 @@ const AdventurePlaceDetail = () => {
         </div>
       </div>
 
-      <Button 
-        onClick={() => setBookingOpen(true)}
-        className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl border-none mb-6 transition-all active:scale-95"
-        style={{ background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)` }}
-      >
+      <Button onClick={() => setBookingOpen(true)} className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl border-none mb-6 transition-all active:scale-95" style={{ background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)` }}>
         Book Adventure
       </Button>
 
-      <div className="grid grid-cols-3 gap-3 mb-2 lg:mb-8">
+      <div className="grid grid-cols-3 gap-3 mb-2">
         <UtilityButton icon={<MapPin className="h-5 w-5" />} label="Map" onClick={openInMaps} />
         <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={handleCopyLink} />
         <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={() => { if(navigator.share) navigator.share({title: place.name, url: window.location.href}) }} />
@@ -192,11 +191,49 @@ const AdventurePlaceDetail = () => {
     </div>
   );
 
+  const AmenitiesSection = () => place.amenities && (
+    <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-3">
+      <div className="flex items-center gap-3 mb-6"><ShieldCheck className="h-5 w-5 text-red-600" /><h2 className="text-xl font-black uppercase tracking-tight text-red-600">Amenities</h2></div>
+      <div className="flex flex-wrap gap-2">
+        {(Array.isArray(place.amenities) ? place.amenities : place.amenities.split(',')).map((item: string, i: number) => (
+          <div key={i} className="flex items-center gap-2 bg-red-50/50 px-4 py-2.5 rounded-2xl border border-red-100">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            <span className="text-[11px] font-black text-red-700 uppercase">{item.trim()}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  const FacilitiesSection = () => place.facilities?.length > 0 && (
+    <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-4">
+      <div className="flex items-center gap-3 mb-6"><Tent className="h-5 w-5 text-[#008080]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#008080]">Facilities</h2></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {place.facilities.map((f: any, i: number) => (
+          <div key={i} className="p-5 rounded-[22px] bg-slate-50 border border-slate-100 flex justify-between items-center"><span className="text-sm font-black uppercase text-slate-700">{f.name}</span><Badge className="bg-white text-[#008080] text-[10px] font-black">KSH {f.price}</Badge></div>
+        ))}
+      </div>
+    </section>
+  );
+
+  const ActivitiesSection = () => place.activities?.length > 0 && (
+    <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-5">
+      <div className="flex items-center gap-3 mb-6"><Zap className="h-5 w-5 text-[#FF9800]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#FF9800]">Activities</h2></div>
+      <div className="flex flex-wrap gap-3">
+        {place.activities.map((act: any, i: number) => (
+          <div key={i} className="px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100 flex items-center gap-3">
+            <span className="text-[11px] font-black text-slate-700 uppercase">{act.name}</span>
+            <span className="text-[10px] font-bold text-[#FF9800]">KSh {act.price}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header className="hidden md:block" />
 
-      {/* Hero Section */}
       <div className="relative w-full h-[55vh] md:h-[70vh] bg-slate-900 overflow-hidden">
         <div className="absolute top-4 left-4 right-4 z-50 flex justify-between">
           <Button onClick={() => navigate(-1)} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0"><ArrowLeft className="h-5 w-5" /></Button>
@@ -231,104 +268,62 @@ const AdventurePlaceDetail = () => {
       </div>
 
       <main className="container px-4 max-w-6xl mx-auto -mt-10 relative z-50">
+        {/* Main Grid: Description and Sidebar */}
         <div className="flex flex-col lg:grid lg:grid-cols-[1.7fr,1fr] gap-6">
           
           <div className="flex flex-col gap-6">
-            {/* 1. Description */}
-            <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-1">
-              <h2 className="text-xl font-black uppercase tracking-tight mb-4 text-[#008080]">Description</h2>
-              <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{place.description}</p>
-            </section>
+            <DescriptionSection />
+            
+            {/* Mobile Only: Price Card below description */}
+            <div className="block lg:hidden order-2"><PriceCard /></div>
 
-            {/* 2. Price Card (Mobile only position: below description) */}
-            <div className="block lg:hidden order-2">
-               <PriceCard />
-            </div>
+            {/* In Mobile: Amenities is order 3. In Desktop: it follows Description */}
+            <AmenitiesSection />
+            <FacilitiesSection />
+            <ActivitiesSection />
 
-            {/* 3. Amenities (Mobile position: below Price Card) */}
-            {place.amenities && (
-              <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-3">
-                <div className="flex items-center gap-3 mb-6"><ShieldCheck className="h-5 w-5 text-red-600" /><h2 className="text-xl font-black uppercase tracking-tight text-red-600">Amenities</h2></div>
-                <div className="flex flex-wrap gap-2">
-                  {(Array.isArray(place.amenities) ? place.amenities : place.amenities.split(',')).map((item: string, i: number) => (
-                    <div key={i} className="flex items-center gap-2 bg-red-50/50 px-4 py-2.5 rounded-2xl border border-red-100">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      <span className="text-[11px] font-black text-red-700 uppercase">{item.trim()}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 4. Facilities (Mobile position: below Amenities) */}
-            {place.facilities?.length > 0 && (
-              <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-4">
-                <div className="flex items-center gap-3 mb-6"><Tent className="h-5 w-5 text-[#008080]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#008080]">Facilities</h2></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {place.facilities.map((f: any, i: number) => (
-                    <div key={i} className="p-5 rounded-[22px] bg-slate-50 border border-slate-100 flex justify-between items-center"><span className="text-sm font-black uppercase text-slate-700">{f.name}</span><Badge className="bg-white text-[#008080] text-[10px] font-black">KSH {f.price}</Badge></div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 5. Activities (Mobile position: below Facilities) */}
-            {place.activities?.length > 0 && (
-              <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-5">
-                <div className="flex items-center gap-3 mb-6"><Zap className="h-5 w-5 text-[#FF9800]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#FF9800]">Activities</h2></div>
-                <div className="flex flex-wrap gap-3">
-                  {place.activities.map((act: any, i: number) => (
-                    <div key={i} className="px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100 flex items-center gap-3">
-                      <span className="text-[11px] font-black text-slate-700 uppercase">{act.name}</span>
-                      <span className="text-[10px] font-bold text-[#FF9800]">KSh {act.price}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 6. Review Card (Mobile position: below Activities) */}
-            <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100 order-6">
-              <ReviewSection itemId={place.id} itemType="adventure_place" />
-            </div>
-
-            {/* 7. Similar Items (Mobile position: below Reviews) */}
-            <div className="mt-8 order-7">
-              <h2 className="text-2xl font-black uppercase tracking-tighter mb-8 text-slate-800">Explore Similar Adventures</h2>
-              <SimilarItems currentItemId={place.id} itemType="adventure" country={place.country} />
+            {/* Mobile Only: Review Section and Similar items in specific order */}
+            <div className="block lg:hidden space-y-6 order-6">
+              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+                <ReviewSection itemId={place.id} itemType="adventure_place" />
+              </div>
+              <div className="mt-8">
+                <h2 className="text-2xl font-black uppercase tracking-tighter mb-8 text-slate-800">Explore Similar Adventures</h2>
+                <SimilarItems currentItemId={place.id} itemType="adventure" country={place.country} />
+              </div>
             </div>
           </div>
 
-          {/* Desktop Sidebar (Price Card) */}
+          {/* Desktop Only Sidebar */}
           <div className="hidden lg:block lg:sticky lg:top-24 h-fit">
             <PriceCard />
           </div>
         </div>
+
+        {/* Desktop Only: Sections below the main grid area to maintain original column widths */}
+        <div className="hidden lg:block">
+           <div className="mt-12 bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+             <ReviewSection itemId={place.id} itemType="adventure_place" />
+           </div>
+           <div className="mt-16">
+             <h2 className="text-2xl font-black uppercase tracking-tighter mb-8 text-slate-800">Explore Similar Adventures</h2>
+             <SimilarItems currentItemId={place.id} itemType="adventure" country={place.country} />
+           </div>
+        </div>
       </main>
 
-      {/* Booking Dialog */}
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[95vh] p-0 overflow-hidden rounded-[32px] border-none shadow-2xl bg-white">
           <MultiStepBooking 
-            onSubmit={handleBookingSubmit} 
-            facilities={place.facilities || []} 
-            activities={place.activities || []} 
-            priceAdult={place.entry_fee || 0} 
-            priceChild={place.entry_fee || 0} 
-            isProcessing={isProcessing} 
-            isCompleted={isCompleted} 
-            itemName={place.name}
-            itemId={place.id}
-            bookingType="adventure_place"
-            hostId={place.created_by || ""}
-            onPaymentSuccess={() => setIsCompleted(true)}
-            onCancel={() => setBookingOpen(false)}
-            primaryColor={COLORS.TEAL}
-            accentColor={COLORS.CORAL}
+            onSubmit={handleBookingSubmit} facilities={place.facilities || []} activities={place.activities || []} 
+            priceAdult={place.entry_fee || 0} priceChild={place.entry_fee || 0} 
+            isProcessing={isProcessing} isCompleted={isCompleted} itemName={place.name}
+            itemId={place.id} bookingType="adventure_place" hostId={place.created_by || ""}
+            onPaymentSuccess={() => setIsCompleted(true)} onCancel={() => setBookingOpen(false)}
+            primaryColor={COLORS.TEAL} accentColor={COLORS.CORAL}
           />
         </DialogContent>
       </Dialog>
-
       <MobileBottomBar />
     </div>
   );
