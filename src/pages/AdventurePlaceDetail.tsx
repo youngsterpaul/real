@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   MapPin, Phone, Share2, Mail, Clock, ArrowLeft, 
-  Heart, Copy, Star, CheckCircle2, Tent, Zap, Calendar 
+  Heart, Copy, Star, CheckCircle2, Tent, Zap, Calendar, Circle
 } from "lucide-react";
 import { SimilarItems } from "@/components/SimilarItems";
 import { useToast } from "@/hooks/use-toast";
@@ -16,9 +16,8 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import Autoplay from "embla-carousel-autoplay";
 import { ReviewSection } from "@/components/ReviewSection";
 import { useSavedItems } from "@/hooks/useSavedItems";
-import { useAuth } from "@/contexts/AuthContext";
 import { MultiStepBooking, BookingFormData } from "@/components/booking/MultiStepBooking";
-import { generateReferralLink, trackReferralClick } from "@/lib/referralUtils";
+import { generateReferralLink } from "@/lib/referralUtils";
 import { useBookingSubmit } from "@/hooks/useBookingSubmit";
 import { extractIdFromSlug } from "@/lib/slugUtils";
 import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
@@ -44,6 +43,8 @@ const AdventurePlaceDetail = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isOpenNow, setIsOpenNow] = useState(false);
+  const [liveRating, setLiveRating] = useState({ avg: 0, count: 0 });
   const { savedItems, handleSave: handleSaveItem } = useSavedItems();
   const isSaved = savedItems.has(id || "");
 
@@ -52,9 +53,40 @@ const AdventurePlaceDetail = () => {
     : undefined;
 
   useEffect(() => {
-    if (id) fetchPlace();
+    if (id) {
+      fetchPlace();
+      fetchLiveRating();
+    }
     requestLocation();
   }, [id]);
+
+  // Real-time Status Calculation
+  useEffect(() => {
+    if (!place) return;
+    const checkOpenStatus = () => {
+      const now = new Date();
+      const currentDay = now.toLocaleString('en-us', { weekday: 'long' });
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      
+      const parseTime = (timeStr: string) => {
+        if (!timeStr) return 0;
+        const [time, modifier] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+      };
+
+      const openTime = parseTime(place.opening_hours || "08:00 AM");
+      const closeTime = parseTime(place.closing_hours || "06:00 PM");
+      const days = Array.isArray(place.days_opened) ? place.days_opened : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      
+      setIsOpenNow(days.includes(currentDay) && currentTime >= openTime && currentTime <= closeTime);
+    };
+    checkOpenStatus();
+    const interval = setInterval(checkOpenStatus, 60000);
+    return () => clearInterval(interval);
+  }, [place]);
 
   const fetchPlace = async () => {
     if (!id) return;
@@ -67,40 +99,29 @@ const AdventurePlaceDetail = () => {
     } finally { setLoading(false); }
   };
 
+  const fetchLiveRating = async () => {
+    if (!id) return;
+    const { data } = await supabase.from("reviews").select("rating").eq("item_id", id).eq("item_type", "adventure_place");
+    if (data && data.length > 0) {
+      const avg = data.reduce((acc, curr) => acc + curr.rating, 0) / data.length;
+      setLiveRating({ avg: parseFloat(avg.toFixed(1)), count: data.length });
+    }
+  };
+
   const getDisplayPrice = () => {
     if (!place) return { price: 0, label: "Starting Price" };
-    if (place.entry_fee && place.entry_fee > 0) {
-      return { price: place.entry_fee, label: "Entrance Fee" };
-    }
+    if (place.entry_fee && place.entry_fee > 0) return { price: place.entry_fee, label: "Entrance Fee" };
     const allItems = [...(place.facilities || []), ...(place.activities || [])];
-    const prices = allItems.map(i => i.price).filter(p => p !== undefined && p !== null && p > 0);
+    const prices = allItems.map(i => i.price).filter(p => p != null && p > 0);
     const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
-    return { 
-      price: minPrice, 
-      label: place.entry_fee_type === 'free' && minPrice > 0 ? "Starting Price" : "Entrance Fee" 
-    };
+    return { price: minPrice, label: "Starting Price" };
   };
 
-  const handleSave = () => id && handleSaveItem(id, "adventure_place");
-  
   const handleCopyLink = async () => {
-    if (!place) return;
-    const refLink = await generateReferralLink(place.id, "adventure_place", place.id);
+    if (!id) return;
+    const refLink = await generateReferralLink(id, "adventure_place", id);
     await navigator.clipboard.writeText(refLink);
     toast({ title: "Link Copied!" });
-  };
-
-  const handleShare = async () => {
-    if (!place) return;
-    const refLink = await generateReferralLink(place.id, "adventure_place", place.id);
-    if (navigator.share) {
-      try { await navigator.share({ title: place.name, url: refLink }); } catch (e) {}
-    } else { handleCopyLink(); }
-  };
-
-  const openInMaps = () => {
-    const query = encodeURIComponent(`${place?.name}, ${place?.location}`);
-    window.open(place?.map_link || `https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
   };
 
   const { submitBooking } = useBookingSubmit();
@@ -116,7 +137,6 @@ const AdventurePlaceDetail = () => {
         hostId: place.created_by, bookingDetails: { ...data, place_name: place.name }
       });
       setIsCompleted(true);
-      setBookingOpen(false);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally { setIsProcessing(false); }
@@ -132,31 +152,19 @@ const AdventurePlaceDetail = () => {
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header className="hidden md:block" />
 
-      {/* 1. HERO SECTION - UPDATED TO FILL ENTIRE AREA */}
-      <div className="relative w-full overflow-hidden h-[55vh] md:h-[70vh] bg-slate-900">
+      {/* Hero Section */}
+      <div className="relative w-full h-[55vh] md:h-[70vh] bg-slate-900 overflow-hidden">
         <div className="absolute top-4 left-4 right-4 z-50 flex justify-between">
-          <Button onClick={() => navigate(-1)} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0 hover:bg-black/50">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <Button onClick={handleSave} className={`rounded-full backdrop-blur-md border-none w-10 h-10 p-0 shadow-lg transition-colors ${isSaved ? "bg-red-500" : "bg-black/30 hover:bg-black/50"}`}>
-            <Heart className={`h-5 w-5 text-white ${isSaved ? "fill-white" : ""}`} />
-          </Button>
+          <Button onClick={() => navigate(-1)} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0"><ArrowLeft className="h-5 w-5" /></Button>
+          <Button onClick={() => id && handleSaveItem(id, "adventure_place")} className={`rounded-full backdrop-blur-md border-none w-10 h-10 p-0 shadow-lg ${isSaved ? "bg-red-500" : "bg-black/30"}`}><Heart className={`h-5 w-5 text-white ${isSaved ? "fill-white" : ""}`} /></Button>
         </div>
 
-        <Carousel 
-          plugins={[Autoplay({ delay: 4000 })]} 
-          className="w-full h-full"
-        >
-          <CarouselContent className="h-full ml-0"> {/* ml-0 removes gap between slides */}
+        <Carousel plugins={[Autoplay({ delay: 4000 })]} className="w-full h-full">
+          <CarouselContent className="h-full ml-0">
             {allImages.map((img, idx) => (
-              <CarouselItem key={idx} className="h-full pl-0 basis-full"> {/* pl-0 and basis-full ensures edge-to-edge */}
+              <CarouselItem key={idx} className="h-full pl-0 basis-full">
                 <div className="relative h-full w-full">
-                  <img 
-                    src={img} 
-                    alt={place.name} 
-                    className="w-full h-full object-cover object-center" 
-                  />
-                  {/* Subtle overlay to ensure text readability */}
+                  <img src={img} alt={place.name} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent z-10" />
                 </div>
               </CarouselItem>
@@ -165,26 +173,12 @@ const AdventurePlaceDetail = () => {
         </Carousel>
 
         <div className="absolute bottom-12 left-0 z-40 w-full p-6 md:p-12 pointer-events-none">
-          <div className="relative z-10 space-y-4 pointer-events-auto max-w-4xl">
-            <Badge className="bg-[#FF7F50] text-white border-none px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
-              Adventure Place
-            </Badge>
-            <h1 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white drop-shadow-2xl leading-[0.9]">
-              {place.name}
-            </h1>
-            <div className="flex items-center gap-3 cursor-pointer group w-fit" onClick={openInMaps}>
-              <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl group-hover:bg-[#FF7F50] transition-all">
-                <MapPin className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-black text-white uppercase tracking-wider">{place.location}</span>
-                {distance && (
-                  <Badge className="bg-[#008080] text-white text-[9px] font-black border-none w-fit mt-1">
-                    {(distance).toFixed(1)}KM AWAY
-                  </Badge>
-                )}
-              </div>
+          <div className="space-y-4 pointer-events-auto max-w-4xl">
+            <div className="flex flex-wrap gap-2">
+               <Badge className="bg-amber-400 text-black border-none px-3 py-1 text-[10px] font-black uppercase rounded-full flex items-center gap-1 shadow-lg"><Star className="h-3 w-3 fill-current" />{liveRating.avg > 0 ? liveRating.avg : "New"}</Badge>
+               <Badge className={`${isOpenNow ? "bg-emerald-500" : "bg-red-500"} text-white border-none px-3 py-1 text-[10px] font-black uppercase rounded-full flex items-center gap-1.5`}><Circle className={`h-2 w-2 fill-current ${isOpenNow ? "animate-pulse" : ""}`} />{isOpenNow ? "open now" : "closed"}</Badge>
             </div>
+            <h1 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white leading-[0.9]">{place.name}</h1>
           </div>
         </div>
       </div>
@@ -192,36 +186,78 @@ const AdventurePlaceDetail = () => {
       <main className="container px-4 max-w-6xl mx-auto -mt-10 relative z-50">
         <div className="flex flex-col lg:grid lg:grid-cols-[1.7fr,1fr] gap-6">
           
-          {/* 2. DESCRIPTION */}
-          <div className="order-1 lg:order-none bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-            <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>Description</h2>
-            <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{place.description}</p>
+          <div className="space-y-6">
+            <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+              <h2 className="text-xl font-black uppercase tracking-tight mb-4 text-[#008080]">Description</h2>
+              <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{place.description}</p>
+            </section>
+
+            {/* FULL LIST OF FACILITIES */}
+            {place.facilities?.length > 0 && (
+              <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+                <div className="flex items-center gap-3 mb-6"><Tent className="h-5 w-5 text-[#008080]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#008080]">Facilities</h2></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {place.facilities.map((f: any, i: number) => (
+                    <div key={i} className="p-5 rounded-[22px] bg-slate-50 border border-slate-100 flex justify-between items-center"><span className="text-sm font-black uppercase text-slate-700">{f.name}</span><Badge className="bg-white text-[#008080] text-[10px] font-black">KSH {f.price}</Badge></div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* FULL LIST OF ACTIVITIES */}
+            {place.activities?.length > 0 && (
+              <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+                <div className="flex items-center gap-3 mb-6"><Zap className="h-5 w-5 text-[#FF9800]" /><h2 className="text-xl font-black uppercase tracking-tight text-[#FF9800]">Activities</h2></div>
+                <div className="flex flex-wrap gap-3">
+                  {place.activities.map((act: any, i: number) => (
+                    <div key={i} className="px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100 flex items-center gap-3"><span className="text-[11px] font-black text-slate-700 uppercase">{act.name}</span><span className="text-[10px] font-bold text-[#FF9800]">KSh {act.price}</span></div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* AMENITIES */}
+            {place.amenities && (
+              <section className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+                <div className="flex items-center gap-3 mb-6"><CheckCircle2 className="h-5 w-5 text-red-600" /><h2 className="text-xl font-black uppercase tracking-tight text-red-600">Amenities</h2></div>
+                <div className="flex flex-wrap gap-2">
+                  {(Array.isArray(place.amenities) ? place.amenities : place.amenities.split(',')).map((item: string, i: number) => (
+                    <div key={i} className="flex items-center gap-2 bg-red-50/50 px-4 py-2.5 rounded-2xl border border-red-100"><div className="w-1.5 h-1.5 rounded-full bg-red-500" /><span className="text-[11px] font-black text-red-700 uppercase">{item.trim()}</span></div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
-          {/* 3. PRICE & CONTACT CARD */}
-          <div className="order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2">
-            <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100 lg:sticky lg:top-24">
+          {/* SIDEBAR */}
+          <div className="lg:sticky lg:top-24 h-fit">
+            <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100">
               <div className="flex justify-between items-end mb-8">
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{priceLabel}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black" style={{ color: COLORS.RED }}>
-                      {displayPrice === 0 ? "FREE" : `KSh ${displayPrice}`}
-                    </span>
-                    {displayPrice > 0 && <span className="text-slate-400 text-[10px] font-bold uppercase">/ entry</span>}
-                  </div>
+                  <span className="text-4xl font-black text-red-600">{displayPrice === 0 ? "FREE" : `KSh ${displayPrice}`}</span>
                 </div>
-                {distance && (
-                  <div className="bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-100 flex flex-col items-center">
-                    <span className="text-[10px] font-black text-[#008080] uppercase">{distance.toFixed(1)} KM</span>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">Away</span>
-                  </div>
-                )}
+                <div className="text-right">
+                  <div className="flex items-center gap-1 justify-end text-amber-500 font-black text-lg"><Star className="h-4 w-4 fill-current" />{liveRating.avg}</div>
+                  <p className="text-[8px] font-black text-slate-400 uppercase">{liveRating.count} reviews</p>
+                </div>
+              </div>
+
+              {/* OPERATING INFO */}
+              <div className="space-y-3 mb-6 bg-slate-50 p-5 rounded-2xl border border-dashed border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-400"><Clock className="h-4 w-4 text-[#008080]" /><span className="text-[10px] font-black uppercase tracking-tight">hours</span></div>
+                  <span className={`text-[10px] font-black uppercase ${isOpenNow ? "text-emerald-600" : "text-red-500"}`}>{place.opening_hours || "08:00 AM"} - {place.closing_hours || "06:00 PM"}</span>
+                </div>
+                <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-100">
+                  <div className="flex items-center gap-2 text-slate-400"><Calendar className="h-4 w-4 text-[#008080]" /><span className="text-[10px] font-black uppercase tracking-tight">working days</span></div>
+                  <p className="text-[9px] font-normal leading-tight text-slate-500 lowercase italic">{Array.isArray(place.days_opened) ? place.days_opened.join(", ") : "mon to sun"}</p>
+                </div>
               </div>
 
               <Button 
                 onClick={() => setBookingOpen(true)}
-                className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl border-none mb-6 hover:opacity-90 transition-opacity"
+                className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl border-none mb-6 hover:opacity-90 transition-all active:scale-95"
                 style={{ background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)` }}
               >
                 Book Adventure
@@ -230,105 +266,31 @@ const AdventurePlaceDetail = () => {
               <div className="grid grid-cols-3 gap-3 mb-8">
                 <UtilityButton icon={<MapPin className="h-5 w-5" />} label="Map" onClick={openInMaps} />
                 <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={handleCopyLink} />
-                <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={handleShare} />
+                <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={() => { if(navigator.share) navigator.share({title: place.name, url: window.location.href}) }} />
               </div>
 
               <div className="space-y-4 pt-6 border-t border-slate-100">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Host Contact Information</h3>
-                <div className="space-y-3">
-                  {place.phone_numbers?.map((phone: string, idx: number) => (
-                    <a key={idx} href={`tel:${phone}`} className="flex items-center gap-3 text-slate-600 group">
-                      <div className="p-2 rounded-lg bg-slate-50 group-hover:bg-teal-50 transition-colors">
-                        <Phone className="h-4 w-4 text-[#008080]" />
-                      </div>
-                      <span className="text-xs font-bold uppercase">{phone}</span>
-                    </a>
-                  ))}
-                  {place.email && (
-                    <a href={`mailto:${place.email}`} className="flex items-center gap-3 text-slate-600 group">
-                      <div className="p-2 rounded-lg bg-slate-50 group-hover:bg-teal-50 transition-colors">
-                        <Mail className="h-4 w-4 text-[#008080]" />
-                      </div>
-                      <span className="text-xs font-bold lowercase break-all">{place.email}</span>
-                    </a>
-                  )}
-                </div>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Host Information</h3>
+                {place.phone_numbers?.map((p: string, i: number) => <a key={i} href={`tel:${p}`} className="flex items-center gap-3 text-slate-600"><Phone className="h-4 w-4 text-[#008080]" /><span className="text-xs font-bold uppercase">{p}</span></a>)}
+                {place.email && <a href={`mailto:${place.email}`} className="flex items-center gap-3 text-slate-600 group"><Mail className="h-4 w-4 text-[#008080]" /><span className="text-xs font-bold lowercase truncate">{place.email}</span></a>}
               </div>
             </div>
-          </div>
-
-          {/* 4. FACILITIES, ACTIVITIES & AMENITIES */}
-          <div className="order-3 lg:col-start-1 space-y-6">
-            {place.facilities?.length > 0 && (
-              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <Tent className="h-5 w-5 text-[#008080]" />
-                  <h2 className="text-xl font-black uppercase tracking-tight text-[#008080]">Facilities</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {place.facilities.map((f: any, i: number) => (
-                    <div key={i} className="p-5 rounded-[22px] bg-slate-50 border border-slate-100 flex justify-between items-center hover:border-teal-200 transition-colors">
-                      <span className="text-sm font-black uppercase text-slate-700">{f.name}</span>
-                      <Badge className="bg-white text-[#008080] text-[10px] font-black">KSH {f.price}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {place.activities?.length > 0 && (
-              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <Zap className="h-5 w-5 text-[#FF9800]" />
-                  <h2 className="text-xl font-black uppercase tracking-tight text-[#FF9800]">Activities</h2>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {place.activities.map((act: any, i: number) => (
-                    <div key={i} className="px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100 flex items-center gap-3">
-                      <span className="text-[11px] font-black text-slate-700 uppercase">{act.name}</span>
-                      <span className="text-[10px] font-bold text-[#FF9800]">KSh {act.price}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {place.amenities && (
-              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <CheckCircle2 className="h-5 w-5 text-red-600" />
-                  <h2 className="text-xl font-black uppercase tracking-tight text-red-600">Amenities</h2>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(Array.isArray(place.amenities) ? place.amenities : place.amenities.split(',')).map((item: string, i: number) => (
-                    <div key={i} className="flex items-center gap-2 bg-red-50/50 px-4 py-2.5 rounded-2xl border border-red-100">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      <span className="text-[11px] font-black text-red-700 uppercase tracking-wide">{item.trim()}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         <div className="mt-12 bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-           <ReviewSection itemId={place.id} itemType="adventure_place" />
-        </div>
-        
-        <div className="mt-16">
-           <SimilarItems currentItemId={place.id} itemType="adventure" country={place.country} />
+          <ReviewSection itemId={place.id} itemType="adventure_place" />
         </div>
       </main>
 
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-[40px] border-none shadow-2xl">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-[40px] border-none shadow-2xl bg-white">
           <MultiStepBooking 
             onSubmit={handleBookingSubmit} 
             facilities={place.facilities || []} 
             activities={place.activities || []} 
-            priceAdult={place.entry_fee} 
-            priceChild={place.entry_fee} 
+            priceAdult={place.entry_fee || 0} 
+            priceChild={place.entry_fee || 0} 
             isProcessing={isProcessing} 
             isCompleted={isCompleted} 
             itemName={place.name}
