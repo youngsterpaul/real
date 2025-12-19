@@ -126,7 +126,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, hideIc
             </button>
           )}
           
-          {/* Notification Bell - Wrapped in button for identical behavior */}
+          {/* Notification Bell - Using identical wrapper and styles as Menu/Search */}
           <button 
             className={headerIconStyles}
             onClick={() => navigate('/notifications')}
