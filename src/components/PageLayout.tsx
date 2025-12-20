@@ -1,13 +1,15 @@
 import { useLocation } from "react-router-dom";
 import { Footer } from "@/components/Footer";
+import { MobileBottomBar } from "@/components/MobileBottomBar";
 
 interface PageLayoutProps {
   children: React.ReactNode;
 }
 
 /**
- * Layout wrapper that conditionally renders Footer
+ * Layout wrapper that conditionally renders Footer and MobileBottomBar
  * Footer is ONLY displayed on Home, Category, Contact, and About pages
+ * MobileBottomBar is ALWAYS displayed on mobile screens across all pages
  */
 export const PageLayout = ({ children }: PageLayoutProps) => {
   const location = useLocation();
@@ -22,10 +24,12 @@ export const PageLayout = ({ children }: PageLayoutProps) => {
 
   return (
     <div className="w-full min-h-screen flex flex-col">
-      <div className="flex-1 w-full">
+      <div className="flex-1 w-full pb-20 md:pb-0">
         {children}
       </div>
       {shouldShowFooter && <Footer />}
+      {/* MobileBottomBar is always visible on mobile - rendered once in PageLayout */}
+      <MobileBottomBar />
     </div>
   );
 };

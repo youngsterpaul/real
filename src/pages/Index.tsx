@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback, memo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { MobileBottomBar } from "@/components/MobileBottomBar";
+// MobileBottomBar moved to PageLayout for persistence across all pages
 import { SearchBarWithSuggestions } from "@/components/SearchBarWithSuggestions";
 import { ListingCard } from "@/components/ListingCard";
 
@@ -512,7 +512,22 @@ const Index = () => {
       behavior: 'smooth'
     });
   };
+// View mode for listings: 'top_destinations' (sorted by rating) or 'my_location' (sorted by distance)
+  const [listingViewMode, setListingViewMode] = useState<'top_destinations' | 'my_location'>('top_destinations');
+  
   const categories = [{
+    icon: Tent,
+    title: "Campsite & Experience",
+    path: "/category/campsite",
+    bgImage: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&h=600&fit=crop&auto=format&q=80",
+    description: "Adventure camping spots"
+  }, {
+    icon: Hotel,
+    title: "Hotels & accommodation",
+    path: "/category/hotels",
+    bgImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop&auto=format&q=80",
+    description: "Find comfortable stays"
+  }, {
     icon: Calendar,
     title: "Trips & tours",
     path: "/category/trips",
@@ -524,20 +539,39 @@ const Index = () => {
     path: "/category/events",
     bgImage: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=600&fit=crop&auto=format&q=80",
     description: "Discover exciting events"
-  }, {
-    icon: Hotel,
-    title: "Hotels & accommodation",
-    path: "/category/hotels",
-    bgImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop&auto=format&q=80",
-    description: "Find comfortable stays"
-  }, {
-    icon: Tent,
-    title: "Campsite & Experience",
-    path: "/category/campsite",
-    bgImage: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&h=600&fit=crop&auto=format&q=80",
-    description: "Adventure camping spots"
   }];
-  return <div className="min-h-screen bg-background pb-20 md:pb-0">
+
+  // Handle My Location tap - request location and switch view mode
+  const handleMyLocationTap = useCallback(() => {
+    if (!position) {
+      requestLocation();
+    }
+    setListingViewMode('my_location');
+  }, [position, requestLocation]);
+
+  // Get filtered/sorted items based on view mode
+  const getDisplayItems = useCallback((items: any[], sortedByRating: any[]) => {
+    if (listingViewMode === 'my_location' && position) {
+      // Sort by distance when My Location is active
+      return [...items].sort((a, b) => {
+        const distA = a.latitude && a.longitude 
+          ? calculateDistance(position.latitude, position.longitude, a.latitude, a.longitude) 
+          : Infinity;
+        const distB = b.latitude && b.longitude 
+          ? calculateDistance(position.latitude, position.longitude, b.latitude, b.longitude) 
+          : Infinity;
+        return distA - distB;
+      });
+    }
+    // Default: top destinations (sorted by rating)
+    return sortedByRating;
+  }, [listingViewMode, position]);
+
+  const displayCampsites = useMemo(() => getDisplayItems(scrollableRows.campsites, sortedCampsites), [scrollableRows.campsites, sortedCampsites, getDisplayItems]);
+  const displayHotels = useMemo(() => getDisplayItems(scrollableRows.hotels, sortedHotels), [scrollableRows.hotels, sortedHotels, getDisplayItems]);
+  const displayTrips = useMemo(() => getDisplayItems(scrollableRows.trips, sortedTrips), [scrollableRows.trips, sortedTrips, getDisplayItems]);
+  const displayEvents = useMemo(() => getDisplayItems(scrollableRows.events, sortedEvents), [scrollableRows.events, sortedEvents, getDisplayItems]);
+  return <div className="min-h-screen bg-background pb-0 md:pb-0">
             <Header onSearchClick={handleSearchIconClick} showSearchIcon={showSearchIcon} hideIcons={isSearchFocused} />
             
      {/* Hero Section with Search Bar, Background Image, and Category Icons - Hidden when search focused */}
@@ -639,34 +673,37 @@ const Index = () => {
 {/* Desktop Category Cards - hidden on mobile since they're in hero */}
 {!isSearchFocused && (
   <div className="hidden md:block w-full px-4 md:px-6 lg:px-8 py-4 md:py-6 overflow-hidden">
-    <div className="grid grid-cols-4 gap-8 w-full">
+    <div className="grid grid-cols-4 gap-4 w-full">
       {categories.map(cat => (
         <div 
           key={cat.title} 
           onClick={() => navigate(cat.path)} 
           className="flex flex-col items-center cursor-pointer group"
         >
-          {/* ICON CONTAINER */}
+          {/* ICON CONTAINER with background image */}
           <div 
-            className="flex items-center justify-center transition-all w-full h-40 lg:h-48 rounded-lg relative"
+            className="flex items-end justify-center transition-all w-full h-40 lg:h-48 rounded-lg relative overflow-hidden"
             style={{
               backgroundImage: `url(${cat.bgImage})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center'
             }}
           >
-            {/* Desktop Overlay */}
-            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all rounded-lg" />
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 group-hover:from-black/70 group-hover:via-black/30 transition-all" />
+            
             {/* Icon: Center aligned */}
-            <cat.icon className="relative z-10 h-12 w-12 lg:h-16 lg:w-16 text-white" />
-          </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <cat.icon className="h-12 w-12 lg:h-16 lg:w-16 text-white drop-shadow-lg" />
+            </div>
 
-          {/* TEXT: Below the icon container */}
-          <div className="mt-2 text-center">
-            <span className="font-bold text-gray-800 text-base lg:text-lg leading-tight block" role="heading" aria-level={3}>
-              {cat.title}
-            </span>
-            <p className="text-gray-500 text-sm mt-1">{cat.description}</p>
+            {/* TEXT: Inside image at bottom */}
+            <div className="relative z-10 p-3 text-center w-full">
+              <span className="font-bold text-white text-base lg:text-lg leading-tight block drop-shadow-lg" role="heading" aria-level={3}>
+                {cat.title}
+              </span>
+              <p className="text-white/90 text-sm mt-1 drop-shadow">{cat.description}</p>
+            </div>
           </div>
         </div>
       ))}
@@ -693,108 +730,34 @@ const Index = () => {
                     </div>}
                 
                 <div className={`w-full px-4 md:px-6 lg:px-8 ${isSearchFocused ? 'hidden' : ''}`}>
-                    {/* Near You / Latest - Show nearby items if location is on, otherwise show latest */}
+                    {/* Top Destinations / My Location Toggle Bar */}
                     <section className="mb-2 md:mb-6">
-                        <div className="mb-1.5 md:mb-3 mt-1 md:mt-0 px-0 mx-[10px] items-end justify-between flex flex-row my-[5px] bg-gradient-to-r from-primary/10 to-transparent py-2 px-3 rounded-lg border-l-4 border-primary">
-                            <h2 className="text-xs md:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis text-primary">
-                                {searchQuery ? 'Search Results' : position ? 'Near You' : 'Latest'}
-                            </h2>
-                            {searchQuery && listings.length > 0 && <div className="flex gap-2">
-                                    <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('list')} className="gap-1">
-                                        <Grid className="h-4 w-4" />
-                                        <span className="hidden md:inline">List</span>
-                                    </Button>
-                                </div>}
-                        </div>
-                        
-                        {searchQuery && viewMode === 'map' ? <Suspense fallback={<div className="h-[400px] bg-muted animate-pulse rounded-lg" />}><MapView listings={listings} /></Suspense> : searchQuery ?
-          // Column grid view for search results
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
-                                {loading ? [...Array(12)].map((_, i) => <div key={i} className="w-full"><ListingSkeleton /></div>) : sortedListings.length === 0 ? <div className="col-span-full text-center py-12">
-                                        <p className="text-muted-foreground text-lg">No results found for "{searchQuery}"</p>
-                                        <p className="text-muted-foreground text-sm mt-2">Try searching with different keywords</p>
-                                    </div> : sortedListings.map((item, index) => {
-              const itemDistance = position && item.latitude && item.longitude ? calculateDistance(position.latitude, position.longitude, item.latitude, item.longitude) : undefined;
-              const ratingData = ratings.get(item.id);
-              return <div key={item.id} className="w-full">
-                                        <ListingCard id={item.id} type={item.type} name={item.name} imageUrl={item.image_url} location={item.location} country={item.country} price={item.price || item.entry_fee || item.price_adult || 0} date={item.date} isCustomDate={item.is_custom_date} onSave={handleSave} isSaved={savedItems.has(item.id)} hidePrice={item.type === "HOTEL" || item.type === "ADVENTURE PLACE"} showBadge={true} priority={index < 4} availableTickets={item.type === "TRIP" || item.type === "EVENT" ? item.available_tickets : undefined} bookedTickets={item.type === "TRIP" || item.type === "EVENT" ? bookingStats[item.id] || 0 : undefined} activities={item.activities} distance={itemDistance} avgRating={ratingData?.avgRating} reviewCount={ratingData?.reviewCount} />
-                                    </div>;
-            })}
-                            </div> :
-          // Horizontal scroll view for latest items (when not searching)
-          <div className="relative">
-                                {!searchQuery && listings.length > 0 && <>
-                                        <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredForYouRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
-                                            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredForYouRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
-                                            <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
-                                        </Button>
-                                    </>}
-                                <div ref={featuredForYouRef} onScroll={handleScroll('featuredForYou')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredForYouRef)} className="gap-3 overflow-x-auto pb-2 scrollbar-hide md:gap-4 flex items-start justify-start pl-1 pr-8 md:pl-2 md:pr-12 scroll-smooth">
-                                {/* Show nearby items if location is on, otherwise show latest */}
-                                {(position ? loadingNearby : loading) || (position ? sortedNearbyPlaces : sortedListings).length === 0 ? [...Array(10)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56 rounded-lg overflow-hidden shadow-md">
-                                            <div className="aspect-[2/1] bg-muted animate-pulse" />
-                                            <div className="p-2 space-y-1.5">
-                                                <div className="h-3 bg-muted animate-pulse rounded w-4/5" />
-                                                <div className="h-2.5 bg-muted animate-pulse rounded w-2/3" />
-                                            </div>
-                                        </div>) : (position ? sortedNearbyPlaces : sortedListings).map((item, index) => {
-                                          const ratingData = ratings.get(item.id);
-                                          return <div key={item.id} className="flex-shrink-0 w-[45vw] md:w-56">
-                                             <ListingCard id={item.id} type={item.type} name={item.name} imageUrl={item.image_url} location={item.location} country={item.country} price={item.price || item.entry_fee || 0} date={item.date} isCustomDate={item.is_custom_date} onSave={handleSave} isSaved={savedItems.has(item.id)} hidePrice={true} showBadge={true} priority={index === 0} availableTickets={item.type === "TRIP" || item.type === "EVENT" ? item.available_tickets : undefined} bookedTickets={item.type === "TRIP" || item.type === "EVENT" ? bookingStats[item.id] || 0 : undefined} activities={item.activities} distance={position ? item.distance : undefined} avgRating={ratingData?.avgRating} reviewCount={ratingData?.reviewCount} />
-                                         </div>;
-                                        })}
-                                </div>
-                            </div>}
-                    </section>
-
-
-                    <hr className="border-t border-gray-200 my-1 md:my-4" />
-
-                    {/* Events */}
-                    <section className="mb-2 md:mb-6">
-                        <div className="mb-1.5 md:mb-3 flex items-center justify-between bg-gradient-to-r from-[#FF7F50]/10 to-transparent py-2 px-3 rounded-lg border-l-4 border-[#FF7F50]">
-                         <h2 className="text-[0.9rem] sm:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis min-w-max text-[#FF7F50]">
-                          Sports and events
-                        </h2>
-                     <Link to="/category/events" className="text-[#FF7F50] text-xs md:text-sm font-bold hover:underline bg-[#FF7F50]/10 px-2 py-1 rounded-full">
-                          View All
-                     </Link>
-                        </div>
-                        <div className="relative">
-                            {scrollableRows.events.length > 0 && <>
-                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredEventsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
-                                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredEventsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
-                                        <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
-                                    </Button>
-                                </>}
-                            <div ref={featuredEventsRef} onScroll={handleScroll('featuredEvents')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredEventsRef)} className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:gap-4 pl-1 pr-8 md:pl-2 md:pr-12 scroll-smooth">
-                            {loadingScrollable ? <div className="flex gap-1.5 md:gap-2">
-                                    {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
-                                            <ListingSkeleton />
-                                        </div>)}
-                                </div> : sortedEvents.length === 0 ? (
-                                  <div className="flex-1 text-center py-8 text-muted-foreground">
-                                    No events available
-                                  </div>
-                                ) : sortedEvents.map((event, index) => {
-                                  const ratingData = ratings.get(event.id);
-                                  const today = new Date().toISOString().split('T')[0];
-                                  const isOutdated = event.date && !event.is_flexible_date && event.date < today;
-                                  return <div key={event.id} className="flex-shrink-0 w-[45vw] md:w-56">
-                                        <ListingCard id={event.id} type="EVENT" name={event.name} imageUrl={event.image_url} location={event.location} country={event.country} price={event.price} date={event.date} isCustomDate={event.is_custom_date} isOutdated={isOutdated} onSave={handleSave} isSaved={savedItems.has(event.id)} showBadge={false} priority={index === 0} activities={event.activities} avgRating={ratingData?.avgRating} reviewCount={ratingData?.reviewCount} availableTickets={event.available_tickets} bookedTickets={bookingStats[event.id] || 0} />
-                                    </div>;
-                                })}
-                            </div>
+                        <div className="mb-1.5 md:mb-3 mt-1 md:mt-0 px-0 mx-[10px] items-center justify-between flex flex-row my-[5px] bg-gradient-to-r from-primary/10 to-transparent py-2 px-3 rounded-lg border-l-4 border-primary">
+                            <button 
+                              onClick={() => setListingViewMode('top_destinations')}
+                              className={`text-xs md:text-lg font-bold whitespace-nowrap transition-all ${
+                                listingViewMode === 'top_destinations' 
+                                  ? 'text-primary' 
+                                  : 'text-muted-foreground hover:text-primary/70'
+                              }`}
+                            >
+                              Top Destinations
+                            </button>
+                            <button 
+                              onClick={handleMyLocationTap}
+                              className={`flex items-center gap-1.5 text-xs md:text-lg font-bold whitespace-nowrap transition-all ${
+                                listingViewMode === 'my_location' 
+                                  ? 'text-primary' 
+                                  : 'text-muted-foreground hover:text-primary/70'
+                              }`}
+                            >
+                              <MapPin className="h-4 w-4" />
+                              My Location
+                            </button>
                         </div>
                     </section>
 
-                    <hr className="border-t border-gray-200 my-1 md:my-4" />
-
-                    {/* Campsite & Experience */}
+                    {/* Campsite & Experience (Adventure Places) - First */}
                     <section className="mb-2 md:mb-6">
                         <div className="mb-1.5 md:mb-3 flex items-center justify-between bg-gradient-to-r from-primary/10 to-transparent py-2 px-3 rounded-lg border-l-4 border-primary">
                          <h2 className="text-[0.9rem] sm:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis min-w-max text-primary">
@@ -818,11 +781,11 @@ const Index = () => {
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
                                             <ListingSkeleton />
                                         </div>)}
-                                </div> : sortedCampsites.length === 0 ? (
+                                </div> : displayCampsites.length === 0 ? (
                                   <div className="flex-1 text-center py-8 text-muted-foreground">
                                     No adventure places available
                                   </div>
-                                ) : sortedCampsites.map((place, index) => {
+                                ) : displayCampsites.map((place, index) => {
                 const itemDistance = position && place.latitude && place.longitude ? calculateDistance(position.latitude, position.longitude, place.latitude, place.longitude) : undefined;
                 const ratingData = ratings.get(place.id);
                 return <div key={place.id} className="flex-shrink-0 w-[45vw] md:w-56">
@@ -833,7 +796,9 @@ const Index = () => {
                         </div>
                     </section>
 
-                    {/* Hotels */}
+                    <hr className="border-t border-gray-200 my-1 md:my-4" />
+
+                    {/* Hotels - Second */}
                     <section className="mb-2 md:mb-6">
                         <div className="mb-1.5 md:mb-3 flex items-center justify-between bg-gradient-to-r from-[#008080]/10 to-transparent py-2 px-3 rounded-lg border-l-4 border-[#008080]">
                             <h2 className="text-[0.9rem] sm:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis min-w-max text-[#008080]">
@@ -857,11 +822,11 @@ const Index = () => {
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
                                             <ListingSkeleton />
                                         </div>)}
-                                </div> : sortedHotels.length === 0 ? (
+                                </div> : displayHotels.length === 0 ? (
                                   <div className="flex-1 text-center py-8 text-muted-foreground">
                                     No hotels available
                                   </div>
-                                ) : sortedHotels.map((hotel, index) => {
+                                ) : displayHotels.map((hotel, index) => {
                 const itemDistance = position && hotel.latitude && hotel.longitude ? calculateDistance(position.latitude, position.longitude, hotel.latitude, hotel.longitude) : undefined;
                 const ratingData = ratings.get(hotel.id);
                 return <div key={hotel.id} className="flex-shrink-0 w-[45vw] md:w-56">
@@ -872,15 +837,9 @@ const Index = () => {
                         </div>
                     </section>
 
-                    {/* Attractions */}
-                    <section className="mb-2 md:mb-6">
-                        
-                        
-                    </section>
-
                     <hr className="border-t border-gray-200 my-1 md:my-4" />
 
-                    {/* Trips Section */}
+                    {/* Trips Section - Third */}
                     <section className="mb-2 md:mb-6">
                         <div className="mb-1.5 md:mb-3 flex items-center justify-between bg-gradient-to-r from-[#FF0000]/10 to-transparent py-2 px-3 rounded-lg border-l-4 border-[#FF0000]">
                             <h2 className="text-[0.9rem] sm:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis min-w-max text-[#FF0000]">
@@ -904,11 +863,11 @@ const Index = () => {
                                     {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
                                             <ListingSkeleton />
                                         </div>)}
-                                </div> : sortedTrips.length === 0 ? (
+                                </div> : displayTrips.length === 0 ? (
                                   <div className="flex-1 text-center py-8 text-muted-foreground">
                                     No trips available
                                   </div>
-                                ) : sortedTrips.map((trip, index) => {
+                                ) : displayTrips.map((trip, index) => {
                 const isEvent = trip.type === "event";
                 const today = new Date().toISOString().split('T')[0];
                 const isOutdated = trip.date && !trip.is_flexible_date && trip.date < today;
@@ -920,9 +879,51 @@ const Index = () => {
                             </div>
                         </div>
                     </section>
+
+                    <hr className="border-t border-gray-200 my-1 md:my-4" />
+
+                    {/* Events - Fourth */}
+                    <section className="mb-2 md:mb-6">
+                        <div className="mb-1.5 md:mb-3 flex items-center justify-between bg-gradient-to-r from-[#FF7F50]/10 to-transparent py-2 px-3 rounded-lg border-l-4 border-[#FF7F50]">
+                         <h2 className="text-[0.9rem] sm:text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis min-w-max text-[#FF7F50]">
+                          Sports and events
+                        </h2>
+                     <Link to="/category/events" className="text-[#FF7F50] text-xs md:text-sm font-bold hover:underline bg-[#FF7F50]/10 px-2 py-1 rounded-full">
+                          View All
+                     </Link>
+                        </div>
+                        <div className="relative">
+                            {scrollableRows.events.length > 0 && <>
+                                    <Button variant="ghost" size="icon" aria-label="Scroll left" onClick={() => scrollSection(featuredEventsRef, 'left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" aria-label="Scroll right" onClick={() => scrollSection(featuredEventsRef, 'right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 md:h-10 md:w-10 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                                        <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
+                                    </Button>
+                                </>}
+                            <div ref={featuredEventsRef} onScroll={handleScroll('featuredEvents')} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => onTouchEnd(featuredEventsRef)} className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:gap-4 pl-1 pr-8 md:pl-2 md:pr-12 scroll-smooth">
+                            {loadingScrollable ? <div className="flex gap-1.5 md:gap-2">
+                                    {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-[45vw] md:w-56">
+                                            <ListingSkeleton />
+                                        </div>)}
+                                </div> : displayEvents.length === 0 ? (
+                                  <div className="flex-1 text-center py-8 text-muted-foreground">
+                                    No events available
+                                  </div>
+                                ) : displayEvents.map((event, index) => {
+                                  const ratingData = ratings.get(event.id);
+                                  const today = new Date().toISOString().split('T')[0];
+                                  const isOutdated = event.date && !event.is_flexible_date && event.date < today;
+                                  return <div key={event.id} className="flex-shrink-0 w-[45vw] md:w-56">
+                                        <ListingCard id={event.id} type="EVENT" name={event.name} imageUrl={event.image_url} location={event.location} country={event.country} price={event.price} date={event.date} isCustomDate={event.is_custom_date} isOutdated={isOutdated} onSave={handleSave} isSaved={savedItems.has(event.id)} showBadge={false} priority={index === 0} activities={event.activities} avgRating={ratingData?.avgRating} reviewCount={ratingData?.reviewCount} availableTickets={event.available_tickets} bookedTickets={bookingStats[event.id] || 0} />
+                                    </div>;
+                                })}
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
             </main>
-            <MobileBottomBar />
         </div>;
 };
 export default Index;
