@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Calendar as CalendarIcon, Info, Ticket } from "lucide-react";
+import { Calendar as CalendarIcon, Ticket } from "lucide-react";
 
-// Use the brand color constant from your main components
 const COLORS = {
   TEAL: "#008080",
   CORAL: "#FF7F50",
@@ -26,69 +25,77 @@ interface AvailabilityData {
 
 interface AvailabilityCalendarProps {
   itemId: string;
-  itemType: 'trip' | 'hotel' | 'adventure' | 'event'; // Added event to match your other files
+  itemType: 'trip' | 'hotel' | 'adventure' | 'event';
   onDateSelect?: (date: Date) => void;
   selectedDate?: Date;
+  totalCapacity?: number;
 }
 
 export function AvailabilityCalendar({ 
   itemId, 
   itemType, 
   onDateSelect,
-  selectedDate 
+  selectedDate,
+  totalCapacity: propCapacity
 }: AvailabilityCalendarProps) {
   const [availability, setAvailability] = useState<Map<string, AvailabilityData>>(new Map());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
+  const [totalCapacity, setTotalCapacity] = useState(propCapacity || 0);
 
+  // Fetch total capacity if not provided
   useEffect(() => {
-    loadAvailability();
-  }, [itemId, itemType, currentMonth]);
+    if (propCapacity) {
+      setTotalCapacity(propCapacity);
+      return;
+    }
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('booking-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `item_id=eq.${itemId}` }, 
-      () => loadAvailability())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [itemId, itemType]);
+    const fetchCapacity = async () => {
+      const tableMap: Record<string, { table: string, field: string }> = {
+        trip: { table: 'trips', field: 'available_tickets' },
+        event: { table: 'trips', field: 'available_tickets' },
+        hotel: { table: 'hotels', field: 'available_rooms' },
+        adventure: { table: 'adventure_places', field: 'available_slots' }
+      };
 
-  const loadAvailability = async () => {
+      const config = tableMap[itemType];
+      if (config) {
+        const { data } = await supabase
+          .from(config.table as any)
+          .select(config.field)
+          .eq('id', itemId)
+          .single();
+        setTotalCapacity(data?.[config.field] || 0);
+      }
+    };
+
+    fetchCapacity();
+  }, [itemId, itemType, propCapacity]);
+
+  const loadAvailability = useCallback(async () => {
+    if (!totalCapacity) return;
+    
     setIsLoading(true);
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const days = eachDayOfInterval({ start, end });
     const availabilityMap = new Map<string, AvailabilityData>();
 
-    let totalCapacity = 0;
-    // Normalized the fetching logic to match your DB structure
-    const tableMap: Record<string, { table: string, field: string }> = {
-      trip: { table: 'trips', field: 'available_tickets' },
-      event: { table: 'trips', field: 'available_tickets' },
-      hotel: { table: 'hotels', field: 'available_rooms' },
-      adventure: { table: 'adventure_places', field: 'available_slots' }
-    };
-
-    const config = tableMap[itemType];
-    if (config) {
-      const { data } = await supabase.from(config.table as any).select(config.field).eq('id', itemId).single();
-      totalCapacity = data?.[config.field] || 0;
-    }
-
-    const { data: bookings } = await supabase
-      .from('bookings')
-      .select('visit_date, slots_booked')
+    // Use the new public availability table
+    const { data: dateAvailability, error } = await supabase
+      .from('item_availability_by_date')
+      .select('visit_date, booked_slots')
       .eq('item_id', itemId)
       .gte('visit_date', format(start, 'yyyy-MM-dd'))
-      .lte('visit_date', format(end, 'yyyy-MM-dd'))
-      .neq('status', 'cancelled')
-      .neq('status', 'rejected');
+      .lte('visit_date', format(end, 'yyyy-MM-dd'));
+
+    if (error) {
+      console.error('Error fetching availability:', error);
+    }
 
     const bookingsByDate = new Map<string, number>();
-    bookings?.forEach(b => {
-      const dateKey = b.visit_date;
-      bookingsByDate.set(dateKey, (bookingsByDate.get(dateKey) || 0) + (b.slots_booked || 1));
+    dateAvailability?.forEach(row => {
+      bookingsByDate.set(row.visit_date, row.booked_slots || 0);
     });
 
     days.forEach(day => {
@@ -98,18 +105,66 @@ export function AvailabilityCalendar({
       
       let status: 'available' | 'partially_booked' | 'fully_booked' = 'available';
       if (left <= 0) status = 'fully_booked';
-      else if (booked / totalCapacity > 0.7) status = 'partially_booked';
+      else if (totalCapacity > 0 && booked / totalCapacity > 0.7) status = 'partially_booked';
 
       availabilityMap.set(dateKey, { date: day, status, availableSlots: left, totalCapacity });
     });
 
     setAvailability(availabilityMap);
     setIsLoading(false);
-  };
+  }, [itemId, currentMonth, totalCapacity]);
+
+  useEffect(() => {
+    loadAvailability();
+  }, [loadAvailability]);
+
+  // Subscribe to realtime updates
+  useEffect(() => {
+    const channel = supabase
+      .channel(`calendar-availability-${itemId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'item_availability_by_date',
+          filter: `item_id=eq.${itemId}`
+        },
+        (payload) => {
+          const newRecord = payload.new as { visit_date: string; booked_slots: number } | null;
+          
+          if (newRecord) {
+            const booked = newRecord.booked_slots || 0;
+            const left = Math.max(0, totalCapacity - booked);
+            
+            let status: 'available' | 'partially_booked' | 'fully_booked' = 'available';
+            if (left <= 0) status = 'fully_booked';
+            else if (totalCapacity > 0 && booked / totalCapacity > 0.7) status = 'partially_booked';
+
+            setAvailability(prev => {
+              const updated = new Map(prev);
+              const existingDay = prev.get(newRecord.visit_date);
+              if (existingDay) {
+                updated.set(newRecord.visit_date, {
+                  ...existingDay,
+                  availableSlots: left,
+                  status
+                });
+              }
+              return updated;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [itemId, totalCapacity]);
 
   const getDateAvailability = (date: Date) => availability.get(format(date, 'yyyy-MM-dd'));
 
-  // CUSTOM STYLING MODIFIERS
   const modifiers = {
     available: (date: Date) => getDateAvailability(date)?.status === 'available',
     partiallyBooked: (date: Date) => getDateAvailability(date)?.status === 'partially_booked',
@@ -164,8 +219,8 @@ export function AvailabilityCalendar({
             modifiersStyles={modifiersStyles}
             className="w-full pointer-events-auto font-black"
             classNames={{
-                day_selected: "bg-[#008080] text-white hover:bg-[#008080] hover:text-white focus:bg-[#008080] focus:text-white rounded-xl",
-                day_today: "bg-slate-200 text-slate-900 rounded-xl"
+              day_selected: "bg-[#008080] text-white hover:bg-[#008080] hover:text-white focus:bg-[#008080] focus:text-white rounded-xl",
+              day_today: "bg-slate-200 text-slate-900 rounded-xl"
             }}
           />
         </div>
@@ -189,7 +244,7 @@ export function AvailabilityCalendar({
                 return (
                   <>
                     <p className="text-lg font-black" style={{ color: COLORS.TEAL }}>
-                      {avail?.availableSlots || 0}
+                      {avail?.availableSlots ?? totalCapacity}
                     </p>
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Slots Left</p>
                   </>
