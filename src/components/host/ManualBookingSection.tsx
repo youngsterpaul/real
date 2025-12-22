@@ -14,6 +14,8 @@ interface ManualBookingSectionProps {
   itemName: string;
   totalCapacity: number;
   facilities?: Array<{ name: string; price: number }>;
+  tripDate?: string | null;
+  isFlexibleDate?: boolean;
   onBookingCreated: () => void;
 }
 
@@ -23,6 +25,8 @@ export const ManualBookingSection = ({
   itemName,
   totalCapacity,
   facilities = [],
+  tripDate,
+  isFlexibleDate = false,
   onBookingCreated
 }: ManualBookingSectionProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -73,6 +77,8 @@ export const ManualBookingSection = ({
               itemName={itemName}
               totalCapacity={totalCapacity}
               facilities={facilities}
+              tripDate={tripDate}
+              isFlexibleDate={isFlexibleDate}
               onBookingCreated={onBookingCreated}
             />
           </div>

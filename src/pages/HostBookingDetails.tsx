@@ -55,6 +55,9 @@ const HostBookingDetails = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [itemName, setItemName] = useState("");
   const [itemCapacity, setItemCapacity] = useState(0);
+  const [itemFacilities, setItemFacilities] = useState<Array<{ name: string; price: number }>>([]);
+  const [tripDate, setTripDate] = useState<string | null>(null);
+  const [isFlexibleDate, setIsFlexibleDate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
 
@@ -82,7 +85,7 @@ const HostBookingDetails = () => {
 
     const { data: item } = await supabase
       .from(tableName as any)
-      .select(`name,created_by,${capacityField}`)
+      .select(`name,created_by,${capacityField},facilities,date,is_flexible_date,is_custom_date`)
       .eq("id", itemId)
       .single();
       
@@ -93,6 +96,21 @@ const HostBookingDetails = () => {
 
     setItemName((item as any).name);
     setItemCapacity((item as any)[capacityField] || 0);
+    
+    // Extract facilities for hotels/adventures
+    const facilitiesData = (item as any).facilities;
+    if (facilitiesData && Array.isArray(facilitiesData)) {
+      const parsedFacilities = facilitiesData
+        .filter((f: any) => f.name && f.price > 0)
+        .map((f: any) => ({ name: f.name, price: Number(f.price) }));
+      setItemFacilities(parsedFacilities);
+    }
+    
+    // Extract trip date info
+    if (type === 'trip' || type === 'event') {
+      setTripDate((item as any).date || null);
+      setIsFlexibleDate((item as any).is_flexible_date || (item as any).is_custom_date || false);
+    }
 
     // Fetch bookings with specific fields
     const { data: bookingsData } = await supabase
@@ -197,6 +215,9 @@ const HostBookingDetails = () => {
             itemType={type as 'trip' | 'event' | 'hotel' | 'adventure' | 'adventure_place'}
             itemName={itemName}
             totalCapacity={itemCapacity}
+            facilities={itemFacilities}
+            tripDate={tripDate}
+            isFlexibleDate={isFlexibleDate}
             onBookingCreated={fetchBookings}
           />
         )}
