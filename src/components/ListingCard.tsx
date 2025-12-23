@@ -94,10 +94,8 @@ const ListingCardComponent = ({
 
   const handleImageLoad = useCallback(() => setImageLoaded(true), []);
 
-  const showDistanceBadge = useMemo(() => 
-    (type === 'HOTEL' || type === 'ADVENTURE PLACE') && distance !== undefined, 
-    [type, distance]
-  );
+  // Show distance for all types when location is available
+  const showDistanceBadge = useMemo(() => distance !== undefined && distance > 0, [distance]);
 
   return (
     <Card 

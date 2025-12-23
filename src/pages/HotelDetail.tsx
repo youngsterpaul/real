@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   MapPin, Clock, ArrowLeft, 
-  Heart, Star, Circle, ShieldCheck, Tent, Zap, Calendar, Loader2
+  Heart, Star, Circle, ShieldCheck, Tent, Zap, Calendar, Loader2, Share2, Copy, Navigation
 } from "lucide-react";
 import { SimilarItems } from "@/components/SimilarItems";
 import { useToast } from "@/hooks/use-toast";
@@ -20,8 +20,7 @@ import { MultiStepBooking, BookingFormData } from "@/components/booking/MultiSte
 import { useBookingSubmit } from "@/hooks/useBookingSubmit";
 import { extractIdFromSlug } from "@/lib/slugUtils";
 import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
-import { trackReferralClick } from "@/lib/referralUtils";
-
+import { trackReferralClick, generateReferralLink } from "@/lib/referralUtils";
 const HotelDetail = () => {
   const { slug } = useParams();
   const id = slug ? extractIdFromSlug(slug) : null;
@@ -271,6 +270,46 @@ const HotelDetail = () => {
               </div>
               <OperatingHoursInfo />
               <Button onClick={() => setBookingOpen(true)} className="w-full mt-6 py-7 rounded-2xl text-md font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-lg transition-all active:scale-95">Book Now</Button>
+              
+              {/* Mobile Utility Buttons */}
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const query = encodeURIComponent(`${hotel?.name}, ${hotel?.location}`);
+                    window.open(hotel?.map_link || `https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+                  }}
+                  className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
+                >
+                  <Navigation className="h-5 w-5 mb-1" />
+                  <span className="text-[10px] font-black uppercase tracking-tighter">Map</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    if (!id) return;
+                    const refLink = await generateReferralLink(id, "hotel", id);
+                    await navigator.clipboard.writeText(refLink);
+                    toast({ title: "Link Copied!" });
+                  }}
+                  className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
+                >
+                  <Copy className="h-5 w-5 mb-1" />
+                  <span className="text-[10px] font-black uppercase tracking-tighter">Copy</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ title: hotel.name, url: window.location.href });
+                    }
+                  }}
+                  className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
+                >
+                  <Share2 className="h-5 w-5 mb-1" />
+                  <span className="text-[10px] font-black uppercase tracking-tighter">Share</span>
+                </Button>
+              </div>
             </div>
 
             {/* Amenities */}
@@ -349,6 +388,46 @@ const HotelDetail = () => {
                 >
                   Reserve Now
                 </Button>
+                
+                {/* Utility Buttons - Share, Copy Link, Map */}
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      const query = encodeURIComponent(`${hotel?.name}, ${hotel?.location}`);
+                      window.open(hotel?.map_link || `https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+                    }}
+                    className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
+                  >
+                    <Navigation className="h-5 w-5 mb-1" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Map</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={async () => {
+                      if (!id) return;
+                      const refLink = await generateReferralLink(id, "hotel", id);
+                      await navigator.clipboard.writeText(refLink);
+                      toast({ title: "Link Copied!" });
+                    }}
+                    className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
+                  >
+                    <Copy className="h-5 w-5 mb-1" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Copy</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: hotel.name, url: window.location.href });
+                      }
+                    }}
+                    className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
+                  >
+                    <Share2 className="h-5 w-5 mb-1" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Share</span>
+                  </Button>
+                </div>
                 
                 <p className="text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">
                   Secure checkout & instant confirmation

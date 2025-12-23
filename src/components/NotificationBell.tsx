@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Bell, CheckCircle2, Trash2, Clock } from "lucide-react";
+import { Bell, CheckCircle2, Trash2, Clock, ChevronRight } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { format, isToday, isYesterday } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useNavigate } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -54,10 +55,50 @@ const categorizeNotifications = (notifications: Notification[]) => {
 
 export const NotificationBell = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Get deep link URL based on notification type and data
+  const getNotificationDeepLink = useCallback((notification: Notification): string | null => {
+    const { type, data } = notification;
+    
+    switch (type) {
+      case 'host_verification':
+        return '/verification-status';
+      case 'payment_verification':
+        return '/account';
+      case 'new_booking':
+        if (data?.item_id && data?.booking_type) {
+          return `/host-bookings/${data.booking_type}/${data.item_id}`;
+        }
+        return '/host-bookings';
+      case 'payment_confirmed':
+        return '/bookings';
+      case 'new_referral':
+        return '/my-referrals';
+      case 'item_status':
+      case 'item_hidden':
+      case 'item_unhidden':
+        if (data?.item_id && data?.item_type) {
+          return `/host-bookings/${data.item_type}/${data.item_id}`;
+        }
+        return '/my-listing';
+      default:
+        return null;
+    }
+  }, []);
+
+  const handleNotificationClick = useCallback((notification: Notification) => {
+    markAsRead(notification.id);
+    const deepLink = getNotificationDeepLink(notification);
+    if (deepLink) {
+      setIsOpen(false);
+      navigate(deepLink);
+    }
+  }, [getNotificationDeepLink, navigate]);
 
   /**
    * UNIFIED ICON STYLING
@@ -196,45 +237,52 @@ export const NotificationBell = () => {
                   </div>
                   
                   <div className="space-y-3">
-                    {group.notifications.map((notification) => (
-                      <button
-                        key={notification.id}
-                        onClick={() => markAsRead(notification.id)}
-                        className={`w-full text-left p-5 rounded-[24px] border transition-all duration-300 group relative overflow-hidden ${
-                          notification.is_read
-                            ? "bg-white border-slate-100 hover:border-[#008080]/30"
-                            : "bg-white border-transparent shadow-md"
-                        }`}
-                      >
-                        {!notification.is_read && (
-                          <div 
-                            className="absolute top-0 left-0 w-1.5 h-full" 
-                            style={{ background: `linear-gradient(to bottom, ${COLORS.CORAL}, ${COLORS.RED})` }}
-                          />
-                        )}
-                        
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="space-y-1">
-                            <h4 className={`text-sm font-black uppercase tracking-tight ${notification.is_read ? 'text-slate-600' : 'text-[#008080]'}`}>
-                              {notification.title}
-                            </h4>
-                            <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                              {notification.message}
-                            </p>
+                    {group.notifications.map((notification) => {
+                      const hasDeepLink = !!getNotificationDeepLink(notification);
+                      return (
+                        <button
+                          key={notification.id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`w-full text-left p-5 rounded-[24px] border transition-all duration-300 group relative overflow-hidden ${
+                            notification.is_read
+                              ? "bg-white border-slate-100 hover:border-[#008080]/30"
+                              : "bg-white border-transparent shadow-md"
+                          }`}
+                        >
+                          {!notification.is_read && (
+                            <div 
+                              className="absolute top-0 left-0 w-1.5 h-full" 
+                              style={{ background: `linear-gradient(to bottom, ${COLORS.CORAL}, ${COLORS.RED})` }}
+                            />
+                          )}
+                          
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-1 flex-1">
+                              <h4 className={`text-sm font-black uppercase tracking-tight ${notification.is_read ? 'text-slate-600' : 'text-[#008080]'}`}>
+                                {notification.title}
+                              </h4>
+                              <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                                {notification.message}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">
+                                {format(new Date(notification.created_at), 'h:mm a')}
+                              </span>
+                              {!notification.is_read ? (
+                                <div className="p-1.5 rounded-lg bg-[#FF7F50]/10 text-[#FF7F50]">
+                                  <Clock className="h-3 w-3" />
+                                </div>
+                              ) : hasDeepLink && (
+                                <div className="p-1.5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-[#008080]/10 group-hover:text-[#008080] transition-colors">
+                                  <ChevronRight className="h-3 w-3" />
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">
-                              {format(new Date(notification.created_at), 'h:mm a')}
-                            </span>
-                            {!notification.is_read && (
-                              <div className="p-1.5 rounded-lg bg-[#FF7F50]/10 text-[#FF7F50]">
-                                <Clock className="h-3 w-3" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

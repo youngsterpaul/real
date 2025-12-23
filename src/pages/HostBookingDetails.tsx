@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { 
   Mail, Phone, Calendar, Users, DollarSign, 
   ArrowLeft, ChevronDown, ChevronUp, User, 
-  Ticket, Info, CheckCircle2 
+  Ticket, Info, CheckCircle2, Download
 } from "lucide-react";
 import { BookingDownloadButton } from "@/components/booking/BookingDownloadButton";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { ManualBookingSection } from "@/components/host/ManualBookingSection";
+import { exportBookingsToCSV } from "@/lib/csvExport";
 
 const COLORS = {
   TEAL: "#008080",
@@ -213,12 +214,25 @@ const HostBookingDetails = () => {
           <Badge className="bg-[#FF7F50] hover:bg-[#FF7F50] border-none px-4 py-1 h-auto uppercase font-black tracking-[0.15em] text-[10px] rounded-full">
             Host Dashboard
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-[#008080]">
-            {itemName}
-          </h1>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            Total Reservations: {bookings.length}
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-[#008080]">
+                {itemName}
+              </h1>
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                Total Reservations: {bookings.length}
+              </p>
+            </div>
+            {bookings.length > 0 && (
+              <Button
+                onClick={() => exportBookingsToCSV(bookings, itemName)}
+                className="bg-[#008080] hover:bg-[#006666] text-white rounded-xl px-6 py-6 font-black uppercase tracking-widest text-xs flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download All ({bookings.length})
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Manual Booking Entry Section */}

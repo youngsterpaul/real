@@ -1,7 +1,8 @@
 // Service Worker for Push Notifications, Image Caching, and Offline Support
 
-const CACHE_NAME = 'triptrac-images-v2';
-const STATIC_CACHE_NAME = 'triptrac-static-v2';
+const CACHE_NAME = 'triptrac-images-v3';
+const STATIC_CACHE_NAME = 'triptrac-static-v3';
+const DATA_CACHE_NAME = 'triptrac-data-v1';
 const IMAGE_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Image URL patterns to cache
@@ -22,6 +23,17 @@ const OFFLINE_PAGES = [
   '/bookings',
   '/host-bookings',
   '/qr-scanner',
+  '/account',
+  '/my-listing',
+];
+
+// API endpoints to cache for offline access
+const CACHEABLE_API_PATTERNS = [
+  /\/rest\/v1\/bookings/,
+  /\/rest\/v1\/profiles/,
+  /\/rest\/v1\/trips/,
+  /\/rest\/v1\/hotels/,
+  /\/rest\/v1\/adventure_places/,
 ];
 
 // Check if URL should be cached
@@ -92,27 +104,45 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Handle API requests - network first, fallback to cache
+  // Handle API requests - network first, fallback to cache with enhanced caching for bookings data
   if (requestUrl.pathname.includes('/rest/v1/') || requestUrl.pathname.includes('/functions/v1/')) {
+    const shouldCacheForOffline = CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url));
+    
     event.respondWith(
       fetch(event.request).then(function(response) {
-        // Cache successful GET requests
+        // Cache successful GET requests, especially for booking data
         if (response.ok && event.request.method === 'GET') {
           const responseClone = response.clone();
-          caches.open(STATIC_CACHE_NAME).then(function(cache) {
+          const cacheName = shouldCacheForOffline ? DATA_CACHE_NAME : STATIC_CACHE_NAME;
+          caches.open(cacheName).then(function(cache) {
             cache.put(event.request, responseClone);
           });
         }
         return response;
       }).catch(function() {
-        // Return cached API response if offline
-        return caches.match(event.request).then(function(cachedResponse) {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return new Response(JSON.stringify({ error: 'Offline', offline: true }), {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
+        // Return cached API response if offline - check both caches
+        return caches.open(DATA_CACHE_NAME).then(function(dataCache) {
+          return dataCache.match(event.request).then(function(cachedResponse) {
+            if (cachedResponse) {
+              // Add offline indicator header
+              const headers = new Headers(cachedResponse.headers);
+              headers.set('X-Offline-Cache', 'true');
+              return new Response(cachedResponse.body, {
+                status: cachedResponse.status,
+                statusText: cachedResponse.statusText,
+                headers: headers
+              });
+            }
+            // Fallback to static cache
+            return caches.match(event.request).then(function(staticCachedResponse) {
+              if (staticCachedResponse) {
+                return staticCachedResponse;
+              }
+              return new Response(JSON.stringify({ error: 'Offline', offline: true }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            });
           });
         });
       })
