@@ -299,10 +299,19 @@ export const ManualBookingForm = ({
         primaryVisitDate = earliestDate || null;
       }
 
-      // Insert manual booking
+      // Determine valid booking_type - only use values that exist in database
+      const validBookingTypes = ['trip', 'event', 'hotel', 'adventure_place', 'adventure', 'attraction'];
+      const dbBookingType = itemType === 'adventure_place' ? 'adventure' : itemType;
+      const finalBookingType = validBookingTypes.includes(dbBookingType) ? dbBookingType : null;
+
+      // Determine valid payment_method - only use values that exist in database, otherwise null
+      const validPaymentMethods = ['mpesa', 'airtel', 'card', 'manual_entry', 'cash', 'bank_transfer'];
+      const paymentMethod = validPaymentMethods.includes('manual_entry') ? 'manual_entry' : null;
+
+      // Insert manual booking with validated values
       const { error } = await supabase.from('bookings').insert({
         item_id: itemId,
-        booking_type: itemType === 'adventure_place' ? 'adventure' : itemType,
+        booking_type: finalBookingType || 'trip', // fallback to 'trip' if somehow null
         guest_name: formData.guestName.trim(),
         guest_email: formData.guestContact.includes('@') ? formData.guestContact.trim() : null,
         guest_phone: !formData.guestContact.includes('@') ? formData.guestContact.trim() : null,
@@ -311,7 +320,7 @@ export const ManualBookingForm = ({
         total_amount: totalAmount,
         status: 'confirmed',
         payment_status: 'paid',
-        payment_method: 'manual_entry',
+        payment_method: paymentMethod,
         is_guest_booking: true,
         booking_details: bookingDetails
       });
