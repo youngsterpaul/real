@@ -1,6 +1,6 @@
 {
-  "short_name": "TripTrac",
-  "name": "Trip Tracker PWA",
+  "short_name": "Realtravo",
+  "name": "Realtravo",
   "icons": [
     {
       "src": "favicon.ico",
@@ -22,6 +22,6 @@
   ],
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#008080",
+  "theme_color": "#ffffff",
   "background_color": "#ffffff"
 }
