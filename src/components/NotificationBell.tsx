@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { format, isToday, isYesterday } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -56,37 +56,40 @@ const categorizeNotifications = (notifications: Notification[]) => {
 export const NotificationBell = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const isIndexPage = location.pathname === '/';
+
+  /**
+   * VISUAL STYLING UPDATE
+   * Matches the Menu Bar: Border, Background, and Icon Color
+   */
+  const headerIconStyles = `
+    h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-200 
+    active:scale-90 shadow-sm border border-slate-200 relative group
+    ${isIndexPage ? 'text-slate-800 bg-white/90 hover:bg-white' : 'text-slate-700 bg-slate-50 hover:bg-slate-100'}
+  `;
+
   const getNotificationDeepLink = useCallback((notification: Notification): string | null => {
     const { type, data } = notification;
-    
     switch (type) {
-      case 'host_verification':
-        return '/verification-status';
-      case 'payment_verification':
-        return '/account';
+      case 'host_verification': return '/verification-status';
+      case 'payment_verification': return '/account';
       case 'new_booking':
-        if (data?.item_id && data?.booking_type) {
-          return `/host-bookings/${data.booking_type}/${data.item_id}`;
-        }
+        if (data?.item_id && data?.booking_type) return `/host-bookings/${data.booking_type}/${data.item_id}`;
         return '/host-bookings';
-      case 'payment_confirmed':
-        return '/bookings';
-      case 'new_referral':
-        return '/my-referrals';
+      case 'payment_confirmed': return '/bookings';
+      case 'new_referral': return '/my-referrals';
       case 'item_status':
       case 'item_hidden':
       case 'item_unhidden':
-        if (data?.item_id && data?.item_type) {
-          return `/host-bookings/${data.item_type}/${data.item_id}`;
-        }
+        if (data?.item_id && data?.item_type) return `/host-bookings/${data.item_type}/${data.item_id}`;
         return '/my-listing';
-      default:
-        return null;
+      default: return null;
     }
   }, []);
 
@@ -98,16 +101,6 @@ export const NotificationBell = () => {
       navigate(deepLink);
     }
   }, [getNotificationDeepLink, navigate]);
-
-  /**
-   * UPDATED STYLING
-   * - Removed dark backgrounds to match the white header.
-   * - Set icon color to #008080 (Teal).
-   */
-  const headerIconStyles = `
-    h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-200 
-    active:scale-90 relative group
-  `;
 
   useEffect(() => {
     audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
@@ -126,6 +119,7 @@ export const NotificationBell = () => {
     toast({ title: notification.title, description: notification.message });
   }, []);
 
+  // Keeping database fetch code as requested
   const fetchNotifications = async () => {
     if (!user) return;
     const { data, error } = await supabase
@@ -176,11 +170,11 @@ export const NotificationBell = () => {
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <button className={headerIconStyles} aria-label="Notifications">
-          {/* Bell Icon color updated to Teal #008080 */}
-          <Bell className="h-6 w-6 transition-transform group-hover:rotate-12" style={{ color: COLORS.TEAL }} />
+          {/* Bell icon weight matched to menu icon */}
+          <Bell className="h-5 w-5 stroke-[2.5px] transition-transform group-hover:rotate-12" />
           {unreadCount > 0 && (
             <Badge
-              className="absolute top-1 right-1 h-5 min-w-[20px] px-1 flex items-center justify-center border-2 border-white text-[10px] font-black"
+              className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center border-2 border-white text-[10px] font-black"
               style={{ backgroundColor: COLORS.RED, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
             >
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -288,4 +282,4 @@ export const NotificationBell = () => {
       </SheetContent>
     </Sheet>
   );
-};1
+};
