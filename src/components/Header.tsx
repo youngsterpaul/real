@@ -139,7 +139,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, hideIc
               onClick={() => user ? navigate('/account') : navigate('/auth')}
               className="h-11 px-6 rounded-2xl flex items-center gap-3 transition-all font-black text-[10px] uppercase tracking-widest shadow-lg border-none text-white hover:brightness-110 active:scale-95"
               style={{ 
-                background: `linear-gradient(135deg, ${COLORS.CORAL} 0%, #FF6B35 100%)`
+                background: `linear-gradient(135deg, ${COLORS.CORAL} 0%, #008080 100%)`
               }}
             >
               <User className="h-4 w-4" />

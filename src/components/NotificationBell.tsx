@@ -61,7 +61,6 @@ export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Get deep link URL based on notification type and data
   const getNotificationDeepLink = useCallback((notification: Notification): string | null => {
     const { type, data } = notification;
     
@@ -101,17 +100,13 @@ export const NotificationBell = () => {
   }, [getNotificationDeepLink, navigate]);
 
   /**
-   * UNIFIED ICON STYLING
-   * Exactly matching the Menu icon:
-   * - Mobile: bg-black/50 (for visibility on hero images)
-   * - Desktop: md:bg-white/15 (glass effect on teal)
+   * UPDATED STYLING
+   * - Removed dark backgrounds to match the white header.
+   * - Set icon color to #008080 (Teal).
    */
   const headerIconStyles = `
     h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-200 
-    active:scale-90 shadow-md md:shadow-none text-white
-    bg-black/50 hover:bg-black/60 
-    md:bg-white/15 md:hover:bg-white/25
-    relative group
+    active:scale-90 relative group
   `;
 
   useEffect(() => {
@@ -181,10 +176,11 @@ export const NotificationBell = () => {
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <button className={headerIconStyles} aria-label="Notifications">
-          <Bell className="h-5 w-5 transition-transform group-hover:rotate-12" />
+          {/* Bell Icon color updated to Teal #008080 */}
+          <Bell className="h-6 w-6 transition-transform group-hover:rotate-12" style={{ color: COLORS.TEAL }} />
           {unreadCount > 0 && (
             <Badge
-              className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center border-2 border-white text-[10px] font-black"
+              className="absolute top-1 right-1 h-5 min-w-[20px] px-1 flex items-center justify-center border-2 border-white text-[10px] font-black"
               style={{ backgroundColor: COLORS.RED, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
             >
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -292,4 +288,4 @@ export const NotificationBell = () => {
       </SheetContent>
     </Sheet>
   );
-};
+};1
