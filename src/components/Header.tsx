@@ -80,7 +80,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, hideIc
           
           <Link to="/" className={`flex items-center gap-3 group ${isIndexPage ? 'hidden md:flex' : 'flex'}`}>
             <img 
-              src="/logo.png" 
+              src="/fulllogo.png" 
               alt="Realtravo Logo"
               className="h-10 w-10 rounded-xl shadow-lg transition-transform group-hover:rotate-12 object-contain bg-white"
             />

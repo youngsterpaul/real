@@ -56,7 +56,7 @@ export const NavigationDrawer = ({ onClose }: NavigationDrawerProps) => {
       <div className="p-6 bg-[#008080] text-white">
         <div className="flex items-center gap-4">
           <img 
-            src="/logo.png" 
+            src="/fulllogo.png" 
             alt="Realtravo Logo"
             className="h-10 w-10 rounded-xl shadow-lg object-contain bg-white"
           />
