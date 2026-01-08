@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +15,7 @@ import { DocumentUploadWithCamera } from "@/components/verification/DocumentUplo
 
 // Define the specified Teal color
 const TEAL_COLOR = "#008080";
-const TEAL_HOVER_COLOR = "#005555"; // A darker shade of teal for hover
+const TEAL_HOVER_COLOR = "#005555"; 
 
 const HostVerification = () => {
   const { user } = useAuth();
@@ -65,7 +63,6 @@ const HostVerification = () => {
       if (data) {
         setExistingVerification(data);
         
-        // If approved, redirect to become host
         if (data.status === "approved") {
           navigate("/become-host");
         }
@@ -129,7 +126,6 @@ const HostVerification = () => {
     setIsLoading(true);
 
     try {
-      // Ensure profile exists first
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from("profiles")
         .select("id, name")
@@ -138,10 +134,9 @@ const HostVerification = () => {
 
       if (profileCheckError) {
         console.error("Profile check error:", profileCheckError);
-        throw new Error("Failed to verify user profile. Please contact support.");
+        throw new Error("Failed to verify user profile.");
       }
 
-      // If no profile exists, create one
       if (!existingProfile) {
         const { error: createProfileError } = await supabase
           .from("profiles")
@@ -151,30 +146,20 @@ const HostVerification = () => {
             email: user!.email || "",
           });
 
-        if (createProfileError) {
-          console.error("Profile creation error:", createProfileError);
-          throw new Error("Failed to create user profile. Please try again.");
-        }
+        if (createProfileError) throw new Error("Failed to create user profile.");
       } else if (existingProfile.name !== legalName) {
-        // Update profile name if it was edited during verification
-        const { error: updateProfileError } = await supabase
+        await supabase
           .from("profiles")
           .update({ name: legalName })
           .eq("id", user!.id);
-
-        if (updateProfileError) {
-          console.error("Profile update error:", updateProfileError);
-        }
       }
 
-      // Upload files
       const frontUrl = await uploadFile(documentFront!, `${user!.id}/document_front_${Date.now()}`);
       const backUrl = documentBack 
         ? await uploadFile(documentBack, `${user!.id}/document_back_${Date.now()}`)
         : null;
       const selfieUrl = await uploadFile(selfie, `${user!.id}/selfie_${Date.now()}`);
 
-      // Insert or update verification
       const verificationData = {
         user_id: user!.id,
         legal_name: legalName,
@@ -190,7 +175,6 @@ const HostVerification = () => {
         submitted_at: new Date().toISOString(),
       };
 
-      // Check if verification exists
       const { data: existingVer } = await supabase
         .from("host_verifications")
         .select("id")
@@ -199,28 +183,23 @@ const HostVerification = () => {
 
       let verificationError;
       if (existingVer) {
-        // Update existing verification
         const { error } = await supabase
           .from("host_verifications")
           .update(verificationData)
           .eq("user_id", user!.id);
         verificationError = error;
       } else {
-        // Insert new verification
         const { error } = await supabase
           .from("host_verifications")
           .insert(verificationData);
         verificationError = error;
       }
 
-      if (verificationError) {
-        console.error("Verification insert/update error:", verificationError);
-        throw verificationError;
-      }
+      if (verificationError) throw verificationError;
 
       toast({
         title: "Submission Successful",
-        description: "Your identity is currently under review. We will notify you of the result soon.",
+        description: "Your identity is currently under review.",
       });
 
       navigate("/verification-status");
@@ -228,7 +207,7 @@ const HostVerification = () => {
       console.error("Verification submission error:", error);
       toast({
         title: "Submission Failed",
-        description: error.message || "Failed to submit verification. Please try again.",
+        description: error.message || "Failed to submit verification.",
         variant: "destructive",
       });
     } finally {
@@ -236,23 +215,12 @@ const HostVerification = () => {
     }
   };
 
-  // Common button styles for teal color
-  const getTealButtonStyle = (variant: 'default' | 'outline' = 'default') => {
-    if (variant === 'default') {
-      return {
-        backgroundColor: TEAL_COLOR,
-        borderColor: TEAL_COLOR,
-        color: 'white',
-        transition: 'background-color 0.15s',
-      };
-    } else { // outline variant is not used in this component, but for completeness
-      return {
-        color: TEAL_COLOR,
-        borderColor: TEAL_COLOR,
-        transition: 'color 0.15s, border-color 0.15s',
-      };
-    }
-  };
+  const getTealButtonStyle = () => ({
+    backgroundColor: TEAL_COLOR,
+    borderColor: TEAL_COLOR,
+    color: 'white',
+    transition: 'background-color 0.15s',
+  });
   
   const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     (e.currentTarget.style as any).backgroundColor = TEAL_HOVER_COLOR;
@@ -262,50 +230,43 @@ const HostVerification = () => {
     (e.currentTarget.style as any).backgroundColor = TEAL_COLOR;
   };
 
-
-  // If user has pending verification, show status
   if (existingVerification && existingVerification.status === "pending") {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container px-4 py-8 mb-20 md:mb-0">
-          <Card className="max-w-2xl mx-auto p-8 text-center">
-            {/* Icon color changed to Teal */}
+        <main className="flex-1 container px-4 py-8 flex items-center justify-center">
+          <Card className="max-w-2xl w-full p-8 text-center shadow-lg">
             <CheckCircle2 className="h-16 w-16 mx-auto mb-4" style={{ color: TEAL_COLOR }} />
             <h1 className="text-2xl font-bold mb-4">Verification Pending</h1>
             <p className="text-muted-foreground mb-6">
               Your identity verification is currently under review. We will notify you of the result soon.
             </p>
-            {/* Button color changed to Teal */}
             <Button 
               onClick={() => navigate("/")}
               style={getTealButtonStyle()}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
+              className="px-8"
             >
               Return to Home
             </Button>
           </Card>
         </main>
-        <Footer />
-        <MobileBottomBar />
       </div>
     );
   }
 
-  // If rejected, allow re-submission
   if (existingVerification && existingVerification.status === "rejected") {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container px-4 py-8 mb-20 md:mb-0">
-          <Card className="max-w-2xl mx-auto p-8">
+        <main className="flex-1 container px-4 py-8 flex items-center justify-center">
+          <Card className="max-w-2xl w-full p-8 shadow-lg">
             <h1 className="text-2xl font-bold mb-4 text-destructive">Verification Failed</h1>
             <div className="bg-destructive/10 p-4 rounded-md mb-6">
               <p className="font-semibold mb-2">Rejection Reason:</p>
               <p className="text-muted-foreground">{existingVerification.rejection_reason}</p>
             </div>
-            {/* Button color changed to Teal */}
             <Button 
               onClick={() => setExistingVerification(null)} 
               className="w-full"
@@ -317,16 +278,14 @@ const HostVerification = () => {
             </Button>
           </Card>
         </main>
-        <Footer />
-        <MobileBottomBar />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container px-4 py-8 mb-20 md:mb-0">
+      <main className="flex-1 container px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold mb-2 text-center">Verify Your Identity to Become a Host</h1>
           <p className="text-muted-foreground mb-8 text-center">
@@ -355,10 +314,6 @@ const HostVerification = () => {
             onSubmit={handleSubmit}
             nextDisabled={false}
             isLoading={isLoading}
-            // Passing the color to MultiStepForm assuming it accepts a primaryColor prop
-            // If MultiStepForm is a custom component, it needs to be updated to respect this prop.
-            // Since we can't edit MultiStepForm, we rely on button styles below.
-            // primaryColor={TEAL_COLOR} 
           >
             {currentStep === 1 && (
               <div className="space-y-4">
@@ -372,7 +327,7 @@ const HostVerification = () => {
                     required
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Auto-filled from your profile. You can edit it to match your ID - this will update your profile name.
+                    Auto-filled from your profile. You can edit it to match your ID.
                   </p>
                 </div>
                 <div>
@@ -385,24 +340,26 @@ const HostVerification = () => {
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="city">City *</Label>
-                  <Input
-                    id="city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Enter your city"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="postalCode">Postal Code (Optional)</Label>
-                  <Input
-                    id="postalCode"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    placeholder="Enter your postal code"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="city">City *</Label>
+                    <Input
+                      id="city"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Enter your city"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="postalCode">Postal Code (Optional)</Label>
+                    <Input
+                      id="postalCode"
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      placeholder="Enter postal code"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="documentType">Government Document Type *</Label>
@@ -423,7 +380,7 @@ const HostVerification = () => {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <DocumentUploadWithCamera
-                  documentType={documentType as "national_id" | "passport" | "driving_licence"}
+                  documentType={documentType as any}
                   label={documentType === "passport" ? "Passport Photo Page" : "Front Side of Document"}
                   side="front"
                   file={documentFront}
@@ -433,7 +390,7 @@ const HostVerification = () => {
 
                 {documentType !== "passport" && (
                   <DocumentUploadWithCamera
-                    documentType={documentType as "national_id" | "passport" | "driving_licence"}
+                    documentType={documentType as any}
                     label="Back Side of Document"
                     side="back"
                     file={documentBack}
@@ -441,19 +398,13 @@ const HostVerification = () => {
                     required
                   />
                 )}
-
-                {documentType === "passport" && (
-                  <p className="text-sm text-muted-foreground">
-                    Back side upload is not required for passport.
-                  </p>
-                )}
               </div>
             )}
 
             {currentStep === 3 && (
               <div className="space-y-4">
                 <DocumentUploadWithCamera
-                  documentType={documentType as "national_id" | "passport" | "driving_licence"}
+                  documentType={documentType as any}
                   label="Selfie for Verification"
                   side="selfie"
                   file={selfie}
@@ -465,8 +416,6 @@ const HostVerification = () => {
           </MultiStepForm>
         </div>
       </main>
-      <Footer />
-      <MobileBottomBar />
     </div>
   );
 };
