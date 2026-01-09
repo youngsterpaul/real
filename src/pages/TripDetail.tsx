@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MapPin, Phone, Share2, Mail, Clock, ArrowLeft, Heart, Copy, Star, Zap, Calendar, Users } from "lucide-react";
 import { SimilarItems } from "@/components/SimilarItems";
 import { useToast } from "@/hooks/use-toast";
@@ -42,14 +42,23 @@ const TripDetail = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
   const { savedItems, handleSave: handleSaveItem } = useSavedItems();
   const isSaved = savedItems.has(id || "");
 
+  // Change 1 & 2: Scroll listener for Sticky Header
   useEffect(() => {
-    // Scroll to top when page loads
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
     if (id) fetchTrip();
-    // Track referral click when page loads with ref parameter
     const urlParams = new URLSearchParams(window.location.search);
     const refSlug = urlParams.get("ref");
     if (refSlug && id) trackReferralClick(refSlug, id, "trip", "booking");
@@ -110,7 +119,6 @@ const TripDetail = () => {
     } finally { setIsProcessing(false); }
   };
 
-  // Real-time availability tracking
   const { remainingSlots, isSoldOut } = useRealtimeItemAvailability(id || undefined, trip?.available_tickets || 0);
 
   if (loading) {
@@ -129,71 +137,6 @@ const TripDetail = () => {
   const isExpired = !trip.is_custom_date && tripDate && tripDate < today;
   const canBook = !isExpired && !isSoldOut;
   const allImages = [trip.image_url, ...(trip.gallery_images || []), ...(trip.images || [])].filter(Boolean);
-
-  // SECTION COMPONENTS
-  const OverviewSection = () => (
-    <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-      <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>Overview</h2>
-      <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{trip.description}</p>
-    </div>
-  );
-
-  const OperatingHoursSection = () => {
-    if (!trip.is_custom_date || (!trip.opening_hours && !trip.days_opened?.length)) return null;
-    return (
-      <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-xl bg-teal-50"><Clock className="h-5 w-5 text-[#008080]" /></div>
-          <div>
-            <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Operating Hours</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">When this tour operates</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {(trip.opening_hours || trip.closing_hours) && (
-            <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
-              <span className="text-[10px] font-black uppercase text-slate-400">Working Hours</span>
-              <span className="text-sm font-black text-slate-700">
-                {trip.opening_hours || "08:00"} - {trip.closing_hours || "18:00"}
-              </span>
-            </div>
-          )}
-          {trip.days_opened?.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {trip.days_opened.map((day: string, i: number) => (
-                <span key={i} className="px-4 py-2 rounded-xl bg-teal-50 text-[10px] font-black uppercase text-[#008080] border border-teal-100">
-                  {day}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const ActivitiesSection = () => trip.activities?.length > 0 && (
-    <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 rounded-xl bg-orange-50"><Zap className="h-5 w-5 text-[#FF9800]" /></div>
-        <div>
-          <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.ORANGE }}>Included Activities</h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Experiences in this package</p>
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        {trip.activities.map((act: any, i: number) => (
-          <div key={i} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100/50">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#FF9800]" />
-            <div className="flex flex-col">
-              <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide">{act.name}</span>
-              <span className="text-[10px] font-bold text-[#FF9800]">{act.price === 0 ? "Included" : `Value: KSh ${act.price}`}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   const BookingCard = () => (
     <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100 lg:sticky lg:top-24">
@@ -279,19 +222,45 @@ const TripDetail = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
-      <Header className="hidden md:block" />
+      {/* 1. Header Removed as requested */}
 
-      {/* HERO SECTION */}
-      <div className="relative w-full overflow-hidden h-[55vh] md:h-[65vh] bg-slate-900">
-        <div className="absolute top-4 left-4 right-4 z-50 flex justify-between">
-          <Button onClick={() => navigate(-1)} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0 hover:bg-black/50">
+      {/* 2. STICKY TOP ACTION BAR */}
+      <div 
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-4 py-3 flex justify-between items-center ${
+          scrolled 
+            ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100" 
+            : "bg-transparent"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={() => navigate(-1)} 
+            className={`rounded-full transition-all duration-300 w-10 h-10 p-0 border-none ${
+              scrolled ? "bg-slate-100 text-slate-900" : "bg-black/30 text-white backdrop-blur-md"
+            }`}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Button onClick={handleSave} className={`rounded-full backdrop-blur-md border-none w-10 h-10 p-0 shadow-lg transition-colors ${isSaved ? "bg-red-500" : "bg-black/30 hover:bg-black/50"}`}>
-            <Heart className={`h-5 w-5 text-white ${isSaved ? "fill-white" : ""}`} />
-          </Button>
+          
+          {scrolled && (
+            <h2 className="text-sm font-black uppercase tracking-tighter text-slate-900 truncate max-w-[180px] md:max-w-md animate-in fade-in slide-in-from-left-2">
+              {trip.name}
+            </h2>
+          )}
         </div>
 
+        <Button 
+          onClick={handleSave} 
+          className={`rounded-full transition-all duration-300 w-10 h-10 p-0 border-none shadow-lg ${
+            isSaved ? "bg-red-500" : scrolled ? "bg-slate-100 text-slate-900" : "bg-black/30 text-white backdrop-blur-md"
+          }`}
+        >
+          <Heart className={`h-5 w-5 ${isSaved ? "fill-white text-white" : scrolled ? "text-slate-900" : "text-white"}`} />
+        </Button>
+      </div>
+
+      {/* 3. HERO SECTION - Now starts from the absolute top of the viewport */}
+      <div className="relative w-full overflow-hidden h-[55vh] md:h-[70vh] bg-slate-900">
         <Carousel plugins={[Autoplay({ delay: 4000 })]} className="w-full h-full p-0">
           <CarouselContent className="h-full ml-0">
             {allImages.map((img, idx) => (
@@ -307,48 +276,82 @@ const TripDetail = () => {
 
         <div className="absolute bottom-6 left-0 z-40 w-full px-4 md:px-8 pointer-events-none">
           <div className="relative z-10 space-y-2 pointer-events-auto bg-gradient-to-r from-black/70 via-black/50 to-transparent rounded-2xl p-4 max-w-xl">
-            <Button className="bg-[#FF7F50] border-none px-3 py-1 h-auto uppercase font-black tracking-[0.1em] text-[9px] rounded-full shadow-lg">Scheduled Trip</Button>
+            <Button className="bg-[#FF7F50] border-none px-3 py-1 h-auto uppercase font-black tracking-[0.1em] text-[9px] rounded-full shadow-lg text-white">Scheduled Trip</Button>
             <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white drop-shadow-2xl">{trip.name}</h1>
-          <div className="flex items-center gap-2 group w-fit cursor-pointer" onClick={openInMaps}>
-               <MapPin className="h-4 w-4 text-white" />
-               <span className="text-xs font-bold text-white uppercase tracking-wide">
-                 {[trip.place, trip.location, trip.country].filter(Boolean).join(', ')}
-               </span>
-          </div>
+            <div className="flex items-center gap-2 group w-fit cursor-pointer" onClick={openInMaps}>
+              <MapPin className="h-4 w-4 text-white" />
+              <span className="text-xs font-bold text-white uppercase tracking-wide">
+                {[trip.place, trip.location, trip.country].filter(Boolean).join(', ')}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <main className="container px-4 max-w-6xl mx-auto -mt-10 relative z-50">
         <div className="flex flex-col lg:grid lg:grid-cols-[1.7fr,1fr] gap-6">
-          
-          {/* LEFT COLUMN: Main Content Stack */}
           <div className="flex flex-col gap-6">
-            <OverviewSection />
+            <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+              <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>Overview</h2>
+              <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{trip.description}</p>
+            </div>
 
-            {/* Operating Hours for custom date tours */}
-            <OperatingHoursSection />
+            {trip.is_custom_date && (trip.opening_hours || trip.days_opened?.length > 0) && (
+              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-xl bg-teal-50"><Clock className="h-5 w-5 text-[#008080]" /></div>
+                  <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Operating Hours</h2>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
+                    <span className="text-[10px] font-black uppercase text-slate-400">Working Hours</span>
+                    <span className="text-sm font-black text-slate-700">{trip.opening_hours || "08:00"} - {trip.closing_hours || "18:00"}</span>
+                  </div>
+                  {trip.days_opened?.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {trip.days_opened.map((day: string, i: number) => (
+                        <span key={i} className="px-4 py-2 rounded-xl bg-teal-50 text-[10px] font-black uppercase text-[#008080] border border-teal-100">{day}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
-            {/* Mobile Only Booking Card */}
             <div className="block lg:hidden">
               <BookingCard />
             </div>
 
-            <ActivitiesSection />
+            {trip.activities?.length > 0 && (
+              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-xl bg-orange-50"><Zap className="h-5 w-5 text-[#FF9800]" /></div>
+                  <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.ORANGE }}>Included Activities</h2>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {trip.activities.map((act: any, i: number) => (
+                    <div key={i} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100/50">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#FF9800]" />
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-slate-700 uppercase">{act.name}</span>
+                        <span className="text-[10px] font-bold text-[#FF9800]">{act.price === 0 ? "Included" : `KSh ${act.price}`}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {/* REVIEWS: Now inside the left column to fill the gap on desktop */}
             <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
               <ReviewSection itemId={trip.id} itemType="trip" />
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Desktop Sticky Sidebar */}
           <div className="hidden lg:block">
             <BookingCard />
           </div>
         </div>
 
-        {/* Similar Items: Stays full-width at the bottom */}
         <div className="mt-12 lg:mt-16">
           <SimilarItems currentItemId={trip.id} itemType="trip" country={trip.country} />
         </div>

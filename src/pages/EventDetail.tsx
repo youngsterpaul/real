@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
 import { MapPin, Share2, Heart, Calendar, Copy, CheckCircle2, ArrowLeft, Star, Phone, Mail, Clock, Users } from "lucide-react";
@@ -29,7 +28,6 @@ const COLORS = {
   SOFT_GRAY: "#F8F9FA"
 };
 
-// Helper component for Review Header to avoid redundancy
 const ReviewHeader = ({ event }: { event: any }) => (
   <div className="flex justify-between items-center mb-8">
     <div>
@@ -59,9 +57,17 @@ const EventDetail = () => {
   const isSaved = savedItems.has(id || "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    // Scroll to top when page loads
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 60);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
     if (id) fetchEvent();
     const urlParams = new URLSearchParams(window.location.search);
@@ -135,7 +141,6 @@ const EventDetail = () => {
     } finally { setIsProcessing(false); }
   };
 
-  // Real-time availability tracking
   const { remainingSlots, isSoldOut } = useRealtimeItemAvailability(id || undefined, event?.available_tickets || 0);
 
   if (loading) {
@@ -153,24 +158,47 @@ const EventDetail = () => {
   const eventDate = event.date ? new Date(event.date) : null;
   const isExpired = !event.is_custom_date && eventDate && eventDate < today;
   const canBook = !isExpired && !isSoldOut;
-
   const allImages = [event?.image_url, ...(event?.images || [])].filter(Boolean);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
-      <Header className="hidden md:block" />
-
-      {/* Hero Image Section */}
-      <div className="relative w-full overflow-hidden h-[55vh] md:h-[70vh] bg-slate-900">
-        <div className="absolute top-4 left-4 right-4 z-50 flex justify-between">
-          <Button onClick={() => navigate(-1)} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0 hover:bg-black/50 transition-all">
+      {/* 1. STICKY TOP ACTION BAR */}
+      <div 
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-4 py-3 flex justify-between items-center ${
+          scrolled 
+            ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100" 
+            : "bg-transparent"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={() => navigate(-1)} 
+            className={`rounded-full transition-all duration-300 w-10 h-10 p-0 border-none ${
+              scrolled ? "bg-slate-100 text-slate-900 shadow-sm" : "bg-black/30 text-white backdrop-blur-md"
+            }`}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Button onClick={handleSave} className={`rounded-full backdrop-blur-md border-none w-10 h-10 p-0 shadow-lg transition-all ${isSaved ? "bg-red-500" : "bg-black/30 hover:bg-black/50"}`}>
-            <Heart className={`h-5 w-5 text-white ${isSaved ? "fill-white" : ""}`} />
-          </Button>
+          
+          {scrolled && (
+            <h2 className="text-sm font-black uppercase tracking-tighter text-slate-900 truncate max-w-[180px] md:max-w-md animate-in fade-in slide-in-from-left-2">
+              {event.name}
+            </h2>
+          )}
         </div>
 
+        <Button 
+          onClick={handleSave} 
+          className={`rounded-full transition-all duration-300 w-10 h-10 p-0 border-none shadow-lg ${
+            isSaved ? "bg-red-500" : scrolled ? "bg-slate-100 text-slate-900" : "bg-black/30 text-white backdrop-blur-md"
+          }`}
+        >
+          <Heart className={`h-5 w-5 ${isSaved ? "fill-white text-white" : scrolled ? "text-slate-900" : "text-white"}`} />
+        </Button>
+      </div>
+
+      {/* 2. HERO SECTION (Main site header removed) */}
+      <div className="relative w-full overflow-hidden h-[55vh] md:h-[70vh] bg-slate-900">
         <Carousel plugins={[Autoplay({ delay: 4000 })]} className="w-full h-full">
           <CarouselContent className="h-full ml-0">
             {allImages.map((img, idx) => (
@@ -189,10 +217,10 @@ const EventDetail = () => {
             <Button className="bg-[#FF7F50] hover:bg-[#FF7F50] border-none px-3 py-1 h-auto uppercase font-black tracking-[0.1em] text-[9px] rounded-full shadow-lg">Experience</Button>
             <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white drop-shadow-2xl">{event.name}</h1>
             <div className="flex items-center gap-2 cursor-pointer group w-fit" onClick={openInMaps}>
-               <MapPin className="h-4 w-4 text-white" />
-               <span className="text-xs font-bold text-white uppercase tracking-wide">
-                 {[event.place, event.location, event.country].filter(Boolean).join(', ')}
-               </span>
+                <MapPin className="h-4 w-4 text-white" />
+                <span className="text-xs font-bold text-white uppercase tracking-wide">
+                  {[event.place, event.location, event.country].filter(Boolean).join(', ')}
+                </span>
             </div>
           </div>
         </div>
@@ -207,7 +235,6 @@ const EventDetail = () => {
               <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{event.description}</p>
             </div>
 
-            {/* Operating Hours for events */}
             {(event.opening_hours || event.days_opened?.length > 0) && (
               <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-3 mb-6">
@@ -253,7 +280,6 @@ const EventDetail = () => {
               </div>
             )}
 
-            {/* REVIEWS: Desktop Version (Hidden on mobile) */}
             <div className="hidden lg:block bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
               <ReviewHeader event={event} />
               <ReviewSection itemId={event.id} itemType="event" />
@@ -352,7 +378,6 @@ const EventDetail = () => {
               </div>
             </div>
 
-            {/* REVIEWS: Mobile Version (Appears below price card, hidden on desktop) */}
             <div className="lg:hidden bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
               <ReviewHeader event={event} />
               <ReviewSection itemId={event.id} itemType="event" />

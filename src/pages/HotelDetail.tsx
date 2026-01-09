@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +20,7 @@ import { useBookingSubmit } from "@/hooks/useBookingSubmit";
 import { extractIdFromSlug } from "@/lib/slugUtils";
 import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
 import { trackReferralClick, generateReferralLink } from "@/lib/referralUtils";
+
 const HotelDetail = () => {
   const { slug } = useParams();
   const id = slug ? extractIdFromSlug(slug) : null;
@@ -35,10 +35,20 @@ const HotelDetail = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isOpenNow, setIsOpenNow] = useState(false);
   const [liveRating, setLiveRating] = useState({ avg: 0, count: 0 });
+  const [scrolled, setScrolled] = useState(false); // Track scroll for sticky bar
+
   const { savedItems, handleSave: handleSaveItem } = useSavedItems();
   const isSaved = savedItems.has(id || "");
 
-  // Memoized distance calculation
+  // Scroll logic for sticky behavior
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 60);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const distance = position && hotel?.latitude && hotel?.longitude
     ? calculateDistance(position.latitude, position.longitude, hotel.latitude, hotel.longitude)
     : undefined;
@@ -48,7 +58,6 @@ const HotelDetail = () => {
     const prices: number[] = [];
     if (hotel.price_per_night) prices.push(Number(hotel.price_per_night));
     
-    // Check nested arrays for prices
     const extractPrices = (arr: any[]) => {
       if (!Array.isArray(arr)) return;
       arr.forEach((item) => {
@@ -59,7 +68,6 @@ const HotelDetail = () => {
 
     extractPrices(hotel.facilities);
     extractPrices(hotel.activities);
-    
     return prices.length > 0 ? Math.min(...prices) : 0;
   };
 
@@ -70,19 +78,17 @@ const HotelDetail = () => {
       fetchHotel();
       fetchLiveRating();
     }
-    // Track referral click when page loads with ref parameter
     const urlParams = new URLSearchParams(window.location.search);
     const refSlug = urlParams.get("ref");
     if (refSlug && id) trackReferralClick(refSlug, id, "hotel", "booking");
     requestLocation();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [id, slug]);
 
   useEffect(() => {
     if (!hotel) return;
     const checkOpenStatus = () => {
       const now = new Date();
-      // Normalize to lowercase for safer comparison
       const currentDay = now.toLocaleString('en-us', { weekday: 'long' }).toLowerCase();
       const currentTime = now.getHours() * 60 + now.getMinutes();
       
@@ -97,14 +103,12 @@ const HotelDetail = () => {
 
       const openTime = parseTime(hotel.opening_hours || "08:00 AM");
       const closeTime = parseTime(hotel.closing_hours || "11:00 PM");
-      
       const days = Array.isArray(hotel.days_opened) 
         ? hotel.days_opened.map((d: string) => d.toLowerCase()) 
         : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
       
       setIsOpenNow(days.includes(currentDay) && currentTime >= openTime && currentTime <= closeTime);
     };
-
     checkOpenStatus();
     const interval = setInterval(checkOpenStatus, 60000);
     return () => clearInterval(interval);
@@ -115,7 +119,7 @@ const HotelDetail = () => {
     try {
       let { data, error } = await supabase
         .from("hotels")
-        .select("id,name,location,place,country,image_url,gallery_images,images,description,amenities,facilities,activities,phone_numbers,email,opening_hours,closing_hours,days_opened,available_rooms,latitude,longitude,created_by,establishment_type")
+        .select("*")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -142,17 +146,10 @@ const HotelDetail = () => {
     setIsProcessing(true);
     try {
       await submitBooking({
-        itemId: hotel.id, 
-        itemName: hotel.name, 
-        bookingType: 'hotel', 
-        totalAmount: startingPrice, 
-        slotsBooked: data.num_adults + data.num_children,
-        visitDate: data.visit_date,
-        guestName: data.guest_name, 
-        guestEmail: data.guest_email, 
-        guestPhone: data.guest_phone,
-        hostId: hotel.created_by, 
-        bookingDetails: { ...data, hotel_name: hotel.name }
+        itemId: hotel.id, itemName: hotel.name, bookingType: 'hotel', totalAmount: startingPrice, 
+        slotsBooked: data.num_adults + data.num_children, visitDate: data.visit_date,
+        guestName: data.guest_name, guestEmail: data.guest_email, guestPhone: data.guest_phone,
+        hostId: hotel.created_by, bookingDetails: { ...data, hotel_name: hotel.name }
       });
       setIsCompleted(true);
     } catch (error: any) {
@@ -198,19 +195,43 @@ const HotelDetail = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
-      <Header className="hidden md:block" />
-
-      {/* Hero Section */}
-      <div className="relative w-full h-[45vh] md:h-[65vh] bg-slate-900 overflow-hidden">
-        <div className="absolute top-4 left-4 right-4 z-50 flex justify-between">
-          <Button onClick={() => navigate(-1)} className="rounded-full bg-black/40 backdrop-blur-md text-white border-none w-10 h-10 p-0 shadow-xl">
+      {/* 1. DYNAMIC STICKY ACTION BAR (Replacing Main Header) */}
+      <div 
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-4 py-3 flex justify-between items-center ${
+          scrolled 
+            ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100" 
+            : "bg-transparent"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={() => navigate(-1)} 
+            className={`rounded-full transition-all duration-300 w-10 h-10 p-0 border-none ${
+              scrolled ? "bg-slate-100 text-slate-900 shadow-sm" : "bg-black/30 text-white backdrop-blur-md"
+            }`}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Button onClick={() => id && handleSaveItem(id, "hotel")} className={`rounded-full backdrop-blur-md border-none w-10 h-10 p-0 shadow-xl ${isSaved ? "bg-red-500" : "bg-black/40"}`}>
-            <Heart className={`h-5 w-5 text-white ${isSaved ? "fill-white" : ""}`} />
-          </Button>
+          
+          {scrolled && (
+            <h2 className="text-sm font-black uppercase tracking-tighter text-slate-900 truncate max-w-[180px] md:max-w-md animate-in fade-in slide-in-from-left-2">
+              {hotel.name}
+            </h2>
+          )}
         </div>
 
+        <Button 
+          onClick={() => id && handleSaveItem(id, "hotel")} 
+          className={`rounded-full transition-all duration-300 w-10 h-10 p-0 border-none shadow-lg ${
+            isSaved ? "bg-red-500" : scrolled ? "bg-slate-100 text-slate-900" : "bg-black/30 text-white backdrop-blur-md"
+          }`}
+        >
+          <Heart className={`h-5 w-5 ${isSaved ? "fill-white text-white" : scrolled ? "text-slate-900" : "text-white"}`} />
+        </Button>
+      </div>
+
+      {/* 2. HERO SECTION (Starts at the very top) */}
+      <div className="relative w-full h-[45vh] md:h-[65vh] bg-slate-900 overflow-hidden">
         <Carousel plugins={[Autoplay({ delay: 3500 })]} className="w-full h-full">
           <CarouselContent className="h-full ml-0">
             {allImages.map((img, idx) => (
@@ -247,7 +268,6 @@ const HotelDetail = () => {
 
       <main className="container px-4 -mt-4 relative z-30 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-[1.8fr,1fr] gap-4">
-          
           <div className="space-y-4">
             <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
               <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 text-slate-400">Description</h2>
@@ -271,49 +291,29 @@ const HotelDetail = () => {
               </div>
               <OperatingHoursInfo />
               <Button onClick={() => navigate(`/booking/hotel/${hotel.id}`)} className="w-full mt-6 py-7 rounded-2xl text-md font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-lg transition-all active:scale-95">Book Now</Button>
-              
-              {/* Mobile Utility Buttons */}
               <div className="grid grid-cols-3 gap-3 mt-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const query = encodeURIComponent(`${hotel?.name}, ${hotel?.location}`);
-                    window.open(hotel?.map_link || `https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
-                  }}
-                  className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
-                >
-                  <Navigation className="h-5 w-5 mb-1" />
-                  <span className="text-[10px] font-black uppercase tracking-tighter">Map</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={async () => {
-                    if (!id) return;
-                    const refLink = await generateReferralLink(id, "hotel", id);
-                    await navigator.clipboard.writeText(refLink);
-                    toast({ title: "Link Copied!" });
-                  }}
-                  className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
-                >
-                  <Copy className="h-5 w-5 mb-1" />
-                  <span className="text-[10px] font-black uppercase tracking-tighter">Copy</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ title: hotel.name, url: window.location.href });
-                    }
-                  }}
-                  className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
-                >
-                  <Share2 className="h-5 w-5 mb-1" />
-                  <span className="text-[10px] font-black uppercase tracking-tighter">Share</span>
-                </Button>
+                <UtilityButton 
+                   icon={<Navigation className="h-5 w-5" />} 
+                   label="Map" 
+                   onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(`${hotel.name}, ${hotel.location}`)}`, "_blank")} 
+                />
+                <UtilityButton 
+                   icon={<Copy className="h-5 w-5" />} 
+                   label="Copy" 
+                   onClick={async () => {
+                     const refLink = await generateReferralLink(id!, "hotel", id!);
+                     await navigator.clipboard.writeText(refLink);
+                     toast({ title: "Link Copied!" });
+                   }} 
+                />
+                <UtilityButton 
+                   icon={<Share2 className="h-5 w-5" />} 
+                   label="Share" 
+                   onClick={() => navigator.share && navigator.share({ title: hotel.name, url: window.location.href })} 
+                />
               </div>
             </div>
 
-            {/* Amenities */}
             <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
               <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck className="h-5 w-5 text-red-600" />
@@ -329,7 +329,6 @@ const HotelDetail = () => {
               </div>
             </section>
 
-            {/* Facilities */}
             {hotel.facilities?.length > 0 && (
               <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-2 mb-4">
@@ -340,16 +339,13 @@ const HotelDetail = () => {
                   {hotel.facilities.map((f: any, i: number) => (
                     <div key={i} className="p-3 rounded-xl bg-teal-50/50 border border-teal-100 flex justify-between items-center">
                       <span className="text-[10px] font-black uppercase text-[#008080]">{f.name || f}</span>
-                      {f.price && (
-                        <span className="text-[10px] font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded-lg">KSh {f.price.toLocaleString()}</span>
-                      )}
+                      {f.price && <span className="text-[10px] font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded-lg">KSh {f.price.toLocaleString()}</span>}
                     </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* Activities */}
             {hotel.activities?.length > 0 && (
               <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-2 mb-4">
@@ -377,101 +373,46 @@ const HotelDetail = () => {
                   <div className="flex items-center justify-center gap-1.5 text-amber-500 font-black">
                     <Star className="h-4 w-4 fill-current" />
                     <span className="text-lg">{liveRating.avg || "0"}</span>
-                    <span className="text-slate-400 text-xs font-bold uppercase ml-1">({liveRating.count} reviews)</span>
                   </div>
                 </div>
-
                 <OperatingHoursInfo />
-
-                <Button 
-                  onClick={() => setBookingOpen(true)} 
-                  className="w-full py-8 rounded-3xl text-lg font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-xl hover:scale-[1.02] transition-transform active:scale-95"
-                >
-                  Reserve Now
-                </Button>
-                
-                {/* Utility Buttons - Share, Copy Link, Map */}
-                <div className="grid grid-cols-3 gap-3 mt-4">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      const query = encodeURIComponent(`${hotel?.name}, ${hotel?.location}`);
-                      window.open(hotel?.map_link || `https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
-                    }}
-                    className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
-                  >
-                    <Navigation className="h-5 w-5 mb-1" />
-                    <span className="text-[10px] font-black uppercase tracking-tighter">Map</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={async () => {
-                      if (!id) return;
-                      const refLink = await generateReferralLink(id, "hotel", id);
-                      await navigator.clipboard.writeText(refLink);
-                      toast({ title: "Link Copied!" });
-                    }}
-                    className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
-                  >
-                    <Copy className="h-5 w-5 mb-1" />
-                    <span className="text-[10px] font-black uppercase tracking-tighter">Copy</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      if (navigator.share) {
-                        navigator.share({ title: hotel.name, url: window.location.href });
-                      }
-                    }}
-                    className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors"
-                  >
-                    <Share2 className="h-5 w-5 mb-1" />
-                    <span className="text-[10px] font-black uppercase tracking-tighter">Share</span>
-                  </Button>
+                <Button onClick={() => setBookingOpen(true)} className="w-full py-8 rounded-3xl text-lg font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-xl hover:scale-[1.02] transition-transform active:scale-95">Reserve Now</Button>
+                <div className="grid grid-cols-3 gap-3">
+                  <UtilityButton icon={<Navigation className="h-5 w-5" />} label="Map" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(`${hotel.name}, ${hotel.location}`)}`, "_blank")} />
+                  <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={async () => { const link = await generateReferralLink(id!, "hotel", id!); await navigator.clipboard.writeText(link); toast({title: "Copied!"}); }} />
+                  <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={() => navigator.share && navigator.share({title: hotel.name, url: window.location.href})} />
                 </div>
-                
-                <p className="text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">
-                  Secure checkout & instant confirmation
-                </p>
             </div>
           </div>
         </div>
 
-        {/* Reviews & Similar */}
-        <div className="mt-8">
-          <ReviewSection itemId={hotel.id} itemType="hotel" />
-        </div>
-
+        <div className="mt-8"><ReviewSection itemId={hotel.id} itemType="hotel" /></div>
         <div className="mt-12">
           <h2 className="text-xl font-black uppercase tracking-tighter mb-6">Explore Similar Stays</h2>
           <SimilarItems currentItemId={hotel.id} itemType="hotel" country={hotel.country} />
         </div>
       </main>
 
-      {/* Booking Modal */}
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[95vh] p-0 overflow-hidden rounded-[32px] border-none shadow-2xl">
           <MultiStepBooking 
-            onSubmit={handleBookingSubmit} 
-            itemName={hotel.name}
-            itemId={hotel.id}
-            bookingType="hotel"
-            priceAdult={startingPrice}
-            isProcessing={isProcessing} 
-            isCompleted={isCompleted} 
-            hostId={hotel.created_by}
-            facilities={hotel.facilities || []}
-            activities={hotel.activities || []}
-            onPaymentSuccess={() => setIsCompleted(true)}
-            primaryColor="#008080"
-            accentColor="#FF7F50"
+            onSubmit={handleBookingSubmit} itemName={hotel.name} itemId={hotel.id} bookingType="hotel"
+            priceAdult={startingPrice} isProcessing={isProcessing} isCompleted={isCompleted} 
+            hostId={hotel.created_by} facilities={hotel.facilities || []} activities={hotel.activities || []}
+            onPaymentSuccess={() => setIsCompleted(true)} primaryColor="#008080" accentColor="#FF7F50"
           />
         </DialogContent>
       </Dialog>
-
       <MobileBottomBar />
     </div>
   );
 };
+
+const UtilityButton = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
+  <Button variant="ghost" onClick={onClick} className="flex-col h-auto py-3 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors">
+    <div className="mb-1">{icon}</div>
+    <span className="text-[10px] font-black uppercase tracking-tighter">{label}</span>
+  </Button>
+);
 
 export default HotelDetail;
