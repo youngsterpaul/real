@@ -184,6 +184,8 @@ export type Database = {
           guest_email: string | null
           guest_name: string | null
           guest_phone: string | null
+          host_confirmed: boolean | null
+          host_confirmed_at: string | null
           id: string
           is_guest_booking: boolean | null
           item_id: string
@@ -208,6 +210,8 @@ export type Database = {
           guest_email?: string | null
           guest_name?: string | null
           guest_phone?: string | null
+          host_confirmed?: boolean | null
+          host_confirmed_at?: string | null
           id?: string
           is_guest_booking?: boolean | null
           item_id: string
@@ -232,6 +236,8 @@ export type Database = {
           guest_email?: string | null
           guest_name?: string | null
           guest_phone?: string | null
+          host_confirmed?: boolean | null
+          host_confirmed_at?: string | null
           id?: string
           is_guest_booking?: boolean | null
           item_id?: string
@@ -997,6 +1003,7 @@ export type Database = {
           place: string
           price: number
           price_child: number | null
+          slot_limit_type: string
           type: string | null
         }
         Insert: {
@@ -1028,6 +1035,7 @@ export type Database = {
           place: string
           price: number
           price_child?: number | null
+          slot_limit_type?: string
           type?: string | null
         }
         Update: {
@@ -1059,6 +1067,7 @@ export type Database = {
           place?: string
           price?: number
           price_child?: number | null
+          slot_limit_type?: string
           type?: string | null
         }
         Relationships: []
@@ -1145,6 +1154,9 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_listings: { Args: never; Returns: undefined }
+      cleanup_old_bookings: { Args: never; Returns: undefined }
+      cleanup_old_notifications: { Args: never; Returns: undefined }
       generate_referral_id: { Args: never; Returns: string }
       get_date_availability: {
         Args: { p_date: string; p_item_id: string; p_item_type: string }
@@ -1173,6 +1185,7 @@ export type Database = {
         Args: { p_item_id: string }
         Returns: undefined
       }
+      run_scheduled_cleanup: { Args: never; Returns: undefined }
       verify_item_credentials: {
         Args: {
           p_item_id: string

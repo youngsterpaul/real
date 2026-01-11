@@ -44,6 +44,10 @@ interface MultiStepBookingProps {
     primaryColor?: string;
     accentColor?: string;
     totalCapacity?: number;
+    // NEW: slotLimitType determines if capacity is inventory-based or per-booking limit
+    slotLimitType?: 'inventory' | 'per_booking';
+    // NEW: isFlexibleDate indicates if this is a flexible date trip
+    isFlexibleDate?: boolean;
 }
 
 export interface BookingFormData {
@@ -78,13 +82,16 @@ export const MultiStepBooking = ({
     primaryColor = "#008080",
     accentColor = "#FF7F50",
     totalCapacity = 0,
+    slotLimitType = 'inventory',
+    isFlexibleDate = false,
 }: MultiStepBookingProps) => {
     const { user } = useAuth();
     
     // Real-time availability check - prevents booking if sold out during booking flow
+    // For per_booking limit type (flexible trips), we don't check global availability
     const { remainingSlots, isSoldOut } = useRealtimeItemAvailability(
-        itemId || undefined, 
-        totalCapacity
+        slotLimitType === 'inventory' ? (itemId || undefined) : undefined, 
+        slotLimitType === 'inventory' ? totalCapacity : 0
     );
     
     // Facility availability checking
@@ -378,14 +385,20 @@ export const MultiStepBooking = ({
     
     const total = calculateTotal();
 
-    // Check if requested slots exceed remaining
+    // Check if requested slots exceed remaining - only for inventory-based items
     const requestedSlots = formData.num_adults + formData.num_children;
-    const insufficientSlots = totalCapacity > 0 && requestedSlots > remainingSlots;
+    // For per_booking limit type (flexible trips), check against per-booking limit instead of global remaining
+    const insufficientSlots = slotLimitType === 'inventory' 
+        ? (totalCapacity > 0 && requestedSlots > remainingSlots)
+        : (totalCapacity > 0 && requestedSlots > totalCapacity); // Per-booking limit check
+
+    // For inventory-based: sold out globally. For per-booking: never globally sold out
+    const isGloballySoldOut = slotLimitType === 'inventory' && isSoldOut && totalCapacity > 0;
 
     return (
         <div className="flex flex-col bg-gradient-to-br from-white via-white to-slate-50 rounded-[32px] overflow-y-auto overscroll-contain touch-pan-y max-h-[90vh] shadow-2xl border border-slate-100">
             {/* Sold Out Banner - Shows real-time if item becomes sold out during booking */}
-            {isSoldOut && totalCapacity > 0 && (
+            {isGloballySoldOut && (
                 <div className="px-6 py-3 bg-red-50 border-b border-red-200 flex items-center gap-3">
                     <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
                     <div>
@@ -403,6 +416,14 @@ export const MultiStepBooking = ({
                     </h2>
                 </div>
                 <p className="text-sm text-slate-500 font-medium">{itemName}</p>
+                
+                {/* Flexible Date Indicator */}
+                {isFlexibleDate && (
+                    <div className="mt-2 inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">
+                        <Calendar className="h-3 w-3" />
+                        Flexible Date Trip
+                    </div>
+                )}
                 
                 {/* Progress Indicator - Page dots */}
                 <div className="flex items-center justify-center gap-2 mt-4">
@@ -470,6 +491,7 @@ export const MultiStepBooking = ({
                                     id="adults"
                                     type="number"
                                     min="0"
+                                    max={slotLimitType === 'per_booking' ? totalCapacity : undefined}
                                     value={formData.num_adults}
                                     onChange={(e) => setFormData({ ...formData, num_adults: parseInt(e.target.value) || 0 })}
                                     className="border-none bg-white rounded-xl h-12 font-bold text-lg focus:ring-[#008080] focus:ring-2"
@@ -484,6 +506,7 @@ export const MultiStepBooking = ({
                                     id="children"
                                     type="number"
                                     min="0"
+                                    max={slotLimitType === 'per_booking' ? totalCapacity : undefined}
                                     value={formData.num_children}
                                     onChange={(e) => setFormData({ ...formData, num_children: parseInt(e.target.value) || 0 })}
                                     className="border-none bg-white rounded-xl h-12 font-bold text-lg focus:ring-[#008080] focus:ring-2"
@@ -499,6 +522,14 @@ export const MultiStepBooking = ({
                             </p>
                             {(formData.num_adults === 0 && formData.num_children === 0) && (
                                 <p className="text-xs text-red-500 font-medium mt-1">You must include at least one guest.</p>
+                            )}
+                            {insufficientSlots && (
+                                <p className="text-xs text-red-500 font-medium mt-1">
+                                    {slotLimitType === 'per_booking' 
+                                        ? `Maximum ${totalCapacity} guests per booking allowed.`
+                                        : `Only ${remainingSlots} slots remaining. Please reduce your group size.`
+                                    }
+                                </p>
                             )}
                         </div>
                     </div>
@@ -685,66 +716,84 @@ export const MultiStepBooking = ({
                                         <Label htmlFor="guest_name" className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Full Name</Label>
                                         <Input
                                             id="guest_name"
+                                            placeholder="Your full name"
                                             value={formData.guest_name}
                                             onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
-                                            className="border-none bg-white rounded-xl h-12 focus:ring-[#008080] focus:ring-2"
-                                            placeholder="Enter your full name"
+                                            className="border-none bg-white rounded-xl h-12"
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="guest_email" className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Email</Label>
+                                        <Label htmlFor="guest_email" className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Email Address</Label>
                                         <Input
                                             id="guest_email"
                                             type="email"
+                                            placeholder="your@email.com"
                                             value={formData.guest_email}
                                             onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
-                                            className="border-none bg-white rounded-xl h-12 focus:ring-[#008080] focus:ring-2"
-                                            placeholder="Enter your email"
+                                            className="border-none bg-white rounded-xl h-12"
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="guest_phone" className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Phone (Optional)</Label>
+                                        <Label htmlFor="guest_phone" className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Phone Number (Optional)</Label>
                                         <Input
                                             id="guest_phone"
                                             type="tel"
+                                            placeholder="e.g. 0712345678"
                                             value={formData.guest_phone}
                                             onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
-                                            className="border-none bg-white rounded-xl h-12 focus:ring-[#008080] focus:ring-2"
-                                            placeholder="e.g., 0712345678"
+                                            className="border-none bg-white rounded-xl h-12"
                                         />
                                     </div>
                                 </div>
                             </div>
                         )}
                         
-                        {/* Booking Summary */}
-                        <div className="p-5 rounded-2xl border-2" style={{ borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}08` }}>
-                            <p className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: primaryColor }}>Booking Summary</p>
-                            <div className="space-y-2">
+                        {/* Order Summary */}
+                        <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50 space-y-3">
+                            <h3 className="text-sm font-black uppercase tracking-wider mb-4" style={{ color: primaryColor }}>Booking Summary</h3>
+                            
+                            {formData.visit_date && (
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Date</span>
-                                    <span className="font-bold">{formData.visit_date || 'Flexible'}</span>
+                                    <span className="text-slate-500">Visit Date</span>
+                                    <span className="font-bold">{new Date(formData.visit_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                 </div>
+                            )}
+                            
+                            {formData.num_adults > 0 && (
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Guests</span>
-                                    <span className="font-bold">{formData.num_adults} Adult(s), {formData.num_children} Child(ren)</span>
+                                    <span className="text-slate-500">{formData.num_adults} Adult{formData.num_adults > 1 ? 's' : ''}</span>
+                                    <span className="font-bold">KES {(formData.num_adults * priceAdult).toLocaleString()}</span>
                                 </div>
-                                {formData.selectedFacilities.length > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Facilities</span>
-                                        <span className="font-bold">{formData.selectedFacilities.length} selected</span>
+                            )}
+                            
+                            {formData.num_children > 0 && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500">{formData.num_children} Child{formData.num_children > 1 ? 'ren' : ''}</span>
+                                    <span className="font-bold">KES {(formData.num_children * priceChild).toLocaleString()}</span>
+                                </div>
+                            )}
+                            
+                            {formData.selectedFacilities.map(f => {
+                                if (!f.startDate || !f.endDate) return null;
+                                const days = Math.ceil((new Date(f.endDate).getTime() - new Date(f.startDate).getTime()) / (1000 * 60 * 60 * 24)) || 1;
+                                return (
+                                    <div key={f.name} className="flex justify-between text-sm">
+                                        <span className="text-slate-500">{f.name} ({days} day{days > 1 ? 's' : ''})</span>
+                                        <span className="font-bold">KES {(f.price * days).toLocaleString()}</span>
                                     </div>
-                                )}
-                                {formData.selectedActivities.length > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Activities</span>
-                                        <span className="font-bold">{formData.selectedActivities.length} selected</span>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="mt-4 pt-4 border-t" style={{ borderColor: `${primaryColor}30` }}>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-black uppercase" style={{ color: primaryColor }}>Total Amount</span>
+                                );
+                            })}
+                            
+                            {formData.selectedActivities.map(a => (
+                                <div key={a.name} className="flex justify-between text-sm">
+                                    <span className="text-slate-500">{a.name} ({a.numberOfPeople})</span>
+                                    <span className="font-bold">KES {(a.price * a.numberOfPeople).toLocaleString()}</span>
+                                </div>
+                            ))}
+                            
+                            <div className="border-t pt-3 mt-3">
+                                <div className="flex justify-between items-baseline">
+                                    <span className="text-sm font-black uppercase" style={{ color: primaryColor }}>Total</span>
                                     <span className="text-2xl font-black" style={{ color: accentColor }}>KES {total.toLocaleString()}</span>
                                 </div>
                             </div>
@@ -753,49 +802,45 @@ export const MultiStepBooking = ({
                         {/* Payment Method Selection */}
                         {total > 0 && (
                             <div className="space-y-4">
-                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Payment Method</h4>
+                                <h3 className="text-sm font-black uppercase tracking-wider" style={{ color: primaryColor }}>Payment Method</h3>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Button
+                                    <button
                                         onClick={() => setPaymentMethod('mpesa')}
-                                        variant={paymentMethod === 'mpesa' ? 'default' : 'outline'}
                                         className={cn(
-                                            "h-14 rounded-2xl font-black uppercase tracking-tight text-sm",
-                                            paymentMethod === 'mpesa' ? "text-white border-none" : "border-slate-200"
+                                            "p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2",
+                                            paymentMethod === 'mpesa' 
+                                                ? "border-[#008080] bg-[#008080]/5" 
+                                                : "border-slate-200 hover:border-slate-300"
                                         )}
-                                        style={{ 
-                                            backgroundColor: paymentMethod === 'mpesa' ? primaryColor : undefined,
-                                        }}
                                     >
-                                        <Phone className="mr-2 h-4 w-4" /> M-Pesa
-                                    </Button>
-                                    <Button
+                                        <Phone className="h-6 w-6" style={{ color: paymentMethod === 'mpesa' ? primaryColor : '#94a3b8' }} />
+                                        <span className={cn("text-sm font-bold", paymentMethod === 'mpesa' ? "text-[#008080]" : "text-slate-500")}>M-Pesa</span>
+                                    </button>
+                                    <button
                                         onClick={() => setPaymentMethod('card')}
-                                        variant={paymentMethod === 'card' ? 'default' : 'outline'}
                                         className={cn(
-                                            "h-14 rounded-2xl font-black uppercase tracking-tight text-sm",
-                                            paymentMethod === 'card' ? "text-white border-none" : "border-slate-200"
+                                            "p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2",
+                                            paymentMethod === 'card' 
+                                                ? "border-[#008080] bg-[#008080]/5" 
+                                                : "border-slate-200 hover:border-slate-300"
                                         )}
-                                        style={{ 
-                                            backgroundColor: paymentMethod === 'card' ? primaryColor : undefined,
-                                        }}
-                                        disabled
                                     >
-                                        <CreditCard className="mr-2 h-4 w-4" /> Card
-                                    </Button>
+                                        <CreditCard className="h-6 w-6" style={{ color: paymentMethod === 'card' ? primaryColor : '#94a3b8' }} />
+                                        <span className={cn("text-sm font-bold", paymentMethod === 'card' ? "text-[#008080]" : "text-slate-500")}>Card</span>
+                                    </button>
                                 </div>
 
                                 {isMpesaSelected && (
                                     <div className="p-4 rounded-2xl border-2 border-[#008080]">
-                                        <Label htmlFor="mpesa_phone_final" className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">M-Pesa Phone Number</Label>
+                                        <Label className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">M-Pesa Phone Number</Label>
                                         <Input
-                                            id="mpesa_phone_final"
                                             type="tel"
+                                            placeholder="e.g. 0712345678"
                                             value={formData.mpesa_phone}
                                             onChange={(e) => setFormData({ ...formData, mpesa_phone: e.target.value })}
-                                            placeholder="e.g., 0712345678"
-                                            className="border-none bg-white rounded-xl h-12 focus:ring-[#008080] focus:ring-2"
+                                            className="border-none bg-white rounded-xl h-12"
                                         />
-                                        <p className="text-xs text-slate-400 mt-2">You'll receive an M-Pesa prompt on this number</p>
+                                        <p className="text-xs text-slate-400 mt-2">You will receive an STK push to complete payment</p>
                                     </div>
                                 )}
                             </div>
@@ -804,15 +849,14 @@ export const MultiStepBooking = ({
                 )}
             </div>
 
-            {/* Fixed Footer */}
-            <div className="flex-shrink-0 p-6 pt-4 border-t border-slate-100 bg-white">
+            {/* Footer with Navigation */}
+            <div className="p-6 pt-4 border-t border-slate-100 bg-white sticky bottom-0">
                 <div className="flex gap-3">
                     {currentStep > (skipDateSelection ? guestsStepNum : dateStepNum) && (
-                        <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={handlePrevious} 
-                            className="flex-1 h-14 rounded-2xl font-black uppercase tracking-tight border-slate-200"
+                        <Button
+                            onClick={handlePrevious}
+                            variant="outline"
+                            className="flex-1 h-14 rounded-2xl font-black uppercase tracking-wider border-2"
                         >
                             Back
                         </Button>
@@ -820,47 +864,38 @@ export const MultiStepBooking = ({
                     
                     {currentStep < totalSteps ? (
                         <Button
-                            type="button"
                             onClick={handleNext}
-                            className="flex-1 h-14 rounded-2xl font-black uppercase tracking-[0.15em] text-white border-none"
-                            style={{ backgroundColor: primaryColor }}
                             disabled={
                                 (currentStep === dateStepNum && !formData.visit_date && !skipDateSelection) ||
-                                (currentStep === guestsStepNum && formData.num_adults === 0 && formData.num_children === 0) ||
-                                (currentStep === facilitiesStepNum && facilitiesStepNum > 0 && formData.selectedFacilities.length > 0 && !areFacilityDatesValid())
+                                (currentStep === guestsStepNum && (formData.num_adults === 0 && formData.num_children === 0)) ||
+                                (currentStep === guestsStepNum && insufficientSlots) ||
+                                (currentStep === facilitiesStepNum && formData.selectedFacilities.length > 0 && !areFacilityDatesValid()) ||
+                                isGloballySoldOut
                             }
+                            className="flex-1 h-14 rounded-2xl font-black uppercase tracking-wider text-white"
+                            style={{ backgroundColor: primaryColor }}
                         >
                             Continue
                         </Button>
                     ) : (
                         <Button
-                            type="button"
                             onClick={handleSubmit}
-                            className="flex-1 h-14 rounded-2xl font-black uppercase tracking-[0.15em] text-white border-none shadow-xl"
-                            style={{ 
-                                background: `linear-gradient(135deg, ${accentColor}CC 0%, ${accentColor} 100%)`,
-                                boxShadow: `0 8px 20px -6px ${accentColor}88`
-                            }}
                             disabled={
-                                isProcessing || 
-                                isPaymentInProgress ||
-                                !formData.guest_name || 
-                                !formData.guest_email ||
-                                (isMpesaSelected && !formData.mpesa_phone) ||
-                                isSoldOut ||
-                                insufficientSlots
+                                isPaymentInProgress || 
+                                isGloballySoldOut ||
+                                insufficientSlots ||
+                                (total > 0 && paymentMethod === 'mpesa' && !formData.mpesa_phone) ||
+                                (!user && (!formData.guest_name || !formData.guest_email))
                             }
+                            className="flex-1 h-14 rounded-2xl font-black uppercase tracking-wider text-white"
+                            style={{ backgroundColor: accentColor }}
                         >
-                            {isSoldOut ? (
-                                'Fully Booked'
-                            ) : insufficientSlots ? (
-                                `Only ${remainingSlots} slots left`
-                            ) : isProcessing || isPaymentInProgress ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : total > 0 ? (
-                                paymentMethod === 'mpesa' ? 'Pay with M-Pesa' : 'Pay with Card'
+                            {isPaymentInProgress ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : total === 0 ? (
+                                "Confirm Booking"
                             ) : (
-                                'Confirm Booking'
+                                `Pay KES ${total.toLocaleString()}`
                             )}
                         </Button>
                     )}
@@ -869,22 +904,10 @@ export const MultiStepBooking = ({
 
             {/* Payment Status Dialog */}
             <PaymentStatusDialog
-                open={paymentStatus !== 'idle' || paymentSucceeded}
-                status={paymentSucceeded ? 'success' : paymentStatus}
-                errorMessage={errorMessage}
-                onClose={() => {
-                    const wasSuccessful = paymentSucceeded || paymentStatus === 'success';
-                    resetPayment();
-                    setPaymentSucceeded(false);
-                    
-                    if (wasSuccessful && onPaymentSuccess) {
-                        onPaymentSuccess(); 
-                    }
-                }}
-                onRetry={() => {
-                    setPaymentSucceeded(false);
-                    resetPayment();
-                }}
+                open={paymentStatus !== 'idle'}
+                status={paymentStatus}
+                errorMessage={errorMessage || undefined}
+                onClose={resetPayment}
             />
         </div>
     );
