@@ -1,4 +1,4 @@
-import { useState, memo, useCallback, useMemo } from "react";
+import { useState, memo, useCallback, useMemo, useEffect } from "react";
 import { MapPin, Heart, Star, Calendar, Ticket } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,33 +57,37 @@ const ListingCardComponent = ({
 }: ListingCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  // Local state for optimistic UI updates on save
+  const [isSavedLocal, setIsSavedLocal] = useState(isSaved);
   const navigate = useNavigate();
 
+  // Sync local save state with props
+  useEffect(() => {
+    setIsSavedLocal(isSaved);
+  }, [isSaved]);
+
   const { ref: imageContainerRef, isIntersecting } = useIntersectionObserver({
-    rootMargin: '300px', // Increased margin for earlier loading
+    rootMargin: '300px',
     triggerOnce: true
   });
 
   const shouldLoadImage = priority || isIntersecting;
-  
-  // Type logic
   const isEventOrSport = useMemo(() => type === "EVENT" || type === "SPORT", [type]);
   const isTrip = useMemo(() => type === "TRIP", [type]);
   const tracksAvailability = useMemo(() => isEventOrSport || isTrip, [isEventOrSport, isTrip]);
   
-  // Availability logic
   const remainingTickets = useMemo(() => availableTickets - bookedTickets, [availableTickets, bookedTickets]);
   const isSoldOut = useMemo(() => tracksAvailability && availableTickets > 0 && remainingTickets <= 0, [tracksAvailability, availableTickets, remainingTickets]);
   const fewSlotsRemaining = useMemo(() => tracksAvailability && remainingTickets > 0 && remainingTickets <= 10, [tracksAvailability, remainingTickets]);
-  
-  // Unified "Unavailable" state for visual overlays
   const isUnavailable = useMemo(() => isOutdated || isSoldOut, [isOutdated, isSoldOut]);
-  // Optimized image with smaller thumbnail for blur-up effect
+
   const optimizedImageUrl = useMemo(() => optimizeSupabaseImage(imageUrl, { width: 400, height: 300, quality: 80 }), [imageUrl]);
   const thumbnailUrl = useMemo(() => optimizeSupabaseImage(imageUrl, { width: 32, height: 24, quality: 30 }), [imageUrl]);
   const displayType = useMemo(() => isEventOrSport ? "Event & Sports" : type.replace('_', ' '), [isEventOrSport, type]);
   const formattedDistance = useMemo(() => distance?.toFixed(2), [distance]);
-  const locationString = useMemo(() => [place, location, country].filter(Boolean).join(', '), [place, location, country]);
+  
+  // Cleaned location string (no country, small letters via CSS)
+  const locationString = useMemo(() => [place, location].filter(Boolean).join(', '), [place, location]);
 
   const handleCardClick = useCallback(() => {
     const typeMap: Record<string, string> = {
@@ -95,37 +99,33 @@ const ListingCardComponent = ({
 
   const handleSaveClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    setIsSavedLocal(!isSavedLocal); // Instant visual toggle
     onSave?.(id, type);
-  }, [onSave, id, type]);
+  }, [onSave, id, type, isSavedLocal]);
 
   const handleImageLoad = useCallback(() => setImageLoaded(true), []);
   const handleImageError = useCallback(() => setImageError(true), []);
-
-  // Show distance for all types when location is available
-  const showDistanceBadge = useMemo(() => distance !== undefined && distance > 0, [distance]);
 
   return (
     <Card 
       onClick={handleCardClick} 
       className={cn(
         "group overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer border-slate-200 flex flex-col",
-        "rounded-[24px] bg-[rgba(0,0,0,0.04)]", // Darkened background to reduce brightness
+        "rounded-[24px] bg-[rgba(0,0,0,0.04)]",
         compact ? "h-auto" : "h-full",
         isUnavailable && "opacity-90"
       )}
     >
-      {/* Image Section with improved loading */}
+      {/* Image Section - No margins, zero bottom radius */}
       <div 
         ref={imageContainerRef} 
-        className="relative overflow-hidden m-2 rounded-[20px] bg-slate-200" 
+        className="relative overflow-hidden w-full rounded-t-[20px] rounded-b-none bg-slate-200" 
         style={{ paddingBottom: '70%' }}
       >
-        {/* Skeleton placeholder - always present until loaded */}
         {!imageLoaded && !imageError && (
           <Skeleton className="absolute inset-0 w-full h-full" />
         )}
         
-        {/* Blur-up thumbnail for smooth transition */}
         {shouldLoadImage && !imageLoaded && !imageError && (
           <img 
             src={thumbnailUrl} 
@@ -135,14 +135,11 @@ const ListingCardComponent = ({
           />
         )}
         
-        {/* Main image */}
         {shouldLoadImage && !imageError && (
           <img 
             src={optimizedImageUrl} 
             alt={name}
             loading={priority ? "eager" : "lazy"}
-            fetchPriority={priority ? "high" : "auto"}
-            decoding={priority ? "sync" : "async"}
             onLoad={handleImageLoad}
             onError={handleImageError}
             className={cn(
@@ -153,14 +150,12 @@ const ListingCardComponent = ({
           />
         )}
         
-        {/* Error fallback */}
         {imageError && (
           <div className="absolute inset-0 w-full h-full bg-slate-100 flex items-center justify-center">
             <span className="text-slate-400 text-xs font-bold uppercase">No Image</span>
           </div>
         )}
 
-        {/* SOLD OUT / NOT AVAILABLE OVERLAY */}
         {isUnavailable && (
           <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
             <Badge className="bg-white text-black font-black border-none px-4 py-1.5 text-[11px] uppercase shadow-2xl">
@@ -169,7 +164,6 @@ const ListingCardComponent = ({
           </div>
         )}
         
-        {/* Category Badge */}
         <Badge 
           className="absolute top-3 left-3 z-10 px-1.5 py-0.5 border-none shadow-md text-[7.5px] font-black uppercase tracking-tight"
           style={{ background: isUnavailable ? '#64748b' : COLORS.TEAL, color: 'white' }}
@@ -177,7 +171,7 @@ const ListingCardComponent = ({
           {displayType}
         </Badge>
 
-        {showDistanceBadge && (
+        {distance !== undefined && distance > 0 && (
           <Badge 
             className="absolute bottom-3 right-3 z-10 px-2 py-1 border-none shadow-lg text-[9px] font-black"
             style={{ background: COLORS.CORAL, color: 'white' }}
@@ -189,13 +183,13 @@ const ListingCardComponent = ({
         {onSave && (
           <button 
             onClick={handleSaveClick}
-            aria-label={isSaved ? "Remove from wishlist" : "Save to wishlist"}
+            aria-label={isSavedLocal ? "Remove from wishlist" : "Save to wishlist"}
             className={cn(
-                "absolute top-3 right-3 z-20 h-8 w-8 flex items-center justify-center rounded-full backdrop-blur-md transition-all", 
-                isSaved ? "bg-red-500" : "bg-black/20 hover:bg-black/40"
+                "absolute top-3 right-3 z-20 h-8 w-8 flex items-center justify-center rounded-full backdrop-blur-md transition-all active:scale-90", 
+                isSavedLocal ? "bg-red-500" : "bg-black/20 hover:bg-black/40"
             )}
           >
-            <Heart className={cn("h-3.5 w-3.5", isSaved ? "text-white fill-white" : "text-white")} />
+            <Heart className={cn("h-3.5 w-3.5", isSavedLocal ? "text-white fill-white" : "text-white")} />
           </button>
         )}
       </div>
@@ -217,8 +211,8 @@ const ListingCardComponent = ({
         
         <div className="flex items-center gap-1.5 mb-3">
             <MapPin className="h-3.5 w-3.5 flex-shrink-0" style={{ color: isUnavailable ? '#94a3b8' : COLORS.CORAL }} />
-            <p className="text-[10px] md:text-xs font-bold text-slate-700 uppercase tracking-wider line-clamp-1">
-                {locationString}
+            <p className="text-[10px] md:text-xs font-bold text-slate-700 capitalize tracking-wider line-clamp-1">
+                {locationString.toLowerCase()}
             </p>
         </div>
 
@@ -226,7 +220,7 @@ const ListingCardComponent = ({
           <div className="flex flex-wrap gap-1 mb-4">
             {activities.slice(0, 3).map((act, i) => (
               <span key={i} className={cn(
-                "text-[10px] font-bold px-2 py-0.5 rounded-md capitalize", // Small letters with Capitalize
+                "text-[10px] font-bold px-2 py-0.5 rounded-md capitalize",
                 isUnavailable ? "bg-slate-200 text-slate-500" : "bg-[#F0E68C]/40 text-[#5c5829]"
               )}>
                 {typeof act === 'string' ? act : act.name}
@@ -241,7 +235,7 @@ const ListingCardComponent = ({
                 {!hidePrice && price !== undefined && (
                   <>
                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Starts at</span>
-                    <span className={cn("text-base font-black", isUnavailable ? "text-slate-500 line-through" : "text-[#FF0000]")}>
+                    <span className={cn("text-base font-medium", isUnavailable ? "text-slate-500 line-through" : "text-[#FF0000]")}>
                         KSh {price.toLocaleString()}
                     </span>
                   </>
@@ -253,7 +247,7 @@ const ListingCardComponent = ({
                   <div className="flex items-center gap-1 text-slate-700">
                       <Calendar className="h-3 w-3" />
                       <span className={`text-[10px] font-black uppercase ${isFlexibleDate ? 'text-emerald-700' : ''}`}>
-                          {isFlexibleDate ? 'Flexible' : new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                          {isFlexibleDate ? 'Flexible' : new Date(date!).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </span>
                   </div>
                 )}
