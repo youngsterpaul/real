@@ -1,49 +1,51 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import React, { useState } from "react";
 import { Search } from "lucide-react";
 import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-export default function FilterBar() {
-  const [dateFrom, setDateFrom] = useState<Date>();
-  const [dateTo, setDateTo] = useState<Date>();
+const COLORS = {
+  TEAL: "#008080", // Exact color from the image
+};
+
+export const FilterBar = () => {
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 flex justify-center">
-      {/* Outer Pill Container */}
-      <div className="flex flex-col md:flex-row items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[40px] md:rounded-full shadow-md p-2 md:p-1.5 w-full md:w-fit">
+      {/* Main Pill Container */}
+      <div className="flex flex-col md:flex-row items-center bg-white border border-slate-200 rounded-[40px] md:rounded-full shadow-sm p-2 w-full md:w-fit overflow-hidden">
         
         {/* WHERE SECTION */}
-        <div className="flex flex-col justify-center px-6 md:px-8 py-2 w-full md:w-64">
-          <label className="text-[11px] font-bold uppercase text-slate-900 dark:text-slate-100 tracking-tight">
+        <div className="flex flex-col flex-1 px-8 py-2 min-w-[280px]">
+          <label className="text-[10px] font-black uppercase text-slate-800 tracking-wider">
             Where
           </label>
           <input 
             type="text" 
             placeholder="Destinations" 
-            className="bg-transparent border-none p-0 text-[15px] md:text-base focus:ring-0 placeholder:text-slate-400 font-normal outline-none"
+            className="bg-transparent border-none p-0 text-base focus:ring-0 placeholder:text-slate-400 font-medium outline-none h-6"
           />
         </div>
 
-        {/* Divider 1 */}
-        <div className="hidden md:block w-[1px] h-10 bg-slate-200 dark:bg-slate-800" />
-        <div className="md:hidden w-full h-[1px] bg-slate-100 dark:bg-slate-900 my-1" />
+        {/* Vertical Divider 1 */}
+        <div className="hidden md:block w-[1px] h-8 bg-slate-200 self-center" />
 
         {/* FROM SECTION */}
         <Popover>
           <PopoverTrigger asChild>
-            <div className="flex flex-col justify-center px-6 md:px-8 py-2 w-full md:w-40 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 rounded-2xl md:rounded-none transition-colors">
-              <span className="text-[11px] font-bold uppercase text-slate-900 dark:text-slate-100 tracking-tight">
+            <div className="flex flex-col flex-1 px-8 py-2 cursor-pointer hover:bg-slate-50 transition-colors min-w-[140px]">
+              <span className="text-[10px] font-black uppercase text-slate-800 tracking-wider">
                 From
               </span>
-              <span className={cn("text-[15px] md:text-base font-normal", !dateFrom ? "text-slate-400" : "text-slate-700 dark:text-slate-300")}>
+              <span className={cn("text-base font-medium leading-6", !dateFrom ? "text-slate-400" : "text-slate-700")}>
                 {dateFrom ? format(dateFrom, "MMM dd") : "Add"}
               </span>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center">
+          <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-2xl" align="start">
             <Calendar
               mode="single"
               selected={dateFrom}
@@ -54,44 +56,43 @@ export default function FilterBar() {
           </PopoverContent>
         </Popover>
 
-        {/* Divider 2 */}
-        <div className="hidden md:block w-[1px] h-10 bg-slate-200 dark:bg-slate-800" />
-        <div className="md:hidden w-full h-[1px] bg-slate-100 dark:bg-slate-900 my-1" />
+        {/* Vertical Divider 2 */}
+        <div className="hidden md:block w-[1px] h-8 bg-slate-200 self-center" />
 
         {/* TO SECTION */}
         <Popover>
           <PopoverTrigger asChild>
-            <div className="flex flex-col justify-center px-6 md:px-8 py-2 w-full md:w-40 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 rounded-2xl md:rounded-none transition-colors">
-              <span className="text-[11px] font-bold uppercase text-slate-900 dark:text-slate-100 tracking-tight">
+            <div className="flex flex-col flex-1 px-8 py-2 cursor-pointer hover:bg-slate-50 transition-colors min-w-[140px]">
+              <span className="text-[10px] font-black uppercase text-slate-800 tracking-wider">
                 To
               </span>
-              <span className={cn("text-[15px] md:text-base font-normal", !dateTo ? "text-slate-400" : "text-slate-700 dark:text-slate-300")}>
+              <span className={cn("text-base font-medium leading-6", !dateTo ? "text-slate-400" : "text-slate-700")}>
                 {dateTo ? format(dateTo, "MMM dd") : "Add"}
               </span>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center">
+          <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-2xl" align="start">
             <Calendar
               mode="single"
               selected={dateTo}
               onSelect={setDateTo}
-              disabled={(date) => date < (dateFrom || new Date())}
+              disabled={(date) => (dateFrom ? date <= dateFrom : date < new Date())}
               initialFocus
             />
           </PopoverContent>
         </Popover>
 
-        {/* SEARCH BUTTON */}
-        <div className="w-full md:w-auto p-1">
-          <Button
-            className="w-full md:w-auto h-12 md:h-[52px] px-8 rounded-full text-white font-bold text-[16px] flex items-center justify-center transition-all hover:brightness-110 active:scale-95 border-none"
-            style={{ backgroundColor: "#008080" }}
+        {/* SEARCH BUTTON SECTION */}
+        <div className="p-1 pl-4 md:pl-2 w-full md:w-auto">
+          <button
+            className="flex items-center justify-center gap-2 text-white font-bold h-12 md:h-14 px-8 rounded-full transition-transform active:scale-95 w-full md:w-auto"
+            style={{ backgroundColor: COLORS.TEAL }}
           >
-            <Search className="h-5 w-5 mr-2 stroke-[3px]" />
-            Search
-          </Button>
+            <Search className="w-5 h-5 stroke-[3px]" />
+            <span className="text-lg">Search</span>
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
