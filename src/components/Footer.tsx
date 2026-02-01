@@ -164,7 +164,7 @@ export const Footer = ({
         
         <div className="border-t border-gray-300 mt-8 pt-6 text-center text-sm text-gray-600">
           <div className="flex justify-center gap-6 mb-3">
-            {/* Link hover colors updated to custom teal */}
+            {/* Link hover colors updated to custom teal*/}
             <Link to="/terms-of-service" className={`transition-colors ${TEAL_HOVER_CLASS}`}>
               Terms of Service
             </Link>
