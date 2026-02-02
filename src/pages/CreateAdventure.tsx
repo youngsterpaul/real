@@ -521,9 +521,9 @@ const CreateAdventure = () => {
               ...formData,
               name: formData.locationName || formData.registrationName,
               workingDays: Object.entries(workingDays).filter(([_, v]) => v).map(([d]) => d),
-              amenities: amenities.map(a => ({ name: a.name })),
-              facilities: formatItemsForDB(facilities),
-              activities: formatItemsForDB(activities),
+              amenities: amenities.filter(a => a.name.trim()).map(a => ({ name: a.name })),
+              facilities: formatItemsForDB(facilities.filter(f => f.name.trim())),
+              activities: formatItemsForDB(activities.filter(a => a.name.trim())),
               imageCount: galleryImages.length,
             }}
             creatorName={creatorProfile.name}

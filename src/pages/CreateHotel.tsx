@@ -542,149 +542,40 @@ const CreateHotel = () => {
 
         {/* Step 7: Review & Submit */}
         {currentStep === 7 && (
-          <Card className="bg-white rounded-[28px] p-8 shadow-sm border-none">
-            <h2 className="text-xl font-black uppercase tracking-tight mb-6 flex items-center gap-2" style={{ color: COLORS.TEAL }}>
-              <CheckCircle2 className="h-5 w-5" /> Review Your Listing
-            </h2>
-            
-            <div className="space-y-6">
-              {/* Registration Details */}
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">Registration Details</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Business Name</p>
-                    <p className="text-sm font-bold">{formData.registrationName}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Registration Number</p>
-                    <p className="text-sm font-bold">{formData.registrationNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Property Type</p>
-                    <p className="text-sm font-bold capitalize">{formData.establishmentType.replace('_', ' ')}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Location & Contact */}
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">Location & Contact</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location</p>
-                    <p className="text-sm font-bold">{formData.place}, {formData.country}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">GPS Coordinates</p>
-                    <p className="text-sm font-bold">{formData.latitude?.toFixed(6)}, {formData.longitude?.toFixed(6)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact</p>
-                    <p className="text-sm font-bold">{formData.email} • {formData.phoneNumber}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Operating Hours */}
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">Operating Hours</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hours</p>
-                    <p className="text-sm font-bold">{formData.openingHours} - {formData.closingHours}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Working Days</p>
-                    <p className="text-sm font-bold">
-                      {Object.entries(workingDays).filter(([_, v]) => v).map(([day]) => day).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Amenities, Facilities, Activities */}
-              {(amenities.filter(a => a.name.trim()).length > 0 || 
-                facilities.filter(f => f.name.trim()).length > 0 || 
-                activities.filter(a => a.name.trim()).length > 0) && (
-                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">Features</h3>
-                  <div className="space-y-4">
-                    {amenities.filter(a => a.name.trim()).length > 0 && (
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Amenities</p>
-                        <div className="flex flex-wrap gap-2">
-                          {amenities.filter(a => a.name.trim()).map((item, i) => (
-                            <span key={i} className="px-3 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-700">
-                              {item.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {facilities.filter(f => f.name.trim()).length > 0 && (
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Facilities</p>
-                        <div className="flex flex-wrap gap-2">
-                          {facilities.filter(f => f.name.trim()).map((item, i) => (
-                            <span key={i} className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                              {item.name} (Capacity: {item.capacity})
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {activities.filter(a => a.name.trim()).length > 0 && (
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Activities</p>
-                        <div className="flex flex-wrap gap-2">
-                          {activities.filter(a => a.name.trim()).map((item, i) => (
-                            <span key={i} className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">
-                              {item.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Photos */}
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">Property Photos ({galleryImages.length})</h3>
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                  {imagePreviewUrls.slice(0, 8).map((url, i) => (
-                    <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                      <img src={url} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                  {galleryImages.length > 8 && (
-                    <div className="aspect-square rounded-xl bg-slate-200 flex items-center justify-center">
-                      <p className="text-sm font-bold text-slate-600">+{galleryImages.length - 8} more</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-600 mb-4">Description</h3>
-                <p className="text-sm leading-relaxed">{formData.description}</p>
-              </div>
-
-              {/* Edit Button */}
-              <div className="flex gap-3">
-                <Button 
-                  onClick={() => setCurrentStep(1)} 
-                  variant="outline"
-                  className="flex-1 py-6 rounded-2xl font-black uppercase text-sm"
-                >
-                  Edit Listing
-                </Button>
-              </div>
-            </div>
-          </Card>
+          <ReviewStep
+            type="hotel"
+            data={{
+              name: formData.registrationName,
+              registrationName: formData.registrationName,
+              registrationNumber: formData.registrationNumber,
+              location: formData.place,
+              place: formData.place,
+              country: formData.country,
+              description: formData.description,
+              email: formData.email,
+              phoneNumber: formData.phoneNumber,
+              openingHours: formData.openingHours,
+              closingHours: formData.closingHours,
+              workingDays: Object.entries(workingDays).filter(([_, v]) => v).map(([d]) => d),
+              amenities: amenities.filter(a => a.name.trim()).map(a => a.name),
+              facilities: facilities.filter(f => f.name.trim()).map(f => ({ 
+                name: f.name, 
+                price: typeof f.price === 'string' ? parseFloat(f.price) || 0 : (f.price || 0),
+                capacity: f.capacity ? parseInt(f.capacity) : null,
+                is_free: f.priceType === 'free'
+              })),
+              activities: activities.filter(a => a.name.trim()).map(a => ({ 
+                name: a.name, 
+                price: typeof a.price === 'string' ? parseFloat(a.price) || 0 : (a.price || 0),
+                is_free: a.priceType === 'free'
+              })),
+              imageCount: galleryImages.length,
+            }}
+            creatorName={creatorProfile.name}
+            creatorEmail={creatorProfile.email}
+            creatorPhone={creatorProfile.phone}
+            accentColor={COLORS.TEAL}
+          />
         )}
 
         {/* Navigation Buttons */}
