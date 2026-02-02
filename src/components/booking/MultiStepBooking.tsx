@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, Users, Loader2, CheckCircle2, Phone, CreditCard, X, AlertTriangle, Check } from "lucide-react";
+import { Calendar, Users, Loader2, CheckCircle2, Phone, CreditCard, X, AlertTriangle, Check, ChevronRight, Sparkles } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,11 +44,8 @@ interface MultiStepBookingProps {
     primaryColor?: string;
     accentColor?: string;
     totalCapacity?: number;
-    // NEW: slotLimitType determines if capacity is inventory-based or per-booking limit
     slotLimitType?: 'inventory' | 'per_booking';
-    // NEW: isFlexibleDate indicates if this is a flexible date trip
     isFlexibleDate?: boolean;
-    // NEW: workingDays for date validation
     workingDays?: string[];
 }
 
@@ -90,35 +87,23 @@ export const MultiStepBooking = ({
 }: MultiStepBookingProps) => {
     const { user } = useAuth();
     
-    // Real-time availability check - prevents booking if sold out during booking flow
-    // For per_booking limit type (flexible trips), we don't check global availability
     const { remainingSlots, isSoldOut } = useRealtimeItemAvailability(
         slotLimitType === 'inventory' ? (itemId || undefined) : undefined, 
         slotLimitType === 'inventory' ? totalCapacity : 0
     );
     
-    // Facility availability checking
     const { checkFacilityAvailability, loading: checkingFacility } = useFacilityRangeAvailability(itemId || undefined);
     const [facilityAvailabilityStatus, setFacilityAvailabilityStatus] = useState<Record<string, { isAvailable: boolean; message: string | null }>>({});
     const [checkingAvailability, setCheckingAvailability] = useState(false);
 
-    // Separate facilities and activities into sequential steps to reduce cognitive load
     const hasFacilities = facilities.filter(f => f.price > 0).length > 0;
     const hasActivities = activities.filter(a => a.price > 0).length > 0;
     
-    // Calculate total steps:
-    // Step 1: Date selection (unless skipped)
-    // Step 2: Number of guests
-    // Step 3: Facilities (if has facilities and not skipping)
-    // Step 4: Activities (if has activities and not skipping)
-    // Final step: Summary/Payment (adds +1 if guest user for contact details)
-    const baseSteps = skipDateSelection ? 1 : 2; // guests step is always there
+    const baseSteps = skipDateSelection ? 1 : 2;
     const facilityStep = !skipFacilitiesAndActivities && hasFacilities ? 1 : 0;
     const activityStep = !skipFacilitiesAndActivities && hasActivities ? 1 : 0;
-    const guestInfoStep = !user ? 1 : 0; // guest users need contact details
-    const totalSteps = baseSteps + facilityStep + activityStep + 1; // +1 for summary/payment
+    const totalSteps = baseSteps + facilityStep + activityStep + 1;
     
-    // Calculate which step number corresponds to what
     const dateStepNum = skipDateSelection ? 0 : 1;
     const guestsStepNum = skipDateSelection ? 1 : 2;
     const facilitiesStepNum = !skipFacilitiesAndActivities && hasFacilities ? guestsStepNum + 1 : 0;
@@ -192,19 +177,16 @@ export const MultiStepBooking = ({
             const start = new Date(f.startDate).getTime();
             const end = new Date(f.endDate).getTime();
             if (end < start) return false;
-            // Check if facility is available
             const status = facilityAvailabilityStatus[f.name];
             if (status && !status.isAvailable) return false;
             return true;
         });
     };
     
-    // Check if any facility has availability conflict
     const hasAvailabilityConflict = () => {
         return Object.values(facilityAvailabilityStatus).some(status => !status.isAvailable);
     };
 
-    // Check if booking has any items (prevent zero booking)
     const hasBookingItems = () => {
         const totalGuests = formData.num_adults + formData.num_children;
         if (totalGuests > 0) return true;
@@ -214,16 +196,11 @@ export const MultiStepBooking = ({
     };
 
     const handleNext = () => {
-        // Date step validation
         if (currentStep === dateStepNum && !formData.visit_date && !skipDateSelection) return;
-        // Guests step validation
         if (currentStep === guestsStepNum && formData.num_adults === 0 && formData.num_children === 0) return;
-        
-        // Facilities step validation
         if (currentStep === facilitiesStepNum && facilitiesStepNum > 0 && formData.selectedFacilities.length > 0 && !areFacilityDatesValid()) {
             return;
         }
-        
         setCurrentStep(Math.min(currentStep + 1, totalSteps));
     };
 
@@ -264,7 +241,6 @@ export const MultiStepBooking = ({
             },
         };
 
-        // Always use Paystack for payment
         setIsCardPaymentLoading(true);
         await initiateCardPayment(
             formData.guest_email || user?.email || '',
@@ -324,7 +300,6 @@ export const MultiStepBooking = ({
                 ),
             };
             
-            // Check availability after updating dates
             const facility = updated.selectedFacilities.find(f => f.name === name);
             if (facility?.startDate && facility?.endDate) {
                 setCheckingAvailability(true);
@@ -335,7 +310,6 @@ export const MultiStepBooking = ({
                 }));
                 setCheckingAvailability(false);
             } else {
-                // Clear status if dates incomplete
                 setFacilityAvailabilityStatus(prevStatus => {
                     const newStatus = { ...prevStatus };
                     delete newStatus[name];
@@ -375,90 +349,137 @@ export const MultiStepBooking = ({
 
     if (isProcessing) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 space-y-4 min-h-[300px]">
-                <Loader2 className="h-12 w-12 animate-spin" style={{ color: primaryColor }} />
-                <p className="text-lg font-semibold">Saving your booking...</p>
-                <p className="text-sm text-muted-foreground">Please wait</p>
+            <div className="flex flex-col items-center justify-center p-8 space-y-4 min-h-[300px] bg-gradient-to-br from-slate-50 to-white">
+                <div className="relative">
+                    <Loader2 className="h-16 w-16 animate-spin opacity-20" style={{ color: primaryColor }} />
+                    <Sparkles className="h-8 w-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
+                </div>
+                <p className="text-xl font-bold tracking-tight" style={{ color: primaryColor }}>Processing Your Booking</p>
+                <p className="text-sm text-slate-400">Just a moment...</p>
             </div>
         );
     }
 
     const total = calculateTotal();
-
-    // Check if requested slots exceed remaining - only for inventory-based items
     const requestedSlots = formData.num_adults + formData.num_children;
-    // For per_booking limit type (flexible trips), check against per-booking limit instead of global remaining
     const insufficientSlots = slotLimitType === 'inventory' 
         ? (totalCapacity > 0 && requestedSlots > remainingSlots)
-        : (totalCapacity > 0 && requestedSlots > totalCapacity); // Per-booking limit check
-
-    // For inventory-based: sold out globally. For per-booking: never globally sold out
+        : (totalCapacity > 0 && requestedSlots > totalCapacity);
     const isGloballySoldOut = slotLimitType === 'inventory' && isSoldOut && totalCapacity > 0;
 
+    const stepTitles = [
+        { num: dateStepNum, title: "When", subtitle: "Choose your date" },
+        { num: guestsStepNum, title: "Who", subtitle: "Select guests" },
+        { num: facilitiesStepNum, title: "Where", subtitle: "Pick facilities" },
+        { num: activitiesStepNum, title: "What", subtitle: "Add activities" },
+        { num: summaryStepNum, title: "Confirm", subtitle: "Review & pay" },
+    ].filter(s => s.num > 0);
+
     return (
-        <div className="flex flex-col bg-gradient-to-br from-white via-white to-slate-50 rounded-2xl sm:rounded-[32px] overflow-hidden max-h-[90vh] sm:max-h-[85vh] shadow-2xl border border-slate-100">
-            {/* Sold Out Banner - Shows real-time if item becomes sold out during booking */}
+        <div className="relative flex flex-col bg-white overflow-hidden max-h-[90vh] sm:max-h-[85vh]" 
+             style={{ 
+                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                 background: `linear-gradient(135deg, ${primaryColor}08 0%, white 50%, ${accentColor}08 100%)`
+             }}>
+            
+            {/* Decorative Header Bar */}
+            <div className="h-2 w-full" style={{ 
+                background: `linear-gradient(90deg, ${primaryColor}, ${accentColor})` 
+            }} />
+
+            {/* Sold Out Banner */}
             {isGloballySoldOut && (
-                <div className="px-4 sm:px-6 py-3 bg-red-50 border-b border-red-200 flex items-center gap-2 sm:gap-3">
-                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 flex-shrink-0" />
+                <div className="px-4 sm:px-6 py-4 bg-red-500 text-white flex items-center gap-3 animate-in slide-in-from-top">
+                    <AlertTriangle className="h-6 w-6 flex-shrink-0" />
                     <div>
-                        <p className="text-xs sm:text-sm font-bold text-red-700">This item is now fully booked</p>
-                        <p className="text-[10px] sm:text-xs text-red-600">All slots have been reserved. Please try another date or item.</p>
+                        <p className="font-bold text-sm sm:text-base">Fully Booked</p>
+                        <p className="text-xs opacity-90">All slots reserved. Please choose another option.</p>
                     </div>
                 </div>
             )}
 
-            {/* Header */}
-            <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 flex-shrink-0">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight" style={{ color: primaryColor }}>
-                        Book Your Visit
-                    </h2>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium">{itemName}</p>
+            {/* Main Header */}
+            <div className="relative px-6 sm:px-8 pt-8 sm:pt-10 pb-6 sm:pb-8 flex-shrink-0 overflow-hidden">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 opacity-5" style={{ 
+                    backgroundImage: `radial-gradient(circle at 2px 2px, ${primaryColor} 1px, transparent 0)`,
+                    backgroundSize: '32px 32px'
+                }} />
                 
-                {/* Flexible Date Indicator */}
-                {isFlexibleDate && (
-                    <div className="mt-2 inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold">
-                        <Calendar className="h-3 w-3" />
-                        Flexible Date Trip
+                <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-6">
+                        <div className="flex-1">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-2 leading-none tracking-tight" 
+                                style={{ 
+                                    color: primaryColor,
+                                    fontFamily: '"Space Mono", "Courier New", monospace'
+                                }}>
+                                Reserve
+                            </h1>
+                            <p className="text-base sm:text-lg text-slate-600 font-medium max-w-md">{itemName}</p>
+                        </div>
+                        
+                        {isFlexibleDate && (
+                            <div className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
+                                <Sparkles className="h-3 w-3" />
+                                Flexible
+                            </div>
+                        )}
                     </div>
-                )}
-                
-                {/* Progress Indicator - Page dots */}
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4">
-                    {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
-                        <div
-                            key={step}
-                            className={cn(
-                                "h-1.5 sm:h-2 rounded-full transition-all duration-300",
-                                step === currentStep ? "w-5 sm:w-6" : "w-1.5 sm:w-2"
-                            )}
-                            style={{ 
-                                backgroundColor: step <= currentStep ? primaryColor : '#e2e8f0'
-                            }}
-                        />
-                    ))}
+                    
+                    {/* Step Indicator - Horizontal pills */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                        {stepTitles.map((step, index) => (
+                            <div key={step.num} className="flex items-center gap-2 flex-shrink-0">
+                                <div className={cn(
+                                    "px-4 py-2 rounded-full transition-all duration-300 border-2",
+                                    currentStep === step.num 
+                                        ? "border-current shadow-lg scale-105"
+                                        : currentStep > step.num 
+                                        ? "border-transparent opacity-50"
+                                        : "border-transparent opacity-30"
+                                )}
+                                style={{
+                                    backgroundColor: currentStep >= step.num ? primaryColor : '#e2e8f0',
+                                    color: currentStep >= step.num ? 'white' : '#64748b'
+                                }}>
+                                    <p className="text-xs font-black">{step.title}</p>
+                                </div>
+                                {index < stepTitles.length - 1 && (
+                                    <ChevronRight className="h-4 w-4 text-slate-300" />
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <p className="text-[10px] sm:text-xs text-center text-slate-400 mt-2 font-medium">Step {currentStep} of {totalSteps}</p>
             </div>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 sm:space-y-6">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 pb-6 space-y-8">
+                
                 {/* Step 1: Visit Date */}
                 {currentStep === dateStepNum && !skipDateSelection && (
-                    <div className="space-y-3 sm:space-y-4">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="p-1.5 sm:p-2 rounded-xl" style={{ backgroundColor: `${primaryColor}15` }}>
-                                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: primaryColor }} />
-                            </div>
-                            <div>
-                                <h3 className="text-base sm:text-lg font-black uppercase tracking-tight" style={{ color: primaryColor }}>Select Visit Date</h3>
-                                <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Choose your preferred date</p>
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" 
+                                     style={{ backgroundColor: primaryColor }}>
+                                    <Calendar className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl sm:text-3xl font-black" style={{ color: primaryColor }}>
+                                        Pick Your Date
+                                    </h2>
+                                    <p className="text-sm text-slate-500">When would you like to visit?</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[#008080]">
-                            <Label htmlFor="visit_date" className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Visit Date</Label>
+
+                        <div className="bg-white/80 backdrop-blur-sm border-2 p-6 rounded-3xl shadow-xl" 
+                             style={{ borderColor: `${primaryColor}40` }}>
+                            <Label htmlFor="visit_date" className="text-sm font-bold text-slate-700 mb-3 block">
+                                Select Date
+                            </Label>
                             <Input
                                 id="visit_date"
                                 type="date"
@@ -466,7 +487,6 @@ export const MultiStepBooking = ({
                                 min={new Date().toISOString().split('T')[0]} 
                                 onChange={(e) => {
                                     const selectedDate = e.target.value;
-                                    // Validate working days if provided
                                     if (workingDays.length > 0 && selectedDate) {
                                         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                                         const dayOfWeek = dayNames[new Date(selectedDate).getDay()];
@@ -474,39 +494,63 @@ export const MultiStepBooking = ({
                                             d.toLowerCase().startsWith(dayOfWeek.toLowerCase()) ||
                                             dayOfWeek.toLowerCase().startsWith(d.toLowerCase().substring(0, 3))
                                         );
-                                        if (!isWorkingDay) {
-                                            return; // Don't update if not a working day
-                                        }
+                                        if (!isWorkingDay) return;
                                     }
                                     setFormData({ ...formData, visit_date: selectedDate });
                                 }}
-                                className="border-none bg-white rounded-lg sm:rounded-xl h-10 sm:h-12 font-medium focus:ring-[#008080] focus:ring-2 text-sm sm:text-base"
+                                className="h-14 text-lg font-semibold rounded-2xl border-2 focus:ring-4 transition-all"
+                                style={{ 
+                                    borderColor: formData.visit_date ? primaryColor : '#e2e8f0',
+                                    '--tw-ring-color': `${primaryColor}40` 
+                                } as any}
                             />
-                            {!formData.visit_date && <p className="text-[10px] sm:text-xs text-red-500 mt-2 font-medium">Please select a date to proceed.</p>}
-                            {workingDays.length > 0 && (
-                                <p className="text-[10px] sm:text-xs text-slate-400 mt-2 font-medium">
-                                    Open on: {workingDays.join(', ')}
+                            {!formData.visit_date && (
+                                <p className="text-sm text-red-500 mt-3 font-medium flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    Please select a date to continue
                                 </p>
+                            )}
+                            {workingDays.length > 0 && (
+                                <div className="mt-4 p-3 bg-slate-50 rounded-xl">
+                                    <p className="text-xs font-bold text-slate-600 mb-1">Available Days</p>
+                                    <p className="text-sm text-slate-700">{workingDays.join(' • ')}</p>
+                                </div>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Step 2: Number of People */}
+                {/* Step 2: Number of Guests */}
                 {currentStep === guestsStepNum && (
-                    <div className="space-y-3 sm:space-y-4">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="p-1.5 sm:p-2 rounded-xl" style={{ backgroundColor: `${primaryColor}15` }}>
-                                <Users className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: primaryColor }} />
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" 
+                                 style={{ backgroundColor: primaryColor }}>
+                                <Users className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-base sm:text-lg font-black uppercase tracking-tight" style={{ color: primaryColor }}>Number of Guests</h3>
-                                <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">How many people are attending?</p>
+                                <h2 className="text-2xl sm:text-3xl font-black" style={{ color: primaryColor }}>
+                                    Guest Count
+                                </h2>
+                                <p className="text-sm text-slate-500">How many people are coming?</p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[#008080]">
-                                <Label htmlFor="adults" className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Adults (18+)</Label>
+
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            {/* Adults */}
+                            <div className="bg-white/80 backdrop-blur-sm border-2 p-6 rounded-3xl shadow-xl group hover:shadow-2xl transition-all"
+                                 style={{ borderColor: `${primaryColor}40` }}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <Label htmlFor="adults" className="text-lg font-black" style={{ color: primaryColor }}>
+                                        Adults
+                                    </Label>
+                                    {entranceType !== 'free' && priceAdult > 0 && (
+                                        <span className="text-sm font-bold px-3 py-1 rounded-full" 
+                                              style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
+                                            KES {priceAdult.toLocaleString()}
+                                        </span>
+                                    )}
+                                </div>
                                 <Input
                                     id="adults"
                                     type="number"
@@ -514,14 +558,26 @@ export const MultiStepBooking = ({
                                     max={slotLimitType === 'per_booking' ? totalCapacity : undefined}
                                     value={formData.num_adults}
                                     onChange={(e) => setFormData({ ...formData, num_adults: parseInt(e.target.value) || 0 })}
-                                    className="border-none bg-white rounded-lg sm:rounded-xl h-10 sm:h-12 font-bold text-base sm:text-lg focus:ring-[#008080] focus:ring-2"
+                                    className="h-16 text-3xl font-black text-center rounded-2xl border-2"
+                                    style={{ borderColor: primaryColor }}
                                 />
-                                {entranceType !== 'free' && priceAdult > 0 && (
-                                    <p className="text-[10px] sm:text-xs font-bold mt-2" style={{ color: accentColor }}>KES {priceAdult.toLocaleString()} each</p>
-                                )}
+                                <p className="text-xs text-slate-400 mt-2 text-center">18 years and older</p>
                             </div>
-                            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[#008080]">
-                                <Label htmlFor="children" className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Children</Label>
+
+                            {/* Children */}
+                            <div className="bg-white/80 backdrop-blur-sm border-2 p-6 rounded-3xl shadow-xl group hover:shadow-2xl transition-all"
+                                 style={{ borderColor: `${primaryColor}40` }}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <Label htmlFor="children" className="text-lg font-black" style={{ color: primaryColor }}>
+                                        Children
+                                    </Label>
+                                    {entranceType !== 'free' && priceChild > 0 && (
+                                        <span className="text-sm font-bold px-3 py-1 rounded-full" 
+                                              style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
+                                            KES {priceChild.toLocaleString()}
+                                        </span>
+                                    )}
+                                </div>
                                 <Input
                                     id="children"
                                     type="number"
@@ -529,47 +585,61 @@ export const MultiStepBooking = ({
                                     max={slotLimitType === 'per_booking' ? totalCapacity : undefined}
                                     value={formData.num_children}
                                     onChange={(e) => setFormData({ ...formData, num_children: parseInt(e.target.value) || 0 })}
-                                    className="border-none bg-white rounded-lg sm:rounded-xl h-10 sm:h-12 font-bold text-base sm:text-lg focus:ring-[#008080] focus:ring-2"
+                                    className="h-16 text-3xl font-black text-center rounded-2xl border-2"
+                                    style={{ borderColor: primaryColor }}
                                 />
-                                {entranceType !== 'free' && priceChild > 0 && (
-                                    <p className="text-[10px] sm:text-xs font-bold mt-2" style={{ color: accentColor }}>KES {priceChild.toLocaleString()} each</p>
-                                )}
+                                <p className="text-xs text-slate-400 mt-2 text-center">Under 18 years</p>
                             </div>
                         </div>
-                        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-dashed" style={{ borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}08` }}>
-                            <p className="text-xs sm:text-sm font-black uppercase tracking-tight" style={{ color: primaryColor }}>
-                                Total Guests: {formData.num_adults + formData.num_children}
-                            </p>
-                            {(formData.num_adults === 0 && formData.num_children === 0) && (
-                                <p className="text-[10px] sm:text-xs text-red-500 font-medium mt-1">You must include at least one guest.</p>
-                            )}
-                            {insufficientSlots && (
-                                <p className="text-[10px] sm:text-xs text-red-500 font-medium mt-1">
-                                    {slotLimitType === 'per_booking' 
-                                        ? `Maximum ${totalCapacity} guests per booking allowed.`
-                                        : `Only ${remainingSlots} slots remaining. Please reduce your group size.`
-                                    }
+
+                        {/* Total Summary */}
+                        <div className="p-6 rounded-3xl shadow-xl relative overflow-hidden"
+                             style={{ 
+                                 background: `linear-gradient(135deg, ${primaryColor}15, ${accentColor}15)`
+                             }}>
+                            <div className="relative z-10">
+                                <p className="text-sm font-bold text-slate-600 mb-2">Total Guests</p>
+                                <p className="text-4xl font-black" style={{ color: primaryColor }}>
+                                    {formData.num_adults + formData.num_children}
                                 </p>
-                            )}
+                                {(formData.num_adults === 0 && formData.num_children === 0) && (
+                                    <p className="text-sm text-red-600 font-medium mt-2 flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        At least one guest required
+                                    </p>
+                                )}
+                                {insufficientSlots && (
+                                    <p className="text-sm text-red-600 font-medium mt-2 flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        {slotLimitType === 'per_booking' 
+                                            ? `Maximum ${totalCapacity} guests allowed`
+                                            : `Only ${remainingSlots} slots available`
+                                        }
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* Step 3: Facilities (Separate step) */}
+                {/* Step 3: Facilities */}
                 {currentStep === facilitiesStepNum && facilitiesStepNum > 0 && (
-                    <div className="space-y-4 sm:space-y-6">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="p-1.5 sm:p-2 rounded-xl" style={{ backgroundColor: `${primaryColor}15` }}>
-                                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: primaryColor }} />
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" 
+                                 style={{ backgroundColor: primaryColor }}>
+                                <CheckCircle2 className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-base sm:text-lg font-black uppercase tracking-tight" style={{ color: primaryColor }}>Select Facilities</h3>
-                                <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Choose facility rentals (optional)</p>
+                                <h2 className="text-2xl sm:text-3xl font-black" style={{ color: primaryColor }}>
+                                    Facilities
+                                </h2>
+                                <p className="text-sm text-slate-500">Optional rentals available</p>
                             </div>
                         </div>
-                        
-                        <div className="space-y-2 sm:space-y-3">
-                            {facilities.filter(f => f.price > 0).map((facility) => {
+
+                        <div className="space-y-4">
+                            {facilities.filter(f => f.price > 0).map((facility, index) => {
                                 const selected = formData.selectedFacilities.find(f => f.name === facility.name);
                                 const isDateInvalid = selected && (
                                     !selected.startDate || 
@@ -578,258 +648,341 @@ export const MultiStepBooking = ({
                                 );
 
                                 return (
-                                    <div key={facility.name} className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 sm:gap-3">
-                                                <Checkbox
-                                                    id={`facility-${facility.name}`}
-                                                    checked={!!selected}
-                                                    onCheckedChange={() => toggleFacility(facility)}
-                                                    className="rounded-lg"
-                                                />
-                                                <Label htmlFor={`facility-${facility.name}`} className="text-xs sm:text-sm font-black uppercase tracking-tight cursor-pointer">
-                                                    {facility.name}
-                                                </Label>
-                                            </div>
-                                            <span className="text-[10px] sm:text-xs font-black px-2 sm:px-3 py-1 rounded-full whitespace-nowrap" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
-                                                KES {facility.price.toLocaleString()}/day
-                                            </span>
-                                        </div>
-                                        {selected && (
-                                            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100">
-                                                <p className="text-[10px] sm:text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Rental Period</p>
-                                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                                    <div>
-                                                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Start Date</Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={selected.startDate || ""}
-                                                            onChange={(e) => updateFacilityDates(facility.name, 'startDate', e.target.value)}
-                                                            min={formData.visit_date || new Date().toISOString().split('T')[0]}
-                                                            className="mt-1 rounded-lg sm:rounded-xl h-9 sm:h-10 text-xs sm:text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">End Date</Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={selected.endDate || ""}
-                                                            onChange={(e) => updateFacilityDates(facility.name, 'endDate', e.target.value)}
-                                                            min={selected.startDate || formData.visit_date || new Date().toISOString().split('T')[0]} 
-                                                            className="mt-1 rounded-lg sm:rounded-xl h-9 sm:h-10 text-xs sm:text-sm"
-                                                        />
+                                    <div key={facility.name} 
+                                         className="bg-white border-2 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all"
+                                         style={{ 
+                                             borderColor: selected ? primaryColor : '#e2e8f0',
+                                             animationDelay: `${index * 100}ms`
+                                         }}>
+                                        <div className="p-5">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start gap-4 flex-1">
+                                                    <Checkbox
+                                                        id={`facility-${facility.name}`}
+                                                        checked={!!selected}
+                                                        onCheckedChange={() => toggleFacility(facility)}
+                                                        className="mt-1 w-6 h-6 rounded-lg"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <Label htmlFor={`facility-${facility.name}`} 
+                                                               className="text-lg font-bold cursor-pointer block mb-1"
+                                                               style={{ color: primaryColor }}>
+                                                            {facility.name}
+                                                        </Label>
                                                     </div>
                                                 </div>
-                                                {isDateInvalid && (
-                                                    <p className="text-[10px] sm:text-xs text-red-500 mt-2 font-medium">Please select valid dates.</p>
-                                                )}
-                                                {/* Availability Status Indicator */}
-                                                {selected.startDate && selected.endDate && !isDateInvalid && (
-                                                    <div className={cn(
-                                                        "flex items-center gap-2 mt-2 sm:mt-3 p-2 rounded-lg text-xs sm:text-sm font-medium",
-                                                        facilityAvailabilityStatus[facility.name]?.isAvailable === true 
-                                                            ? "bg-green-50 text-green-700"
-                                                            : facilityAvailabilityStatus[facility.name]?.isAvailable === false
-                                                            ? "bg-red-50 text-red-700"
-                                                            : "bg-slate-50 text-slate-500"
-                                                    )}>
-                                                        {checkingAvailability ? (
-                                                            <>
-                                                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                                                                <span className="text-[10px] sm:text-xs">Checking availability...</span>
-                                                            </>
-                                                        ) : facilityAvailabilityStatus[facility.name]?.isAvailable === true ? (
-                                                            <>
-                                                                <Check className="h-3 w-3 sm:h-4 sm:w-4" />
-                                                                <span className="text-[10px] sm:text-xs">Facility Available</span>
-                                                            </>
-                                                        ) : facilityAvailabilityStatus[facility.name]?.isAvailable === false ? (
-                                                            <>
-                                                                <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                                                                <span className="text-[10px] sm:text-xs">{facilityAvailabilityStatus[facility.name]?.message || 'Dates not available'}</span>
-                                                            </>
-                                                        ) : null}
-                                                    </div>
-                                                )}
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-black" style={{ color: accentColor }}>
+                                                        {facility.price.toLocaleString()}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 font-medium">KES per day</p>
+                                                </div>
                                             </div>
-                                        )}
+
+                                            {selected && (
+                                                <div className="mt-6 pt-6 border-t-2 border-dashed" style={{ borderColor: `${primaryColor}30` }}>
+                                                    <p className="text-sm font-bold text-slate-700 mb-4">Rental Period</p>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <Label className="text-xs font-bold text-slate-500 mb-2 block">Start</Label>
+                                                            <Input
+                                                                type="date"
+                                                                value={selected.startDate || ""}
+                                                                onChange={(e) => updateFacilityDates(facility.name, 'startDate', e.target.value)}
+                                                                min={formData.visit_date || new Date().toISOString().split('T')[0]}
+                                                                className="h-12 rounded-xl border-2"
+                                                                style={{ borderColor: primaryColor }}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs font-bold text-slate-500 mb-2 block">End</Label>
+                                                            <Input
+                                                                type="date"
+                                                                value={selected.endDate || ""}
+                                                                onChange={(e) => updateFacilityDates(facility.name, 'endDate', e.target.value)}
+                                                                min={selected.startDate || formData.visit_date || new Date().toISOString().split('T')[0]}
+                                                                className="h-12 rounded-xl border-2"
+                                                                style={{ borderColor: primaryColor }}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {isDateInvalid && (
+                                                        <p className="text-sm text-red-500 mt-3 font-medium flex items-center gap-2">
+                                                            <X className="h-4 w-4" />
+                                                            Please select valid dates
+                                                        </p>
+                                                    )}
+
+                                                    {selected.startDate && selected.endDate && !isDateInvalid && (
+                                                        <div className={cn(
+                                                            "flex items-center gap-2 mt-4 p-3 rounded-xl font-medium text-sm",
+                                                            facilityAvailabilityStatus[facility.name]?.isAvailable === true 
+                                                                ? "bg-emerald-50 text-emerald-700"
+                                                                : facilityAvailabilityStatus[facility.name]?.isAvailable === false
+                                                                ? "bg-red-50 text-red-700"
+                                                                : "bg-slate-50 text-slate-500"
+                                                        )}>
+                                                            {checkingAvailability ? (
+                                                                <><Loader2 className="h-4 w-4 animate-spin" /> Checking...</>
+                                                            ) : facilityAvailabilityStatus[facility.name]?.isAvailable === true ? (
+                                                                <><Check className="h-4 w-4" /> Available</>
+                                                            ) : facilityAvailabilityStatus[facility.name]?.isAvailable === false ? (
+                                                                <><X className="h-4 w-4" /> {facilityAvailabilityStatus[facility.name]?.message}</>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        
-                        <p className="text-[10px] sm:text-xs text-slate-400 text-center">You can skip this step if you don't need any facilities</p>
+
+                        <p className="text-center text-sm text-slate-400 italic">Skip if not needed</p>
                     </div>
                 )}
 
-                {/* Step 4: Activities (Separate step) */}
+                {/* Step 4: Activities */}
                 {currentStep === activitiesStepNum && activitiesStepNum > 0 && (
-                    <div className="space-y-4 sm:space-y-6">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="p-1.5 sm:p-2 rounded-xl" style={{ backgroundColor: `${accentColor}15` }}>
-                                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: accentColor }} />
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" 
+                                 style={{ backgroundColor: accentColor }}>
+                                <Sparkles className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-base sm:text-lg font-black uppercase tracking-tight" style={{ color: primaryColor }}>Select Activities</h3>
-                                <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Choose activities to participate in (optional)</p>
+                                <h2 className="text-2xl sm:text-3xl font-black" style={{ color: primaryColor }}>
+                                    Activities
+                                </h2>
+                                <p className="text-sm text-slate-500">Enhance your experience</p>
                             </div>
                         </div>
-                        
-                        <div className="space-y-2 sm:space-y-3">
-                            {activities.filter(a => a.price > 0).map((activity) => {
+
+                        <div className="space-y-4">
+                            {activities.filter(a => a.price > 0).map((activity, index) => {
                                 const selected = formData.selectedActivities.find(a => a.name === activity.name);
                                 return (
-                                    <div key={activity.name} className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 sm:gap-3">
-                                                <Checkbox
-                                                    id={`activity-${activity.name}`}
-                                                    checked={!!selected}
-                                                    onCheckedChange={() => toggleActivity(activity)}
-                                                    className="rounded-lg"
-                                                />
-                                                <Label htmlFor={`activity-${activity.name}`} className="text-xs sm:text-sm font-black uppercase tracking-tight cursor-pointer">
-                                                    {activity.name}
-                                                </Label>
+                                    <div key={activity.name}
+                                         className="bg-white border-2 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all"
+                                         style={{ 
+                                             borderColor: selected ? accentColor : '#e2e8f0',
+                                             animationDelay: `${index * 100}ms`
+                                         }}>
+                                        <div className="p-5">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start gap-4 flex-1">
+                                                    <Checkbox
+                                                        id={`activity-${activity.name}`}
+                                                        checked={!!selected}
+                                                        onCheckedChange={() => toggleActivity(activity)}
+                                                        className="mt-1 w-6 h-6 rounded-lg"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <Label htmlFor={`activity-${activity.name}`}
+                                                               className="text-lg font-bold cursor-pointer block"
+                                                               style={{ color: primaryColor }}>
+                                                            {activity.name}
+                                                        </Label>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-black" style={{ color: accentColor }}>
+                                                        {activity.price.toLocaleString()}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 font-medium">KES per person</p>
+                                                </div>
                                             </div>
-                                            <span className="text-[10px] sm:text-xs font-black px-2 sm:px-3 py-1 rounded-full whitespace-nowrap" style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
-                                                KES {activity.price.toLocaleString()}/person
-                                            </span>
+
+                                            {selected && (
+                                                <div className="mt-6 pt-6 border-t-2 border-dashed" style={{ borderColor: `${accentColor}30` }}>
+                                                    <Label className="text-sm font-bold text-slate-700 mb-3 block">
+                                                        Number of Participants
+                                                    </Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        value={selected.numberOfPeople}
+                                                        onChange={(e) => updateActivityPeople(activity.name, parseInt(e.target.value) || 1)}
+                                                        className="h-14 text-2xl font-black text-center rounded-xl border-2 w-32"
+                                                        style={{ borderColor: accentColor }}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
-                                        {selected && (
-                                            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100">
-                                                <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Number of People</Label>
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    value={selected.numberOfPeople}
-                                                    onChange={(e) => updateActivityPeople(activity.name, parseInt(e.target.value) || 1)}
-                                                    className="mt-1 rounded-lg sm:rounded-xl h-9 sm:h-10 text-xs sm:text-sm w-20 sm:w-24"
-                                                />
-                                            </div>
-                                        )}
                                     </div>
                                 );
                             })}
                         </div>
-                        
-                        <p className="text-[10px] sm:text-xs text-slate-400 text-center">You can skip this step if you don't want any activities</p>
+
+                        <p className="text-center text-sm text-slate-400 italic">Skip if not interested</p>
                     </div>
                 )}
 
-                {/* Final Step: Summary */}
+                {/* Final Step: Summary & Payment */}
                 {currentStep === totalSteps && (
-                    <div className="space-y-4 sm:space-y-6">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {!user && (
-                            <div className="space-y-3 sm:space-y-4">
-                                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                                    <div className="p-1.5 sm:p-2 rounded-xl" style={{ backgroundColor: `${primaryColor}15` }}>
-                                        <Users className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: primaryColor }} />
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" 
+                                         style={{ backgroundColor: primaryColor }}>
+                                        <Users className="h-6 w-6 text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base sm:text-lg font-black uppercase tracking-tight" style={{ color: primaryColor }}>Contact Details</h3>
-                                        <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">We'll send your booking confirmation here</p>
+                                        <h2 className="text-2xl sm:text-3xl font-black" style={{ color: primaryColor }}>
+                                            Your Details
+                                        </h2>
+                                        <p className="text-sm text-slate-500">For booking confirmation</p>
                                     </div>
                                 </div>
-                                <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[#008080]">
+
+                                <div className="bg-white/80 backdrop-blur-sm border-2 p-6 rounded-3xl shadow-xl space-y-4"
+                                     style={{ borderColor: `${primaryColor}40` }}>
                                     <div>
-                                        <Label htmlFor="guest_name" className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Full Name</Label>
+                                        <Label htmlFor="guest_name" className="text-sm font-bold text-slate-700 mb-2 block">
+                                            Full Name
+                                        </Label>
                                         <Input
                                             id="guest_name"
-                                            placeholder="Your full name"
+                                            placeholder="John Doe"
                                             value={formData.guest_name}
                                             onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
-                                            className="border-none bg-white rounded-lg sm:rounded-xl h-10 sm:h-12 text-sm sm:text-base"
+                                            className="h-12 rounded-xl border-2 text-base"
+                                            style={{ borderColor: primaryColor }}
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="guest_email" className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Email Address</Label>
+                                        <Label htmlFor="guest_email" className="text-sm font-bold text-slate-700 mb-2 block">
+                                            Email Address
+                                        </Label>
                                         <Input
                                             id="guest_email"
                                             type="email"
-                                            placeholder="your@email.com"
+                                            placeholder="john@example.com"
                                             value={formData.guest_email}
                                             onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
-                                            className="border-none bg-white rounded-lg sm:rounded-xl h-10 sm:h-12 text-sm sm:text-base"
+                                            className="h-12 rounded-xl border-2 text-base"
+                                            style={{ borderColor: primaryColor }}
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="guest_phone" className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 mb-2 block">Phone Number (Optional)</Label>
+                                        <Label htmlFor="guest_phone" className="text-sm font-bold text-slate-700 mb-2 block">
+                                            Phone (Optional)
+                                        </Label>
                                         <Input
                                             id="guest_phone"
                                             type="tel"
-                                            placeholder="e.g. 0712345678"
+                                            placeholder="0712345678"
                                             value={formData.guest_phone}
                                             onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
-                                            className="border-none bg-white rounded-lg sm:rounded-xl h-10 sm:h-12 text-sm sm:text-base"
+                                            className="h-12 rounded-xl border-2 text-base"
+                                            style={{ borderColor: primaryColor }}
                                         />
                                     </div>
                                 </div>
                             </div>
                         )}
-                        
+
                         {/* Order Summary */}
-                        <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-100 bg-slate-50 space-y-2 sm:space-y-3">
-                            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider mb-3 sm:mb-4" style={{ color: primaryColor }}>Booking Summary</h3>
-                            
-                            {formData.visit_date && (
-                                <div className="flex justify-between text-xs sm:text-sm">
-                                    <span className="text-slate-500">Visit Date</span>
-                                    <span className="font-bold">{new Date(formData.visit_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                </div>
-                            )}
-                            
-                            {formData.num_adults > 0 && (
-                                <div className="flex justify-between text-xs sm:text-sm">
-                                    <span className="text-slate-500">{formData.num_adults} Adult{formData.num_adults > 1 ? 's' : ''}</span>
-                                    <span className="font-bold">KES {(formData.num_adults * priceAdult).toLocaleString()}</span>
-                                </div>
-                            )}
-                            
-                            {formData.num_children > 0 && (
-                                <div className="flex justify-between text-xs sm:text-sm">
-                                    <span className="text-slate-500">{formData.num_children} Child{formData.num_children > 1 ? 'ren' : ''}</span>
-                                    <span className="font-bold">KES {(formData.num_children * priceChild).toLocaleString()}</span>
-                                </div>
-                            )}
-                            
-                            {formData.selectedFacilities.map(f => {
-                                if (!f.startDate || !f.endDate) return null;
-                                const days = Math.ceil((new Date(f.endDate).getTime() - new Date(f.startDate).getTime()) / (1000 * 60 * 60 * 24)) || 1;
-                                return (
-                                    <div key={f.name} className="flex justify-between text-xs sm:text-sm">
-                                        <span className="text-slate-500">{f.name} ({days} day{days > 1 ? 's' : ''})</span>
-                                        <span className="font-bold">KES {(f.price * days).toLocaleString()}</span>
+                        <div className="bg-white border-2 rounded-3xl shadow-2xl overflow-hidden"
+                             style={{ borderColor: primaryColor }}>
+                            <div className="p-6 border-b-2" style={{ 
+                                background: `linear-gradient(135deg, ${primaryColor}10, ${accentColor}10)`,
+                                borderColor: `${primaryColor}20`
+                            }}>
+                                <h3 className="text-2xl font-black" style={{ color: primaryColor }}>
+                                    Booking Summary
+                                </h3>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                {formData.visit_date && (
+                                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                        <span className="text-sm text-slate-600 font-medium">Visit Date</span>
+                                        <span className="text-base font-bold text-slate-900">
+                                            {new Date(formData.visit_date).toLocaleDateString('en-GB', { 
+                                                day: 'numeric', 
+                                                month: 'short', 
+                                                year: 'numeric' 
+                                            })}
+                                        </span>
                                     </div>
-                                );
-                            })}
-                            
-                            {formData.selectedActivities.map(a => (
-                                <div key={a.name} className="flex justify-between text-xs sm:text-sm">
-                                    <span className="text-slate-500">{a.name} ({a.numberOfPeople})</span>
-                                    <span className="font-bold">KES {(a.price * a.numberOfPeople).toLocaleString()}</span>
-                                </div>
-                            ))}
-                            
-                            <div className="border-t pt-2 sm:pt-3 mt-2 sm:mt-3">
+                                )}
+
+                                {formData.num_adults > 0 && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-slate-600">
+                                            {formData.num_adults} Adult{formData.num_adults > 1 ? 's' : ''}
+                                        </span>
+                                        <span className="text-base font-bold">
+                                            KES {(formData.num_adults * priceAdult).toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {formData.num_children > 0 && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-slate-600">
+                                            {formData.num_children} Child{formData.num_children > 1 ? 'ren' : ''}
+                                        </span>
+                                        <span className="text-base font-bold">
+                                            KES {(formData.num_children * priceChild).toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {formData.selectedFacilities.map(f => {
+                                    if (!f.startDate || !f.endDate) return null;
+                                    const days = Math.ceil((new Date(f.endDate).getTime() - new Date(f.startDate).getTime()) / (1000 * 60 * 60 * 24)) || 1;
+                                    return (
+                                        <div key={f.name} className="flex justify-between items-center">
+                                            <span className="text-sm text-slate-600">
+                                                {f.name} <span className="text-xs">({days}d)</span>
+                                            </span>
+                                            <span className="text-base font-bold">
+                                                KES {(f.price * days).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+
+                                {formData.selectedActivities.map(a => (
+                                    <div key={a.name} className="flex justify-between items-center">
+                                        <span className="text-sm text-slate-600">
+                                            {a.name} <span className="text-xs">×{a.numberOfPeople}</span>
+                                        </span>
+                                        <span className="text-base font-bold">
+                                            KES {(a.price * a.numberOfPeople).toLocaleString()}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="p-6 border-t-2" style={{ 
+                                background: `linear-gradient(135deg, ${primaryColor}15, ${accentColor}15)`,
+                                borderColor: `${primaryColor}30`
+                            }}>
                                 <div className="flex justify-between items-baseline">
-                                    <span className="text-xs sm:text-sm font-black uppercase" style={{ color: primaryColor }}>Total</span>
-                                    <span className="text-xl sm:text-2xl font-black" style={{ color: accentColor }}>KES {total.toLocaleString()}</span>
+                                    <span className="text-lg font-black" style={{ color: primaryColor }}>
+                                        TOTAL
+                                    </span>
+                                    <span className="text-4xl font-black" style={{ color: accentColor }}>
+                                        KES {total.toLocaleString()}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Payment Info */}
+                        {/* Payment Badge */}
                         {total > 0 && (
-                            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#008080]/10 to-[#FF7F50]/10 border border-slate-200">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="p-1.5 sm:p-2 rounded-xl bg-white shadow-sm">
-                                        <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: primaryColor }} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs sm:text-sm font-black uppercase tracking-tight" style={{ color: primaryColor }}>Secure Payment</p>
-                                        <p className="text-[10px] sm:text-xs text-slate-500">You'll be redirected to Paystack to complete payment</p>
-                                    </div>
+                            <div className="flex items-center justify-center gap-3 p-4 rounded-2xl"
+                                 style={{ backgroundColor: `${primaryColor}10` }}>
+                                <CreditCard className="h-6 w-6" style={{ color: primaryColor }} />
+                                <div>
+                                    <p className="text-sm font-bold" style={{ color: primaryColor }}>Secure Payment via Paystack</p>
+                                    <p className="text-xs text-slate-500">You'll be redirected to complete payment</p>
                                 </div>
                             </div>
                         )}
@@ -837,19 +990,20 @@ export const MultiStepBooking = ({
                 )}
             </div>
 
-            {/* Footer with Navigation - Fixed at bottom */}
-            <div className="p-3 sm:p-6 sm:pt-4 border-t border-slate-100 bg-white flex-shrink-0">
-                <div className="flex gap-2 sm:gap-3">
+            {/* Fixed Footer Navigation */}
+            <div className="flex-shrink-0 p-4 sm:p-6 bg-white border-t-2 border-slate-100">
+                <div className="flex gap-3">
                     {currentStep > (skipDateSelection ? guestsStepNum : dateStepNum) && (
                         <Button
                             onClick={handlePrevious}
                             variant="outline"
-                            className="flex-1 h-11 sm:h-14 rounded-xl sm:rounded-2xl font-black uppercase tracking-wider border-2 text-xs sm:text-sm"
+                            className="flex-1 h-14 sm:h-16 rounded-2xl font-bold text-base border-2 hover:scale-[0.98] transition-transform"
+                            style={{ borderColor: primaryColor, color: primaryColor }}
                         >
-                            Back
+                            ← Back
                         </Button>
                     )}
-                    
+
                     {currentStep < totalSteps ? (
                         <Button
                             onClick={handleNext}
@@ -860,10 +1014,10 @@ export const MultiStepBooking = ({
                                 (currentStep === facilitiesStepNum && formData.selectedFacilities.length > 0 && !areFacilityDatesValid()) ||
                                 isGloballySoldOut
                             }
-                            className="flex-1 h-11 sm:h-14 rounded-xl sm:rounded-2xl font-black uppercase tracking-wider text-white text-xs sm:text-sm"
+                            className="flex-1 h-14 sm:h-16 rounded-2xl font-bold text-base text-white shadow-lg hover:shadow-xl hover:scale-[0.98] transition-all disabled:opacity-50"
                             style={{ backgroundColor: primaryColor }}
                         >
-                            Continue
+                            Continue →
                         </Button>
                     ) : (
                         <Button
@@ -875,20 +1029,45 @@ export const MultiStepBooking = ({
                                 insufficientSlots ||
                                 (!user && (!formData.guest_name || !formData.guest_email))
                             }
-                            className="flex-1 h-11 sm:h-14 rounded-xl sm:rounded-2xl font-black uppercase tracking-wider text-white text-xs sm:text-sm"
+                            className="flex-1 h-14 sm:h-16 rounded-2xl font-bold text-base text-white shadow-lg hover:shadow-xl hover:scale-[0.98] transition-all disabled:opacity-50"
                             style={{ backgroundColor: accentColor }}
                         >
                             {(isPaystackLoading || isCardPaymentLoading) ? (
-                                <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                                <><Loader2 className="h-5 w-5 animate-spin mr-2" /> Processing</>
                             ) : total === 0 ? (
                                 "Confirm Booking"
                             ) : (
-                                `Proceed to Payment`
+                                `Pay KES ${total.toLocaleString()}`
                             )}
                         </Button>
                     )}
                 </div>
             </div>
+
+            <style>{`
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                @keyframes fade-in {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes slide-in-from-bottom-4 {
+                    from { transform: translateY(1rem); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes slide-in-from-top {
+                    from { transform: translateY(-1rem); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-in {
+                    animation: fade-in 0.3s ease-out, slide-in-from-bottom-4 0.5s ease-out;
+                }
+            `}</style>
         </div>
     );
 };
