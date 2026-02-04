@@ -928,26 +928,66 @@ const BookingPage = () => {
                                 <p className="text-xs sm:text-sm font-bold text-slate-700 mb-3 sm:mb-4">Rental Period</p>
                                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
                                   <div>
-                                    <Label className="text-xs font-bold text-slate-500 mb-1.5 sm:mb-2 block">Start</Label>
-                                    <Input
-                                      type="date"
-                                      value={selected.startDate || ""}
-                                      onChange={(e) => updateFacilityDates(facility.name, 'startDate', e.target.value)}
-                                      min={formData.visit_date || new Date().toISOString().split('T')[0]}
-                                      className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-2 text-sm"
-                                      style={{ borderColor: COLORS.TEAL }}
-                                    />
+                                    <Label className="text-xs font-bold text-slate-500 mb-1.5 sm:mb-2 block">Start Date</Label>
+                                    <div className="relative">
+                                      <Input
+                                        type="date"
+                                        value={selected.startDate || ""}
+                                        onChange={(e) => {
+                                          e.preventDefault();
+                                          const value = e.target.value;
+                                          if (value) {
+                                            updateFacilityDates(facility.name, 'startDate', value);
+                                          }
+                                        }}
+                                        onBlur={(e) => {
+                                          const value = e.target.value;
+                                          if (value) {
+                                            updateFacilityDates(facility.name, 'startDate', value);
+                                          }
+                                        }}
+                                        min={formData.visit_date || new Date().toISOString().split('T')[0]}
+                                        className="h-12 sm:h-14 rounded-lg sm:rounded-xl border-2 text-sm w-full cursor-pointer bg-white"
+                                        style={{ borderColor: COLORS.TEAL }}
+                                      />
+                                      <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                    </div>
+                                    {selected.startDate && (
+                                      <p className="text-xs text-slate-600 mt-1 font-medium">
+                                        {new Date(selected.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                      </p>
+                                    )}
                                   </div>
                                   <div>
-                                    <Label className="text-xs font-bold text-slate-500 mb-1.5 sm:mb-2 block">End</Label>
-                                    <Input
-                                      type="date"
-                                      value={selected.endDate || ""}
-                                      onChange={(e) => updateFacilityDates(facility.name, 'endDate', e.target.value)}
-                                      min={selected.startDate || formData.visit_date || new Date().toISOString().split('T')[0]}
-                                      className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-2 text-sm"
-                                      style={{ borderColor: COLORS.TEAL }}
-                                    />
+                                    <Label className="text-xs font-bold text-slate-500 mb-1.5 sm:mb-2 block">End Date</Label>
+                                    <div className="relative">
+                                      <Input
+                                        type="date"
+                                        value={selected.endDate || ""}
+                                        onChange={(e) => {
+                                          e.preventDefault();
+                                          const value = e.target.value;
+                                          if (value) {
+                                            updateFacilityDates(facility.name, 'endDate', value);
+                                          }
+                                        }}
+                                        onBlur={(e) => {
+                                          const value = e.target.value;
+                                          if (value) {
+                                            updateFacilityDates(facility.name, 'endDate', value);
+                                          }
+                                        }}
+                                        min={selected.startDate || formData.visit_date || new Date().toISOString().split('T')[0]}
+                                        className="h-12 sm:h-14 rounded-lg sm:rounded-xl border-2 text-sm w-full cursor-pointer bg-white"
+                                        style={{ borderColor: COLORS.TEAL }}
+                                      />
+                                      <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                    </div>
+                                    {selected.endDate && (
+                                      <p className="text-xs text-slate-600 mt-1 font-medium">
+                                        {new Date(selected.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
 

@@ -336,7 +336,45 @@ const AdventurePlaceDetail = () => {
               )}
             </section>
 
-            {/* Mobile Booking Card */}
+            {/* Amenities */}
+            {place.amenities?.length > 0 && (
+              <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                <div className="flex items-center gap-2 mb-4">
+                  <ShieldCheck className="h-5 w-5 text-red-600" />
+                  <h2 className="text-sm font-black uppercase tracking-widest text-red-600">Amenities</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(Array.isArray(place.amenities) ? place.amenities : []).map((amenity: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 p-3 bg-red-50/50 rounded-xl border border-red-100">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      <span className="text-[10px] font-black uppercase text-red-700 truncate">{typeof amenity === 'string' ? amenity : amenity.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Facilities with Images */}
+            {place.facilities?.length > 0 && (
+              <FacilitiesGrid 
+                facilities={place.facilities} 
+                itemId={place.id} 
+                itemType="adventure_place"
+                accentColor="#008080"
+              />
+            )}
+
+            {/* Activities with Images */}
+            {place.activities?.length > 0 && (
+              <ActivitiesGrid 
+                activities={place.activities} 
+                itemId={place.id} 
+                itemType="adventure_place"
+                accentColor="#FF7F50"
+              />
+            )}
+
+            {/* Mobile Booking Card - Below Activities */}
             <div className="bg-white rounded-[32px] p-6 shadow-xl border border-slate-100 lg:hidden">
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -389,44 +427,6 @@ const AdventurePlaceDetail = () => {
                 />
               </div>
             </div>
-
-            {/* Amenities */}
-            {place.amenities?.length > 0 && (
-              <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-2 mb-4">
-                  <ShieldCheck className="h-5 w-5 text-red-600" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-red-600">Amenities</h2>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {(Array.isArray(place.amenities) ? place.amenities : []).map((amenity: any, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 p-3 bg-red-50/50 rounded-xl border border-red-100">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      <span className="text-[10px] font-black uppercase text-red-700 truncate">{typeof amenity === 'string' ? amenity : amenity.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Facilities with Images */}
-            {place.facilities?.length > 0 && (
-              <FacilitiesGrid 
-                facilities={place.facilities} 
-                itemId={place.id} 
-                itemType="adventure_place"
-                accentColor="#008080"
-              />
-            )}
-
-            {/* Activities with Images */}
-            {place.activities?.length > 0 && (
-              <ActivitiesGrid 
-                activities={place.activities} 
-                itemId={place.id} 
-                itemType="adventure_place"
-                accentColor="#FF7F50"
-              />
-            )}
           </div>
 
           {/* Desktop Sidebar */}

@@ -287,18 +287,26 @@ export const ReviewStep = ({ type, data, creatorName, creatorEmail, creatorPhone
 
       {/* Amenities */}
       {data.amenities && data.amenities.length > 0 && (
-        <Section title={`Amenities (${data.amenities.length})`} icon={CheckCircle2}>
-          <div className="col-span-2 flex flex-wrap gap-2">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-emerald-50">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            </div>
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">
+              Amenities ({data.amenities.length})
+            </h4>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
             {data.amenities.map((amenity, i) => (
-              <span 
-                key={i}
-                className="inline-flex px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600"
-              >
-                {typeof amenity === 'string' ? amenity : amenity.name}
-              </span>
+              <div key={i} className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                <span className="text-sm text-slate-700 font-medium">
+                  {typeof amenity === 'string' ? amenity : amenity.name}
+                </span>
+              </div>
             ))}
           </div>
-        </Section>
+        </div>
       )}
 
       {/* Contact Info - Item Phone/Email */}
