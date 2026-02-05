@@ -40,7 +40,7 @@ const CategoryDetail = () => {
     trips: { title: "Trips", tables: ["trips"], type: "TRIP", tripType: "trip", filterType: "trips-events" },
     events: { title: "Events", tables: ["trips"], type: "EVENT", tripType: "event", filterType: "trips-events" },
     hotels: { title: "Hotels", tables: ["hotels"], type: "HOTEL", filterType: "hotels" },
-    adventure: { title: "Attractions", tables: ["attractions"], type: "ATTRACTION", filterType: "adventure" },
+    adventure: { title: "Attractions", tables: ["adventure_places"], type: "ATTRACTION", filterType: "adventure" },
     campsite: { title: "Campsite & Experience", tables: ["adventure_places"], type: "ADVENTURE PLACE", filterType: "adventure" },
     accommodation: { title: "Accommodation", tables: ["hotels"], type: "HOTEL", filterType: "accommodation", establishmentType: "accommodation_only" }
   };
