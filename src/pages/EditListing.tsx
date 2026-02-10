@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
@@ -56,6 +57,7 @@ const EditListing = () => {
   const { itemType: type, id } = useParams<{ itemType: string; id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const goBack = useSafeBack("/my-listing");
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -630,7 +632,7 @@ const EditListing = () => {
       <main className="container px-4 py-8 max-w-7xl mx-auto">
         <Button
           variant="ghost"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="mb-4 text-[#008080] hover:bg-[#008080]/10"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { supabase } from "@/integrations/supabase/client";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const TripDetail = () => {
   const { slug } = useParams();
   const id = slug ? extractIdFromSlug(slug) : null;
   const navigate = useNavigate();
+  const goBack = useSafeBack();
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -61,7 +63,7 @@ const TripDetail = () => {
     try {
       const { data, error } = await supabase
         .from("trips")
-        .select("id,name,location,place,country,image_url,gallery_images,images,date,is_custom_date,price,price_child,available_tickets,description,activities,phone_number,email,created_by,opening_hours,closing_hours,days_opened")
+        .select("id,name,location,place,country,image_url,gallery_images,images,date,is_custom_date,price,price_child,available_tickets,description,activities,phone_number,email,created_by,opening_hours,closing_hours,days_opened,map_link,is_flexible_date")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -92,8 +94,12 @@ const TripDetail = () => {
   };
 
   const openInMaps = () => {
-    const query = encodeURIComponent(`${trip?.name}, ${trip?.location}`);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+    if (trip?.map_link) {
+      window.open(trip.map_link, "_blank");
+    } else {
+      const query = encodeURIComponent(`${trip?.name}, ${trip?.location}`);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+    }
   };
 
   const { submitBooking } = useBookingSubmit();
@@ -235,7 +241,7 @@ const TripDetail = () => {
           {/* Action Buttons - Overlaid on Gallery */}
           <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center">
             <Button 
-              onClick={() => navigate(-1)} 
+              onClick={goBack} 
               className="rounded-full w-10 h-10 p-0 border-none bg-white/90 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg transition-all"
             >
               <ArrowLeft className="h-5 w-5" />

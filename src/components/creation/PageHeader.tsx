@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 // Standardizing colors to match your theme
 const COLORS = {
@@ -23,6 +24,7 @@ export const PageHeader = ({
   backgroundImage
 }: PageHeaderProps) => {
   const navigate = useNavigate();
+  const goBack = useSafeBack();
 
   // STYLED WITH BACKGROUND IMAGE
   if (backgroundImage) {
@@ -46,7 +48,7 @@ export const PageHeader = ({
 
         {showBackButton && (
           <Button
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="absolute top-6 left-6 rounded-full bg-black/30 backdrop-blur-md text-white border-none hover:bg-black/50 transition-all active:scale-95"
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
@@ -74,7 +76,7 @@ export const PageHeader = ({
         {showBackButton && (
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="group flex flex-col h-auto py-2 px-4 bg-[#008080]/5 text-[#008080] rounded-2xl hover:bg-[#008080]/10 transition-all"
           >
             <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />

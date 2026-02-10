@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
 import { MapPin, Share2, Heart, Calendar, Copy, CheckCircle2, ArrowLeft, Star, Phone, Mail, Clock, Users } from "lucide-react";
@@ -49,6 +50,7 @@ const EventDetail = () => {
   const { slug } = useParams();
   const id = slug ? extractIdFromSlug(slug) : null;
   const navigate = useNavigate();
+  const goBack = useSafeBack();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -73,14 +75,14 @@ const EventDetail = () => {
     try {
       let { data, error } = await supabase
         .from("trips")
-        .select("id,name,location,place,country,image_url,gallery_images,images,date,is_custom_date,price,price_child,available_tickets,description,activities,phone_number,email,created_by,type,opening_hours,closing_hours,days_opened")
+        .select("id,name,location,place,country,image_url,gallery_images,images,date,is_custom_date,price,price_child,available_tickets,description,activities,phone_number,email,created_by,type,opening_hours,closing_hours,days_opened,map_link,is_flexible_date")
         .eq("id", id)
         .eq("type", "event")
         .single();
       if (error && id.length === 8) {
         const { data: prefixData, error: prefixError } = await supabase
           .from("trips")
-          .select("id,name,location,place,country,image_url,gallery_images,images,date,is_custom_date,price,price_child,available_tickets,description,activities,phone_number,email,created_by,type,opening_hours,closing_hours,days_opened")
+          .select("id,name,location,place,country,image_url,gallery_images,images,date,is_custom_date,price,price_child,available_tickets,description,activities,phone_number,email,created_by,type,opening_hours,closing_hours,days_opened,map_link,is_flexible_date")
           .ilike("id", `${id}%`)
           .eq("type", "event")
           .single();
@@ -163,7 +165,7 @@ const EventDetail = () => {
           {/* Action Buttons - Overlaid on Gallery */}
           <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center">
             <Button 
-              onClick={() => navigate(-1)} 
+              onClick={goBack} 
               className="rounded-full w-10 h-10 p-0 border-none bg-white/90 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg transition-all"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -210,7 +212,7 @@ const EventDetail = () => {
           {/* Action Buttons - Overlaid on Gallery */}
           <div className="absolute top-6 left-6 right-6 z-50 flex justify-between items-center">
             <Button 
-              onClick={() => navigate(-1)} 
+              onClick={goBack} 
               className="rounded-full w-12 h-12 p-0 border-none bg-white/90 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg transition-all"
             >
               <ArrowLeft className="h-6 w-6" />
