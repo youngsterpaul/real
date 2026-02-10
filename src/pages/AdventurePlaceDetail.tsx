@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ const AdventurePlaceDetail = () => {
   const { slug } = useParams();
   const id = slug ? extractIdFromSlug(slug) : null;
   const navigate = useNavigate();
+  const goBack = useSafeBack();
   const { toast } = useToast();
   const { position, requestLocation } = useGeolocation();
   
@@ -169,7 +171,7 @@ const AdventurePlaceDetail = () => {
           {/* Action Buttons - Overlaid on Gallery */}
           <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center">
             <Button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="rounded-full w-10 h-10 p-0 border-none bg-white/90 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg transition-all"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -225,7 +227,7 @@ const AdventurePlaceDetail = () => {
           {/* Action Buttons - Overlaid on Gallery */}
           <div className="absolute top-6 left-6 right-6 z-50 flex justify-between items-center">
             <Button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="rounded-full w-12 h-12 p-0 border-none bg-white/90 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg transition-all"
             >
               <ArrowLeft className="h-6 w-6" />

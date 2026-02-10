@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ const TOTAL_STEPS = 7;
 
 const CreateTripEvent = () => {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/become-host");
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -242,7 +244,7 @@ const CreateTripEvent = () => {
         <div className="relative rounded-[40px] overflow-hidden mb-8 shadow-2xl h-[200px] md:h-[280px]">
           <img src="/images/category-trips.webp" className="w-full h-full object-cover" alt="Header" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
-            <Button onClick={() => navigate(-1)} className="absolute top-6 left-6 rounded-full bg-white/20 backdrop-blur-md border-none w-10 h-10 p-0 text-white">
+            <Button onClick={goBack} className="absolute top-6 left-6 rounded-full bg-white/20 backdrop-blur-md border-none w-10 h-10 p-0 text-white">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <p className="text-[#FF7F50] font-black uppercase tracking-[0.2em] text-[10px] mb-2">Step {currentStep} of {TOTAL_STEPS}</p>

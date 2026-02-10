@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ const TOTAL_STEPS_ACCOMMODATION = 7; // Same steps, link source removed
 
 const CreateHotel = () => {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/become-host");
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -289,7 +291,7 @@ const CreateHotel = () => {
         <img src="/images/category-hotels.webp" className="w-full h-full object-cover opacity-50" alt="Hotel Header" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#F8F9FA] via-transparent to-transparent" />
         <div className="absolute top-4 left-4">
-          <Button onClick={() => navigate(-1)} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0">
+          <Button onClick={goBack} className="rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>

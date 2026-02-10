@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { Header } from "@/components/Header";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const COLORS = {
 
 const CreateAdventure = () => {
   const navigate = useNavigate();
+  const goBack = useSafeBack("/become-host");
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -249,7 +251,7 @@ const CreateAdventure = () => {
           className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Header"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#F8F9FA] via-transparent to-transparent" />
-        <Button onClick={() => navigate(-1)} className="absolute top-4 left-4 rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0 z-50">
+        <Button onClick={goBack} className="absolute top-4 left-4 rounded-full bg-black/30 backdrop-blur-md text-white border-none w-10 h-10 p-0 z-50">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         

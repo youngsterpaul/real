@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +66,7 @@ interface CheckedInGuest {
 const QRScanner = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const goBack = useSafeBack("/become-host");
   const { toast } = useToast();
   const isOnline = useOnlineStatus();
   const { verifyBookingOffline, saveOfflineScan, cachedHostBookings, getPendingCheckIns, clearSyncedCheckIns } = useOfflineBookings();
@@ -314,7 +316,7 @@ const QRScanner = () => {
     <div className="min-h-screen bg-[#F8F9FA] pb-10">
       {/* Dynamic Header */}
       <div className="bg-white px-6 pt-12 pb-6 rounded-b-[40px] shadow-sm border-b border-slate-100 flex items-center justify-between">
-        <Button onClick={() => navigate(-1)} className="rounded-full bg-slate-100 text-slate-900 border-none w-10 h-10 p-0 hover:bg-slate-200">
+        <Button onClick={goBack} className="rounded-full bg-slate-100 text-slate-900 border-none w-10 h-10 p-0 hover:bg-slate-200">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="text-center">
