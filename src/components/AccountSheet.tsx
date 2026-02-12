@@ -137,7 +137,7 @@ export const AccountSheet = ({ children }: AccountSheetProps) => {
               <Skeleton className="h-20 w-full rounded-[20px]" />
               <Skeleton className="h-20 w-full rounded-[20px]" />
             </div>
-          ) : (
+          ) : ( 
             <div className="space-y-4">
               {/* Menu Sections - Compact spacing */}
               {menuItems.map((section, idx) => {
