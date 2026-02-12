@@ -24,6 +24,7 @@ import { QuickNavigationBar } from "@/components/detail/QuickNavigationBar";
 import { AmenitiesSection } from "@/components/detail/AmenitiesSection";
 import { DetailMapSection } from "@/components/detail/DetailMapSection";
 import { DetailPageSkeleton } from "@/components/detail/DetailPageSkeleton";
+import { ExternalBookingDialog } from "@/components/detail/ExternalBookingDialog";
 
 const HotelDetail = () => {
   const { slug } = useParams();
@@ -37,6 +38,7 @@ const HotelDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isOpenNow, setIsOpenNow] = useState(false);
   const [liveRating, setLiveRating] = useState({ avg: 0, count: 0 });
+  const [showExternalBooking, setShowExternalBooking] = useState(false);
 
   const isAccommodationOnly = hotel?.establishment_type === 'accommodation_only';
 
@@ -434,7 +436,7 @@ const HotelDetail = () => {
               <Button 
                 onClick={() => {
                   if (isAccommodationOnly && hotel.general_booking_link) {
-                    window.open(hotel.general_booking_link, "_blank", "noopener,noreferrer");
+                    setShowExternalBooking(true);
                   } else {
                     navigate(`/booking/hotel/${hotel.id}`);
                   }
@@ -528,7 +530,7 @@ const HotelDetail = () => {
                 <Button 
                   onClick={() => {
                     if (isAccommodationOnly && hotel.general_booking_link) {
-                      window.open(hotel.general_booking_link, "_blank", "noopener,noreferrer");
+                      setShowExternalBooking(true);
                     } else {
                       navigate(`/booking/hotel/${hotel.id}`);
                     }
@@ -626,6 +628,15 @@ const HotelDetail = () => {
         </div>
       </main>
 
+      {/* External Booking Dialog */}
+      {isAccommodationOnly && hotel.general_booking_link && (
+        <ExternalBookingDialog
+          open={showExternalBooking}
+          onOpenChange={setShowExternalBooking}
+          url={hotel.general_booking_link}
+          title={`Reserve — ${hotel.name}`}
+        />
+      )}
     </div>
   );
 };

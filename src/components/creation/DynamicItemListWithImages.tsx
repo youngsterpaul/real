@@ -16,6 +16,7 @@ export interface DynamicItemWithImages {
   images?: string[];
   tempImages?: File[];
   bookingLink?: string;
+  amenities?: string[];
 }
 
 interface DynamicItemListWithImagesProps {
@@ -26,6 +27,7 @@ interface DynamicItemListWithImagesProps {
   showCapacity?: boolean;
   showPrice?: boolean;
   showBookingLink?: boolean;
+  showAmenities?: boolean;
   accentColor?: string;
   maxImages?: number;
   userId?: string;
@@ -39,6 +41,7 @@ export const DynamicItemListWithImages = ({
   showCapacity = false,
   showPrice = true,
   showBookingLink = false,
+  showAmenities = false,
   accentColor = "#008080",
   maxImages = 5,
 }: DynamicItemListWithImagesProps) => {
@@ -51,8 +54,10 @@ export const DynamicItemListWithImages = ({
     capacity: "",
     images: [],
     tempImages: [],
-    bookingLink: ""
+    bookingLink: "",
+    amenities: []
   });
+  const [newAmenity, setNewAmenity] = useState("");
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -124,8 +129,10 @@ export const DynamicItemListWithImages = ({
       capacity: "",
       images: [],
       tempImages: [],
-      bookingLink: ""
+      bookingLink: "",
+      amenities: []
     });
+    setNewAmenity("");
   };
 
   // Auto-save: when user blurs any field, auto-add if all required fields are filled
@@ -139,8 +146,10 @@ export const DynamicItemListWithImages = ({
         capacity: "",
         images: [],
         tempImages: [],
-        bookingLink: ""
+        bookingLink: "",
+        amenities: []
       });
+      setNewAmenity("");
     }
   };
 
@@ -243,6 +252,13 @@ export const DynamicItemListWithImages = ({
                         </span>
                       )}
                     </div>
+                    {showAmenities && item.amenities && item.amenities.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {item.amenities.map((a, ai) => (
+                          <span key={ai} className="text-[9px] bg-emerald-500/10 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{a}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <Button 
                     type="button" 
@@ -361,6 +377,53 @@ export const DynamicItemListWithImages = ({
           />
         )}
 
+        {showAmenities && (
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Amenities for this facility *
+            </Label>
+            <div className="flex flex-wrap gap-1 mb-2">
+              {newItem.amenities?.map((a, ai) => (
+                <span key={ai} className="text-[10px] bg-emerald-500/10 text-emerald-700 px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                  {a}
+                  <button type="button" onClick={() => setNewItem({ ...newItem, amenities: newItem.amenities?.filter((_, i) => i !== ai) })}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newAmenity}
+                onChange={(e) => setNewAmenity(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newAmenity.trim()) {
+                    e.preventDefault();
+                    setNewItem({ ...newItem, amenities: [...(newItem.amenities || []), newAmenity.trim()] });
+                    setNewAmenity("");
+                  }
+                }}
+                placeholder="e.g. WiFi, TV, AC..."
+                className="rounded-xl border-border bg-background h-9 font-bold text-sm flex-1"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (newAmenity.trim()) {
+                    setNewItem({ ...newItem, amenities: [...(newItem.amenities || []), newAmenity.trim()] });
+                    setNewAmenity("");
+                  }
+                }}
+                className="h-9 rounded-xl text-[10px] font-black uppercase"
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Photos (max {maxImages})
@@ -449,6 +512,7 @@ export const formatItemsWithImagesForDB = (items: DynamicItemWithImages[]) => {
     is_free: item.priceType === "free",
     capacity: item.capacity ? parseInt(item.capacity) : null,
     images: item.images || [],
+    amenities: item.amenities || [],
     ...(item.bookingLink ? { bookingLink: item.bookingLink } : {})
   }));
 };
