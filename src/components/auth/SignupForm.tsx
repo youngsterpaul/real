@@ -11,6 +11,26 @@ import { PasswordStrength } from "@/components/ui/password-strength";
 import { generateStrongPassword } from "@/lib/passwordUtils";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
+// Generate friendly user ID from email + 4 random alphanumeric characters
+const generateUserFriendlyId = (email: string): string => {
+  const username = email.split('@')[0];
+  const cleanName = username
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s.-]/g, '')
+    .replace(/[\s.]+/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, 20);
+  
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  return `${cleanName}-${code}`;
+};
+
 type FormErrors = {
   email?: string;
   password?: string;
@@ -35,6 +55,7 @@ export const SignupForm = () => {
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [generatedUserId, setGeneratedUserId] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -75,6 +96,19 @@ export const SignupForm = () => {
     setLoading(true);
 
     try {
+      const friendlyUserId = generateUserFriendlyId(email);
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', friendlyUserId)
+        .single();
+      
+      const finalUserId = existingProfile 
+        ? generateUserFriendlyId(email + Math.random()) 
+        : friendlyUserId;
+
+      setGeneratedUserId(finalUserId);
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -82,6 +116,7 @@ export const SignupForm = () => {
           data: {
             name: name,
             gender: gender,
+            friendly_id: finalUserId,
           },
           emailRedirectTo: `${window.location.origin}/`,
         }
@@ -102,7 +137,8 @@ export const SignupForm = () => {
 
       toast({
         title: "Verification code sent!",
-        description: "Please check your email for the 6-digit verification code.",
+        description: `Your user ID will be: ${finalUserId}. Check your email for the 6-digit code.`,
+        duration: 7000,
       });
 
       setStep('verify');
@@ -139,7 +175,8 @@ export const SignupForm = () => {
 
       toast({
         title: "Email verified!",
-        description: "Your account has been created successfully.",
+        description: `Welcome! Your user ID is: ${generatedUserId}`,
+        duration: 5000,
       });
 
       navigate('/');
@@ -223,6 +260,11 @@ export const SignupForm = () => {
           <p className="text-sm text-muted-foreground">
             We've sent a 6-digit code to <strong>{email}</strong>
           </p>
+          {generatedUserId && (
+            <p className="text-xs font-mono text-primary mt-2 bg-primary/5 py-2 px-3 rounded-lg">
+              Your ID: {generatedUserId}
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -406,18 +448,16 @@ export const SignupForm = () => {
         </div>
       </div>
 
-      {/* Branded Google Button */}
       <button
         type="button"
         onClick={handleGoogleSignup}
         className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-gray-200"
       >
-        {/* Google Multi-Color Brand Bar */}
         <div className="absolute bottom-0 left-0 h-[2px] w-full flex">
-          <div className="h-full w-1/4 bg-[#4285F4]" /> {/* Blue */}
-          <div className="h-full w-1/4 bg-[#EA4335]" /> {/* Red */}
-          <div className="h-full w-1/4 bg-[#FBBC05]" /> {/* Yellow */}
-          <div className="h-full w-1/4 bg-[#34A853]" /> {/* Green */}
+          <div className="h-full w-1/4 bg-[#4285F4]" />
+          <div className="h-full w-1/4 bg-[#EA4335]" />
+          <div className="h-full w-1/4 bg-[#FBBC05]" />
+          <div className="h-full w-1/4 bg-[#34A853]" />
         </div>
 
         <svg className="h-5 w-5" viewBox="0 0 24 24">
