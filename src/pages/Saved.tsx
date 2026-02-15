@@ -95,23 +95,30 @@ const Saved = () => {
 
     const [tripsRes, hotelsRes, adventuresRes] = await Promise.all([
       tripIds.length > 0 
-        ? supabase.from("trips").select("id,name,location,country,image_url,date,price,available_tickets,type").in("id", tripIds)
+        ? supabase.from("trips").select("id,name,location,country,image_url,date,price,available_tickets,type,is_hidden").in("id", tripIds)
         : Promise.resolve({ data: [] }),
       hotelIds.length > 0 
-        ? supabase.from("hotels").select("id,name,location,country,image_url").in("id", hotelIds)
+        ? supabase.from("hotels").select("id,name,location,country,image_url,is_hidden").in("id", hotelIds)
         : Promise.resolve({ data: [] }),
       adventureIds.length > 0 
-        ? supabase.from("adventure_places").select("id,name,location,country,image_url,entry_fee").in("id", adventureIds)
+        ? supabase.from("adventure_places").select("id,name,location,country,image_url,entry_fee,is_hidden").in("id", adventureIds)
         : Promise.resolve({ data: [] }),
     ]);
 
     const itemMap = new Map<string, any>();
     (tripsRes.data || []).forEach((item: any) => {
+      if (item.is_hidden) return; // Skip hidden items
       const savedType = savedData.find(s => s.item_id === item.id)?.item_type || "trip";
       itemMap.set(item.id, { ...item, savedType });
     });
-    (hotelsRes.data || []).forEach((item: any) => itemMap.set(item.id, { ...item, savedType: "hotel" }));
-    (adventuresRes.data || []).forEach((item: any) => itemMap.set(item.id, { ...item, savedType: "adventure_place" }));
+    (hotelsRes.data || []).forEach((item: any) => {
+      if (item.is_hidden) return; // Skip hidden items
+      itemMap.set(item.id, { ...item, savedType: "hotel" });
+    });
+    (adventuresRes.data || []).forEach((item: any) => {
+      if (item.is_hidden) return; // Skip hidden items
+      itemMap.set(item.id, { ...item, savedType: "adventure_place" });
+    });
 
     const items = savedData
       .map(saved => itemMap.get(saved.item_id))

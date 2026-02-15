@@ -16,8 +16,8 @@ export const MobileBottomBar = () => {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
-    { icon: Ticket, label: "Bookings", path: "/bookings" },
-    { icon: Heart, label: "Saved", path: "/saved" },
+    { icon: Ticket, label: "Bookings", path: "/bookings", useSheet: true },
+    { icon: Heart, label: "Saved", path: "/saved", useSheet: false },
   ];
 
   const isProfileActive = false; // Account is now a sheet, never a route

@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ChevronRight, User, Briefcase, CreditCard, Shield, 
   LogOut, UserCog, 
-  CalendarCheck, Settings 
+  CalendarCheck, Settings, LayoutDashboard 
 } from "lucide-react";
 
 const COLORS = {
@@ -77,8 +77,9 @@ export const AccountSheet = ({ children }: AccountSheetProps) => {
   };
 
   const menuItems = [
-    { section: "Host Tools", items: [
+    { section: "Creator Tools", items: [
       { icon: Briefcase, label: "Become a Host", path: "/become-host", show: true },
+      { icon: LayoutDashboard, label: "My Listings", path: "/my-listing", show: true },
       { icon: CalendarCheck, label: "My Host Bookings", path: "/host-bookings", show: true },
     ]},
     { section: "Personal", items: [

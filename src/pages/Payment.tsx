@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useHostVerificationStatus } from "@/hooks/useHostVerificationStatus";
 import { WithdrawalDialog } from "@/components/referral/WithdrawalDialog";
+import { WithdrawalDetailsSection } from "@/components/payment/WithdrawalDetailsSection";
 import { Badge } from "@/components/ui/badge";
 
 export default function Payment() {
@@ -151,6 +152,9 @@ export default function Payment() {
             </Button>
           </div>
         </div>
+
+        {/* Withdrawal Details */}
+        <WithdrawalDetailsSection userId={user?.id || ""} />
 
         {/* Host Earnings Breakdown */}
         <div className="mb-3">

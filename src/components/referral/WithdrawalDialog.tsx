@@ -36,13 +36,30 @@ export const WithdrawalDialog = ({
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
+  const [detailsLoaded, setDetailsLoaded] = useState(false);
+
+  // Pre-fill from saved withdrawal details
+  useState(() => {
+    const loadDetails = async () => {
+      const [bankRes, profileRes] = await Promise.all([
+        supabase.from("bank_details").select("bank_name, account_number, account_holder_name").eq("user_id", userId).maybeSingle(),
+        supabase.from("profiles").select("phone_number").eq("id", userId).single(),
+      ]);
+      if (bankRes.data) {
+        setBankCode(bankRes.data.bank_name || "");
+        setAccountNumber(bankRes.data.account_number || "");
+        setAccountName(bankRes.data.account_holder_name || "");
+      }
+      if (profileRes.data?.phone_number) {
+        setMpesaNumber(profileRes.data.phone_number);
+      }
+      setDetailsLoaded(true);
+    };
+    loadDetails();
+  });
 
   const resetForm = () => {
     setWithdrawAmount("");
-    setMpesaNumber("");
-    setBankCode("");
-    setAccountNumber("");
-    setAccountName("");
     setWithdrawMethod("mpesa");
   };
 
