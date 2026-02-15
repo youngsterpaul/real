@@ -89,11 +89,11 @@ export const FacilityImageCard = ({
               </div>
             </div>
             
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <Button
                 size="sm"
                 onClick={handleReserve}
-                className="h-8 text-[10px] font-black uppercase tracking-wider rounded-lg flex-1"
+                className="h-8 text-[10px] font-black uppercase tracking-wider rounded-lg flex-1 min-w-[100px]"
                 style={{ backgroundColor: accentColor }}
               >
                 <Calendar className="h-3 w-3 mr-1" />
@@ -104,7 +104,7 @@ export const FacilityImageCard = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setShowAmenities(true)}
-                  className="h-8 text-[10px] font-black uppercase tracking-wider rounded-lg"
+                  className="h-8 text-[10px] font-black uppercase tracking-wider rounded-lg whitespace-nowrap"
                 >
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Amenities

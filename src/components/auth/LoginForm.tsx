@@ -57,10 +57,18 @@ export const LoginForm = () => {
       description: "Please wait while we redirect you",
     });
     const redirectUrl = `${window.location.origin}/`;
+    
+    // Check if mobile/PWA - try popup mode to avoid full page redirect
+    const isMobile = window.innerWidth < 768;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: redirectUrl,
+        skipBrowserRedirect: isMobile,
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     });
 

@@ -1,7 +1,6 @@
-import { useState, useCallback } from "react";
-import { Loader2, ExternalLink } from "lucide-react";
+import { useCallback } from "react";
+import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 
 interface ExternalBookingButtonProps {
   url: string;
@@ -11,38 +10,22 @@ interface ExternalBookingButtonProps {
 }
 
 export const ExternalBookingButton = ({ url, title = "Reserve Now", className, children }: ExternalBookingButtonProps) => {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   const handleClick = useCallback(() => {
-    setLoading(true);
-    toast({ title: "Opening booking page...", description: "Redirecting to external site." });
-    
-    // Small delay for spinner visibility, then open
-    setTimeout(() => {
-      window.open(url, "_blank", "noopener,noreferrer");
-      setLoading(false);
-    }, 800);
-  }, [url, toast]);
+    // Open instantly - no delay to avoid white blank page
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [url]);
 
   return (
     <Button
       onClick={handleClick}
-      disabled={loading}
       className={className}
     >
-      {loading ? (
+      {children || (
         <>
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Opening...
+          <ExternalLink className="h-4 w-4 mr-2" />
+          {title}
         </>
-      ) : (
-        children || (
-          <>
-            <ExternalLink className="h-4 w-4 mr-2" />
-            {title}
-          </>
-        )
       )}
     </Button>
   );
