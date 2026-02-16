@@ -216,7 +216,7 @@ const FacilityBuilder = ({ items, onChange, showErrors, onValidationFail }: Faci
                 <p className="font-black text-sm text-slate-800 truncate">{item.name}</p>
                 <p className="text-[11px] text-slate-500 truncate">{item.amenities.join(", ")}</p>
                 <div className="flex gap-3 mt-0.5">
-                  {item.capacity && <p className="text-[11px] text-slate-400">Cap: {item.capacity}</p>}
+                  {item.capacity && <p className="text-[11px] text-slate-400">Capacity: {item.capacity}</p>}
                   {item.price && <p className="text-[11px] font-bold text-[#FF7F50]">KSh {item.price}</p>}
                 </div>
               </div>
@@ -251,9 +251,13 @@ const FacilityBuilder = ({ items, onChange, showErrors, onValidationFail }: Faci
 
               {/* Row 2: Capacity */}
               <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Capacity *</Label>
-                <Input value={item.capacity} onChange={(e) => update(item.id, { capacity: e.target.value })}
-                  placeholder="e.g. 20 people, 5 tents"
+                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Capacity * <span className="text-slate-300 normal-case font-normal">(number of people)</span></Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={item.capacity}
+                  onChange={(e) => update(item.id, { capacity: e.target.value.replace(/[^0-9]/g, "") })}
+                  placeholder="e.g. 20"
                   className={cn("rounded-xl h-10 font-bold text-sm", showErrors && !item.capacity.trim() && "border-red-500 bg-red-50")} />
               </div>
 
@@ -615,8 +619,8 @@ const CreateAdventure = () => {
       const facilitiesForDB = await Promise.all(
         facilities.map(async (fac) => ({
           name: fac.name,
-          amenities: fac.amenities,           // array of strings
-          capacity: fac.capacity,
+          amenities: fac.amenities,
+          capacity: fac.capacity ? parseInt(fac.capacity, 10) || 0 : 0,
           price: fac.price ? parseFloat(fac.price) || 0 : 0,
           images: await Promise.all(fac.images.map((f) => uploadFile(f, "fac"))),
         }))
@@ -875,4 +879,4 @@ const CreateAdventure = () => {
   );
 };
 
-export default CreateAdventure;
+export default CreateAdventure;1
