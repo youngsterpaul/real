@@ -57,69 +57,18 @@ export const LoginForm = () => {
       description: "Please wait while we redirect you",
     });
     const redirectUrl = `${window.location.origin}/`;
-    
-    // On mobile, try to open Google auth in a smaller popup window
-    const isMobile = window.innerWidth < 768;
-    
-    if (isMobile) {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: true,
-          queryParams: { prompt: 'select_account' },
-        },
-      });
-      
-      if (error) {
-        setLoading(false);
-        toast({ title: "Google login failed", description: error.message, variant: "destructive" });
-        return;
-      }
-      
-      if (data?.url) {
-        // Open in a centered popup window instead of full redirect
-        const width = 500;
-        const height = 600;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
-        const popup = window.open(
-          data.url,
-          'google-auth',
-          `width=${width},height=${height},top=${top},left=${left},toolbar=no,menubar=no`
-        );
-        
-        // If popup blocked, fall back to redirect
-        if (!popup || popup.closed) {
-          window.location.href = data.url;
-        } else {
-          // Poll for popup close to refresh auth state
-          const interval = setInterval(async () => {
-            if (popup.closed) {
-              clearInterval(interval);
-              setLoading(false);
-              // Check if user signed in
-              const { data: session } = await supabase.auth.getSession();
-              if (session?.session) {
-                navigate("/");
-              }
-            }
-          }, 500);
-        }
-      }
-    } else {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: { prompt: 'select_account' },
-        },
-      });
 
-      if (error) {
-        setLoading(false);
-        toast({ title: "Google login failed", description: error.message, variant: "destructive" });
-      }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+
+    if (error) {
+      setLoading(false);
+      toast({ title: "Google login failed", description: error.message, variant: "destructive" });
     }
   };
 
