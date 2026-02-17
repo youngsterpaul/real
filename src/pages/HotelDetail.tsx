@@ -39,7 +39,8 @@ const HotelDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isOpenNow, setIsOpenNow] = useState(false);
   const [liveRating, setLiveRating] = useState({ avg: 0, count: 0 });
-  const [showExternalBooking, setShowExternalBooking] = useState(false); // kept for state but opens new tab now
+  const [showExternalBooking, setShowExternalBooking] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const isAccommodationOnly = hotel?.establishment_type === 'accommodation_only';
 
@@ -81,6 +82,12 @@ const HotelDetail = () => {
     requestLocation();
     window.scrollTo(0, 0);
   }, [id, slug]);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 300);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!hotel) return;
@@ -186,6 +193,34 @@ const HotelDetail = () => {
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
       {/* Header - All Screens */}
       <Header showSearchIcon={false} />
+
+      {/* Sticky Scroll Bar */}
+      <div
+        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300"
+        style={{
+          transform: scrolled ? "translateY(0)" : "translateY(-100%)",
+          opacity: scrolled ? 1 : 0,
+          pointerEvents: scrolled ? "auto" : "none",
+        }}
+      >
+        <Button
+          onClick={goBack}
+          className="rounded-full w-9 h-9 p-0 border-none bg-slate-100 text-slate-900 hover:bg-slate-200 shadow-none transition-all flex-shrink-0"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-black uppercase tracking-tight text-slate-800 truncate mx-3 flex-1 text-center">
+          {hotel.name}
+        </span>
+        <Button
+          onClick={() => id && handleSaveItem(id, "hotel")}
+          className={`rounded-full w-9 h-9 p-0 border-none shadow-none transition-all flex-shrink-0 ${
+            isSaved ? "bg-red-500 hover:bg-red-600" : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+          }`}
+        >
+          <Heart className={`h-4 w-4 ${isSaved ? "fill-white text-white" : "text-slate-900"}`} />
+        </Button>
+      </div>
 
       {/* HERO / IMAGE GALLERY */}
       <div className="max-w-6xl mx-auto md:px-4 md:pt-3">
@@ -377,8 +412,6 @@ z
 
             {/* General Facilities with Icons */}
             <GeneralFacilitiesDisplay facilityIds={hotel.amenities || []} />
-
-            {/* Link Source Attribution removed for accommodation only per requirement */}
 
             {/* Facilities & Pricing with Images */}
             {hotel.facilities?.length > 0 && (

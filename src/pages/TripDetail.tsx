@@ -2,230 +2,184 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { supabase } from "@/integrations/supabase/client";
-import { MobileBottomBar } from "@/components/MobileBottomBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Phone, Share2, Mail, Clock, ArrowLeft, Heart, Copy, Star, Zap, Calendar, Users } from "lucide-react";
+import { 
+  MapPin, Clock, ArrowLeft, 
+  Heart, Star, Circle, Calendar, Loader2, Share2, Copy, Navigation, AlertCircle, Phone, Mail
+} from "lucide-react";
 import { SimilarItems } from "@/components/SimilarItems";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { ReviewSection } from "@/components/ReviewSection";
+import { FacilitiesGrid, ActivitiesGrid } from "@/components/detail/FacilityActivityCards";
 import { useSavedItems } from "@/hooks/useSavedItems";
-import { useAuth } from "@/contexts/AuthContext";
-import { generateReferralLink, trackReferralClick } from "@/lib/referralUtils";
-import { useBookingSubmit, BookingFormData } from "@/hooks/useBookingSubmit";
 import { extractIdFromSlug } from "@/lib/slugUtils";
-import { useRealtimeItemAvailability } from "@/hooks/useRealtimeBookings";
+import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
+import { trackReferralClick, generateReferralLink } from "@/lib/referralUtils";
 import { Header } from "@/components/Header";
 import { ImageGalleryModal } from "@/components/detail/ImageGalleryModal";
+import { QuickNavigationBar } from "@/components/detail/QuickNavigationBar";
+// AmenitiesSection removed - using only GeneralFacilitiesDisplay with icons
+import { GeneralFacilitiesDisplay } from "@/components/detail/GeneralFacilitiesDisplay";
 import { DetailMapSection } from "@/components/detail/DetailMapSection";
 import { DetailPageSkeleton } from "@/components/detail/DetailPageSkeleton";
 
-const COLORS = {
-  TEAL: "#008080",
-  CORAL: "#FF7F50",
-  CORAL_LIGHT: "#FF9E7A",
-  KHAKI: "#F0E68C",
-  KHAKI_DARK: "#857F3E",
-  RED: "#FF0000",
-  ORANGE: "#FF9800",
-  SOFT_GRAY: "#F8F9FA"
-};
-
-const TripDetail = () => {
+const AdventurePlaceDetail = () => {
   const { slug } = useParams();
   const id = slug ? extractIdFromSlug(slug) : null;
   const navigate = useNavigate();
   const goBack = useSafeBack();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { position, requestLocation } = useGeolocation();
   
-  const [trip, setTrip] = useState<any | null>(null);
+  const [place, setPlace] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [isOpenNow, setIsOpenNow] = useState(false);
+  const [liveRating, setLiveRating] = useState({ avg: 0, count: 0 });
+  const [scrolled, setScrolled] = useState(false);
+
   const { savedItems, handleSave: handleSaveItem } = useSavedItems();
   const isSaved = savedItems.has(id || "");
 
+  const distance = position && place?.latitude && place?.longitude
+    ? calculateDistance(position.latitude, position.longitude, place.latitude, place.longitude)
+    : undefined;
+
+  const getStartingPrice = () => {
+    if (!place) return 0;
+    const prices: number[] = [];
+    if (place.entry_fee) prices.push(Number(place.entry_fee));
+    
+    const extractPrices = (arr: any[]) => {
+      if (!Array.isArray(arr)) return;
+      arr.forEach((item) => {
+        const p = typeof item === 'object' ? item.price : null;
+        if (p) prices.push(Number(p));
+      });
+    };
+
+    extractPrices(place.facilities);
+    extractPrices(place.activities);
+    return prices.length > 0 ? Math.min(...prices) : 0;
+  };
+
+  const startingPrice = getStartingPrice();
+
   useEffect(() => {
-    window.scrollTo(0, 0);
-    if (id) fetchTrip();
+    if (id) {
+      Promise.all([fetchPlace(), fetchLiveRating()]);
+    }
     const urlParams = new URLSearchParams(window.location.search);
     const refSlug = urlParams.get("ref");
-    if (refSlug && id) trackReferralClick(refSlug, id, "trip", "booking");
-  }, [id]);
+    if (refSlug && id) trackReferralClick(refSlug, id, "adventure_place", "booking");
+    requestLocation();
+    window.scrollTo(0, 0);
+  }, [id, slug]);
 
-  const fetchTrip = async () => {
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 300);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!place) return;
+    const checkOpenStatus = () => {
+      const now = new Date();
+      const currentDay = now.toLocaleString('en-us', { weekday: 'long' }).toLowerCase();
+      
+      // Check if open 24 hours
+      if (place.opening_hours === "00:00" && place.closing_hours === "23:59") {
+        const days = Array.isArray(place.days_opened) 
+          ? place.days_opened.map((d: string) => d.toLowerCase()) 
+          : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+        setIsOpenNow(days.includes(currentDay));
+        return;
+      }
+
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      
+      const parseTime = (timeStr: string) => {
+        if (!timeStr) return 0;
+        const [time, modifier] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+      };
+
+      const openTime = parseTime(place.opening_hours || "08:00 AM");
+      const closeTime = parseTime(place.closing_hours || "06:00 PM");
+      const days = Array.isArray(place.days_opened) 
+        ? place.days_opened.map((d: string) => d.toLowerCase()) 
+        : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+      
+      setIsOpenNow(days.includes(currentDay) && currentTime >= openTime && currentTime <= closeTime);
+    };
+    checkOpenStatus();
+    const interval = setInterval(checkOpenStatus, 60000);
+    return () => clearInterval(interval);
+  }, [place]);
+
+  const fetchPlace = async () => {
     if (!id) return;
     try {
       const { data, error } = await supabase
-        .from("trips")
-        .select("id,name,location,place,country,image_url,gallery_images,images,date,is_custom_date,price,price_child,available_tickets,description,activities,phone_number,email,created_by,opening_hours,closing_hours,days_opened,map_link,is_flexible_date")
+        .from("adventure_places")
+        .select("*")
         .eq("id", id)
         .single();
       if (error) throw error;
-      setTrip(data);
+      setPlace(data);
     } catch (error) {
-      toast({ title: "Trip not found", variant: "destructive" });
+      toast({ title: "Place not found", variant: "destructive" });
+      navigate('/');
     } finally { setLoading(false); }
   };
 
-  const handleSave = () => id && handleSaveItem(id, "trip");
-  
-  const handleCopyLink = async () => {
-    toast({ title: "Copying link..." });
-    const refLink = await generateReferralLink(trip.id, "trip", trip.id);
-    await navigator.clipboard.writeText(refLink);
-    toast({ title: "Link Copied!" });
-  };
-
-  const handleShare = async () => {
-    toast({ title: "Preparing share..." });
-    const refLink = await generateReferralLink(trip.id, "trip", trip.id);
-    if (navigator.share) {
-      try { await navigator.share({ title: trip.name, url: refLink }); } catch (e) {}
-    } else { 
-      await navigator.clipboard.writeText(refLink);
-      toast({ title: "Link Copied!" });
+  const fetchLiveRating = async () => {
+    if (!id) return;
+    const { data } = await supabase.from("reviews").select("rating").eq("item_id", id).eq("item_type", "adventure_place");
+    if (data && data.length > 0) {
+      const avg = data.reduce((acc, curr) => acc + curr.rating, 0) / data.length;
+      setLiveRating({ avg: parseFloat(avg.toFixed(1)), count: data.length });
     }
   };
-
-  const openInMaps = () => {
-    if (trip?.map_link) {
-      window.open(trip.map_link, "_blank");
-    } else {
-      const query = encodeURIComponent(`${trip?.name}, ${trip?.location}`);
-      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
-    }
-  };
-
-  const { submitBooking } = useBookingSubmit();
-
-  const handleBookingSubmit = async (data: BookingFormData) => {
-    if (!trip) return;
-    setIsProcessing(true);
-    try {
-      const totalAmount = (data.num_adults * trip.price) + (data.num_children * (trip.price_child || 0));
-      await submitBooking({
-        itemId: trip.id, itemName: trip.name, bookingType: 'trip', totalAmount,
-        slotsBooked: data.num_adults + data.num_children, visitDate: data.visit_date,
-        guestName: data.guest_name, guestEmail: data.guest_email, guestPhone: data.guest_phone,
-        hostId: trip.created_by, bookingDetails: { ...data, trip_name: trip.name }
-      });
-      setIsCompleted(true);
-      setBookingOpen(false);
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally { setIsProcessing(false); }
-  };
-
-  const { remainingSlots, isSoldOut } = useRealtimeItemAvailability(id || undefined, trip?.available_tickets || 0);
 
   if (loading) return <DetailPageSkeleton />;
-  if (!trip) return null;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tripDate = trip.date ? new Date(trip.date) : null;
-  const isExpired = !trip.is_custom_date && tripDate && tripDate < today;
-  const canBook = !isExpired && !isSoldOut;
-  const allImages = [trip.image_url, ...(trip.gallery_images || []), ...(trip.images || [])].filter(Boolean);
+  if (!place) return null;
 
-  const BookingCard = () => (
-    <div className="bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100 lg:sticky lg:top-24">
-      {/* Price + slots badge */}
-      <div className="flex justify-between items-end mb-8">
-        <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Price</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black" style={{ color: COLORS.RED }}>KSh {trip.price}</span>
-            <span className="text-slate-400 text-[10px] font-bold uppercase">/ adult</span>
-          </div>
+  // Collect all images: gallery + facility images + activity images
+  const facilityImages = (Array.isArray(place.facilities) ? place.facilities : [])
+    .flatMap((f: any) => (Array.isArray(f.images) ? f.images : []));
+  const activityImages = (Array.isArray(place.activities) ? place.activities : [])
+    .flatMap((a: any) => (Array.isArray(a.images) ? a.images : []));
+  const allImages = [place.image_url, ...(place.gallery_images || []), ...facilityImages, ...activityImages].filter(Boolean);
+
+  const is24Hours = place.opening_hours === "00:00" && place.closing_hours === "23:59";
+
+  const OperatingHoursInfo = () => (
+    <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-slate-400">
+          <Clock className="h-4 w-4 text-teal-600" />
+          <span className="text-[10px] font-black uppercase tracking-tight">Working Hours</span>
         </div>
-        <div className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 flex items-center gap-2">
-          <Clock className="h-4 w-4" style={{ color: COLORS.TEAL }} />
-          <span className={`text-xs font-black uppercase ${isSoldOut ? "text-red-500" : "text-slate-600"}`}>
-            {isSoldOut ? "Full" : `${remainingSlots} Left`}
-          </span>
-        </div>
+        <span className={`text-[10px] font-black uppercase ${isOpenNow ? "text-emerald-600" : "text-red-500"}`}>
+          {is24Hours ? "Open 24 Hours" : `${place.opening_hours || "08:00 AM"} - ${place.closing_hours || "06:00 PM"}`}
+        </span>
       </div>
-
-      {/* Availability bar */}
-      <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-            <Users className="h-3 w-3" /> Booking Availability
-          </span>
-          <span className={`text-[10px] font-black uppercase ${remainingSlots < 5 ? 'text-red-500' : 'text-emerald-600'}`}>
-            {isSoldOut ? "Sold Out" : `${remainingSlots} Tickets Remaining`}
-          </span>
+      <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-100">
+        <div className="flex items-center gap-2 text-slate-400">
+          <Calendar className="h-4 w-4 text-teal-600" />
+          <span className="text-[10px] font-black uppercase tracking-tight">Working Days</span>
         </div>
-        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-           <div 
-            className={`h-full transition-all duration-500 ${remainingSlots < 5 ? 'bg-red-500' : 'bg-emerald-500'}`}
-            style={{ width: `${Math.min((remainingSlots / (trip.available_tickets || 50)) * 100, 100)}%` }}
-           />
-        </div>
-      </div>
-
-      {/* Date + child price */}
-      <div className="space-y-4 mb-8">
-        <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
-          <span className="text-slate-400 flex items-center gap-1"><Calendar className="h-3 w-3" /> Trip Date</span>
-          <span className={isExpired ? "text-red-500" : "text-slate-700"}>
-            {trip.is_custom_date ? "Flexible" : new Date(trip.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-            {isExpired && " (Past)"}
-          </span>
-        </div>
-        <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
-           <span className="text-slate-400">Child Rate</span>
-           <span className="text-slate-700">KSh {trip.price_child || 'N/A'}</span>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <Button 
-        onClick={() => navigate(`/booking/trip/${trip.id}`)}
-        disabled={!canBook}
-        className="w-full py-8 rounded-2xl text-md font-black uppercase tracking-[0.2em] text-white shadow-xl transition-all active:scale-95 border-none mb-6"
-        style={{ 
-            background: !canBook 
-                ? "#cbd5e1" 
-                : `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
-        }}
-      >
-        {isSoldOut ? "Fully Booked" : isExpired ? "Trip Expired" : "Secure My Spot"}
-      </Button>
-
-      {/* Utility buttons */}
-      <div className="grid grid-cols-3 gap-3 mb-8">
-        <UtilityButton icon={<MapPin className="h-5 w-5" />} label="Map" onClick={openInMaps} />
-        <UtilityButton icon={<Copy className="h-5 w-5" />} label="Copy" onClick={handleCopyLink} />
-        <UtilityButton icon={<Share2 className="h-5 w-5" />} label="Share" onClick={handleShare} />
-      </div>
-
-      {/* Contact */}
-      <div className="space-y-4 pt-6 border-t border-slate-50">
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Organizer Contact</h3>
-        {trip.phone_number && (
-          <a href={`tel:${trip.phone_number}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
-            <div className="p-2 rounded-lg bg-slate-50">
-              <Phone className="h-4 w-4 text-[#008080]" />
-            </div>
-            <span className="text-xs font-bold uppercase tracking-tight">{trip.phone_number}</span>
-          </a>
-        )}
-        {trip.email && (
-          <a href={`mailto:${trip.email}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
-            <div className="p-2 rounded-lg bg-slate-50">
-              <Mail className="h-4 w-4 text-[#008080]" />
-            </div>
-            <span className="text-xs font-bold tracking-tight">{trip.email}</span>
-          </a>
-        )}
+        <p className="text-[10px] font-normal leading-tight text-slate-500 lowercase italic">
+          {Array.isArray(place.days_opened) ? place.days_opened.join(", ") : "monday, tuesday, wednesday, thursday, friday, saturday, sunday"}
+        </p>
       </div>
     </div>
   );
@@ -235,20 +189,49 @@ const TripDetail = () => {
       {/* Header - All Screens */}
       <Header showSearchIcon={false} />
 
+      {/* Sticky Scroll Bar */}
+      <div
+        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300"
+        style={{
+          transform: scrolled ? "translateY(0)" : "translateY(-100%)",
+          opacity: scrolled ? 1 : 0,
+          pointerEvents: scrolled ? "auto" : "none",
+        }}
+      >
+        <Button
+          onClick={goBack}
+          className="rounded-full w-9 h-9 p-0 border-none bg-slate-100 text-slate-900 hover:bg-slate-200 shadow-none transition-all flex-shrink-0"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-black uppercase tracking-tight text-slate-800 truncate mx-3 flex-1 text-center">
+          {place.name}
+        </span>
+        <Button
+          onClick={() => id && handleSaveItem(id, "adventure_place")}
+          className={`rounded-full w-9 h-9 p-0 border-none shadow-none transition-all flex-shrink-0 ${
+            isSaved ? "bg-red-500 hover:bg-red-600" : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+          }`}
+        >
+          <Heart className={`h-4 w-4 ${isSaved ? "fill-white text-white" : "text-slate-900"}`} />
+        </Button>
+      </div>
+
       {/* HERO / IMAGE GALLERY */}
       <div className="max-w-6xl mx-auto md:px-4 md:pt-3">
-        <div className="relative w-full overflow-hidden h-[55vh] md:h-[70vh] bg-slate-900 md:rounded-3xl">
+        {/* Mobile Carousel View */}
+        <div className="relative w-full h-[45vh] bg-slate-900 overflow-hidden md:rounded-3xl md:hidden">
           {/* Action Buttons - Overlaid on Gallery */}
           <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center">
-            <Button 
-              onClick={goBack} 
+            <Button
+              onClick={goBack}
               className="rounded-full w-10 h-10 p-0 border-none bg-white/90 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg transition-all"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
 
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={() => id && handleSaveItem(id, "adventure_place")}
               className={`rounded-full w-10 h-10 p-0 border-none shadow-lg backdrop-blur-sm transition-all ${
                 isSaved ? "bg-red-500 hover:bg-red-600" : "bg-white/90 text-slate-900 hover:bg-white"
               }`}
@@ -256,140 +239,410 @@ const TripDetail = () => {
               <Heart className={`h-5 w-5 ${isSaved ? "fill-white text-white" : "text-slate-900"}`} />
             </Button>
           </div>
-          <Carousel plugins={[Autoplay({ delay: 4000 })]} className="w-full h-full p-0">
+          <Carousel plugins={[Autoplay({ delay: 3500 })]} className="w-full h-full">
             <CarouselContent className="h-full ml-0">
-              {allImages.map((img, idx) => (
+              {allImages.length > 0 ? allImages.map((img, idx) => (
                 <CarouselItem key={idx} className="h-full pl-0 basis-full">
-                  <div className="relative h-full w-full">
-                    <img src={img} alt={trip.name} className="w-full h-full object-cover object-center" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent z-10" />
-                  </div>
+                  <img src={img} alt={`${place.name} - ${idx + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent z-10" />
                 </CarouselItem>
-              ))}
+              )) : (
+                <div className="h-full w-full bg-slate-200 flex items-center justify-center text-slate-400 font-black uppercase text-xs">No Image</div>
+              )}
             </CarouselContent>
           </Carousel>
-
-          {/* See All Button - All screens */}
+          {/* Mobile See All Gallery Button */}
           {allImages.length > 1 && (
-            <ImageGalleryModal images={allImages} name={trip.name} />
+            <ImageGalleryModal images={allImages} name={place.name} />
           )}
-          <div className="absolute bottom-6 left-0 z-40 w-full px-4 md:px-8 pointer-events-none">
-            <div className="relative z-10 space-y-2 pointer-events-auto bg-gradient-to-r from-black/70 via-black/50 to-transparent rounded-2xl p-4 max-w-xl">
-              <Button className="bg-[#FF7F50] border-none px-3 py-1 h-auto uppercase font-black tracking-[0.1em] text-[9px] rounded-full shadow-lg text-white">Scheduled Trip</Button>
-              <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white drop-shadow-2xl">{trip.name}</h1>
-              <div className="flex items-center gap-2 group w-fit cursor-pointer" onClick={openInMaps}>
-                <MapPin className="h-4 w-4 text-white" />
-                <span className="text-xs font-bold text-white uppercase tracking-wide">
-                  {[trip.place, trip.location, trip.country].filter(Boolean).join(', ')}
+          <div className="absolute bottom-6 left-0 w-full px-4 z-20">
+            <div className="bg-gradient-to-r from-black/70 via-black/50 to-transparent rounded-2xl p-4 max-w-xl">
+              <div className="flex flex-wrap gap-2 mb-2">
+                <Badge className="bg-amber-400 text-black border-none px-2 py-0.5 text-[9px] font-black uppercase rounded-full flex items-center gap-1 shadow-lg">
+                  <Star className="h-3 w-3 fill-current" />
+                  {liveRating.avg > 0 ? liveRating.avg : "New"}
+                </Badge>
+                <Badge className={`${isOpenNow ? "bg-emerald-500" : "bg-red-500"} text-white border-none px-2 py-0.5 text-[9px] font-black uppercase rounded-full flex items-center gap-1`}>
+                  <Circle className={`h-2 w-2 fill-current ${isOpenNow ? "animate-pulse" : ""}`} />
+                  {isOpenNow ? "open" : "closed"}
+                </Badge>
+              </div>
+              <h1 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-2">{place.name}</h1>
+              <div className="flex items-center gap-1 text-white">
+                <MapPin className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold uppercase truncate">
+                  {[place.place, place.location, place.country].filter(Boolean).join(', ')}
                 </span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 3. MAIN BODY */}
-      <main className="container px-4 max-w-6xl mx-auto -mt-10 relative z-50">
-        <div className="flex flex-col lg:grid lg:grid-cols-[1.7fr,1fr] gap-6">
-          <div className="flex flex-col gap-6">
-            {/* Overview */}
-            <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-              <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>About this Tour</h2>
-              <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{trip.description}</p>
-            </div>
+        {/* Desktop Grid View */}
+        <div className="hidden md:block relative">
+          {/* Action Buttons - Overlaid on Gallery */}
+          <div className="absolute top-6 left-6 right-6 z-50 flex justify-between items-center">
+            <Button
+              onClick={goBack}
+              className="rounded-full w-12 h-12 p-0 border-none bg-white/90 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg transition-all"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
 
-            {/* Operating Hours (flexible trips only) */}
-            {trip.is_custom_date && (trip.opening_hours || trip.days_opened?.length > 0) && (
-              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-xl bg-teal-50"><Clock className="h-5 w-5 text-[#008080]" /></div>
-                  <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Operating Hours</h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
-                    <span className="text-[10px] font-black uppercase text-slate-400">Working Hours</span>
-                    <span className="text-sm font-black text-slate-700">{trip.opening_hours || "08:00"} - {trip.closing_hours || "18:00"}</span>
-                  </div>
-                  {trip.days_opened?.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {trip.days_opened.map((day: string, i: number) => (
-                        <span key={i} className="px-4 py-2 rounded-xl bg-teal-50 text-[10px] font-black uppercase text-[#008080] border border-teal-100">{day}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <Button
+              onClick={() => id && handleSaveItem(id, "adventure_place")}
+              className={`rounded-full w-12 h-12 p-0 border-none shadow-lg backdrop-blur-sm transition-all ${
+                isSaved ? "bg-red-500 hover:bg-red-600" : "bg-white/90 text-slate-900 hover:bg-white"
+              }`}
+            >
+              <Heart className={`h-6 w-6 ${isSaved ? "fill-white text-white" : "text-slate-900"}`} />
+            </Button>
+          </div>
 
-            {/* Booking card — mobile only */}
-            <div className="block lg:hidden">
-              <BookingCard />
-            </div>
-
-            {/* Included Activities */}
-            {trip.activities?.length > 0 && (
-              <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-xl bg-orange-50"><Zap className="h-5 w-5 text-[#FF9800]" /></div>
-                  <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.ORANGE }}>Included Activities</h2>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {trip.activities.map((act: any, i: number) => (
-                    <div key={i} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-orange-50/50 border border-orange-100/50">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#FF9800]" />
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-slate-700 uppercase">{act.name}</span>
-                        <span className="text-[10px] font-bold text-[#FF9800]">{act.price === 0 ? "Included" : `KSh ${act.price}`}</span>
+          {/* Image Grid Layout */}
+          <div className="grid grid-cols-4 gap-2 h-[500px]">
+            {allImages.length > 0 ? (
+              <>
+                {/* Main Large Image - Takes 2 columns and full height */}
+                <div className="col-span-2 row-span-2 rounded-3xl overflow-hidden relative group">
+                  <img 
+                    src={allImages[0]} 
+                    alt={place.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  
+                  {/* Place Info Overlay */}
+                  <div className="absolute bottom-6 left-6 right-6 z-20">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge className="bg-amber-400 text-black border-none px-3 py-1 text-[10px] font-black uppercase rounded-full flex items-center gap-1.5 shadow-lg">
+                          <Star className="h-3.5 w-3.5 fill-current" />
+                          {liveRating.avg > 0 ? liveRating.avg : ""}
+                        </Badge>
+                        <Badge className={`${isOpenNow ? "bg-emerald-500" : "bg-red-500"} text-white border-none px-3 py-1 text-[10px] font-black uppercase rounded-full flex items-center gap-1.5`}>
+                          <Circle className={`h-2.5 w-2.5 fill-current ${isOpenNow ? "animate-pulse" : ""}`} />
+                          {isOpenNow ? "open now" : ""}
+                        </Badge>
                       </div>
+                      <h1 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">{place.name}</h1>
+                      <div className="flex items-center gap-2 text-white">
+                        <MapPin className="h-4 w-4" />
+                        <span className="text-sm font-bold uppercase">
+                          {[place.place, place.location, place.country].filter(Boolean).join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Right Image */}
+                {allImages[1] && (
+                  <div className="col-span-2 rounded-3xl overflow-hidden relative group">
+                    <img 
+                      src={allImages[1]} 
+                      alt={`${place.name} - Gallery 2`}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                )}
+
+                {/* Bottom Right - 3 Small Images */}
+                <div className="col-span-2 grid grid-cols-3 gap-2">
+                  {allImages.slice(2, 5).map((img, idx) => (
+                    <div key={idx} className="rounded-2xl overflow-hidden relative group">
+                      <img 
+                        src={img} 
+                        alt={`${place.name} - Gallery ${idx + 3}`}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
                     </div>
                   ))}
                 </div>
+
+                {/* See All Button */}
+                <ImageGalleryModal images={allImages} name={place.name} />
+              </>
+            ) : (
+              <div className="col-span-4 rounded-3xl bg-slate-200 flex items-center justify-center">
+                <p className="text-slate-400 font-black uppercase text-sm">No Images Available</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Navigation - Mobile Only */}
+      <div className="md:hidden container px-4 mt-4 max-w-6xl mx-auto">
+        <QuickNavigationBar 
+          hasFacilities={place.facilities?.length > 0} 
+          hasActivities={place.activities?.length > 0}
+          hasContact={place.phone_numbers?.length > 0 || !!place.email}
+        />
+      </div>
+
+      {/* 3. MAIN BODY */}
+      <main className="container px-4 mt-6 relative z-30 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.8fr,1fr] gap-4">
+          <div className="space-y-4">
+            {/* Description */}
+            <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+              <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 text-slate-400">About This Property</h2>
+              {place.description ? (
+                <p className="text-slate-500 text-sm leading-relaxed">{place.description}</p>
+              ) : (
+                <div className="flex items-center gap-2 text-slate-300 italic py-4"><AlertCircle className="h-4 w-4" /> Description coming soon</div>
+              )}
+            </section>
+
+            {/* Operating Hours - Mobile Only (below description) */}
+            <div className="md:hidden">
+              <OperatingHoursInfo />
+            </div>
+
+            {/* General Facilities with Icons */}
+            <GeneralFacilitiesDisplay facilityIds={
+              Array.isArray(place.amenities) 
+                ? place.amenities.map((a: any) => typeof a === 'string' ? a : a.name || '') 
+                : []
+            } />
+
+            {/* Facilities with Images */}
+            {place.facilities?.length > 0 && (
+              <div id="facilities-section">
+                <FacilitiesGrid 
+                  facilities={place.facilities} 
+                  itemId={place.id} 
+                  itemType="adventure_place"
+                  accentColor="#008080"
+                />
               </div>
             )}
 
-            {/* Reviews */}
-            <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
-              <ReviewSection itemId={trip.id} itemType="trip" />
+            {/* Activities with Images */}
+            {place.activities?.length > 0 && (
+              <div id="activities-section">
+                <ActivitiesGrid 
+                  activities={place.activities} 
+                  itemId={place.id} 
+                  itemType="adventure_place"
+                  accentColor="#FF7F50"
+                />
+              </div>
+            )}
+
+            {/* Mobile Booking Card - Below Activities */}
+            <div className="bg-white rounded-[32px] p-6 shadow-xl border border-slate-100 lg:hidden">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Starting from</p>
+                  {place.entry_fee && place.entry_fee > 0 ? (
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-black text-red-600">KSh {Number(place.entry_fee).toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">/ adult</span>
+                      </div>
+                      {place.child_entry_fee !== undefined && (
+                        <div className="text-sm font-bold text-slate-500">
+                          Child: KSh {Number(place.child_entry_fee || 0).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-3xl font-black text-emerald-600">Free Entry</span>
+                  )}
+                </div>
+                <div className="text-right">
+                    <div className="flex items-center gap-1 text-amber-500 font-black text-lg">
+                        <Star className="h-4 w-4 fill-current" />
+                        <span>{liveRating.avg || "0"}</span>
+                    </div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase">{liveRating.count} reviews</p>
+                </div>
+              </div>
+              {/* Operating hours removed from mobile price card - now shown below description */}
+              <Button onClick={() => navigate(`/booking/adventure_place/${place.id}`)} className="w-full py-7 rounded-2xl text-md font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-lg transition-all active:scale-95">Book Now</Button>
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <UtilityButton
+                   icon={<Navigation className="h-5 w-5" />}
+                   label="Map"
+                   onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place.name}, ${place.location}`)}`, "_blank")}
+                />
+                <UtilityButton
+                   icon={<Copy className="h-5 w-5" />}
+                   label="Copy"
+                   onClick={async () => {
+                     toast({ title: "Copying link..." });
+                     const refLink = await generateReferralLink(id!, "adventure_place", id!);
+                     await navigator.clipboard.writeText(refLink);
+                     toast({ title: "Link Copied!" });
+                   }}
+                />
+                <UtilityButton
+                   icon={<Share2 className="h-5 w-5" />}
+                   label="Share"
+                   onClick={async () => {
+                     toast({ title: "Preparing share..." });
+                     const refLink = await generateReferralLink(id!, "adventure_place", id!);
+                     if (navigator.share) {
+                       try { await navigator.share({ title: place.name, url: refLink }); } catch (e) {}
+                     } else {
+                       await navigator.clipboard.writeText(refLink);
+                       toast({ title: "Link Copied!" });
+                     }
+                   }}
+                />
+              </div>
+            </div>
+
+            {/* Contact Section - Mobile (for quick nav link) */}
+            <div id="contact-section" className="lg:hidden">
+              {(place.phone_numbers?.length > 0 || place.email) && (
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-3">
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Contact</h3>
+                  {place.phone_numbers?.map((phone: string, idx: number) => (
+                    <a key={idx} href={`tel:${phone}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
+                      <div className="p-2 rounded-lg bg-slate-50">
+                        <Phone className="h-4 w-4 text-[#008080]" />
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-tight">{phone}</span>
+                    </a>
+                  ))}
+                  {place.email && (
+                    <a href={`mailto:${place.email}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
+                      <div className="p-2 rounded-lg bg-slate-50">
+                        <Mail className="h-4 w-4 text-[#008080]" />
+                      </div>
+                      <span className="text-xs font-bold tracking-tight">{place.email}</span>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Booking card — desktop only */}
+          {/* Desktop Sidebar */}
           <div className="hidden lg:block">
-            <BookingCard />
+            <div className="sticky top-24 bg-white rounded-[40px] p-8 shadow-2xl border border-slate-100 space-y-6">
+                <div className="text-center">
+                  <p className="text-xs font-black uppercase text-slate-400 mb-1">Starting from/Entrtace Fee</p>
+                  {place.entry_fee && place.entry_fee > 0 ? (
+                    <div className="space-y-1">
+                      <h3 className="text-4xl font-black text-red-600">KSh {Number(place.entry_fee).toLocaleString()}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">per adult</p>
+                      {place.child_entry_fee !== undefined && (
+                        <p className="text-sm font-bold text-slate-500">
+                          Child: KSh {Number(place.child_entry_fee || 0).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <h3 className="text-4xl font-black text-emerald-600 mb-2">Free Entry</h3>
+                  )}
+                  <div className="flex items-center justify-center gap-1.5 text-amber-500 font-black mt-2">
+                    <Star className="h-4 w-4 fill-current" />
+                    <span className="text-lg">{liveRating.avg || "0"}</span>
+                  </div>
+                </div>
+
+                <OperatingHoursInfo />
+
+                <Button onClick={() => navigate(`/booking/adventure_place/${place.id}`)} className="w-full py-7 rounded-3xl text-lg font-black uppercase tracking-widest bg-gradient-to-r from-[#FF7F50] to-[#FF4E50] border-none shadow-xl transition-all active:scale-95">Reserve Now</Button>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <UtilityButton
+                     icon={<Navigation className="h-5 w-5" />}
+                     label="Map"
+                     onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place.name}, ${place.location}`)}`, "_blank")}
+                  />
+                  <UtilityButton
+                     icon={<Copy className="h-5 w-5" />}
+                     label="Copy"
+                     onClick={async () => {
+                       toast({ title: "Copying link..." });
+                       const refLink = await generateReferralLink(id!, "adventure_place", id!);
+                       await navigator.clipboard.writeText(refLink);
+                       toast({ title: "Link Copied!" });
+                     }}
+                  />
+                  <UtilityButton
+                     icon={<Share2 className="h-5 w-5" />}
+                     label="Share"
+                     onClick={async () => {
+                       toast({ title: "Preparing share..." });
+                       const refLink = await generateReferralLink(id!, "adventure_place", id!);
+                       if (navigator.share) {
+                         try { await navigator.share({ title: place.name, url: refLink }); } catch (e) {}
+                       } else {
+                         await navigator.clipboard.writeText(refLink);
+                         toast({ title: "Link Copied!" });
+                       }
+                     }}
+                  />
+                </div>
+
+                {/* Contact Section */}
+                {(place.phone_numbers?.length > 0 || place.email) && (
+                  <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</h3>
+                    {place.phone_numbers?.map((phone: string, idx: number) => (
+                      <a key={idx} href={`tel:${phone}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
+                        <div className="p-2 rounded-lg bg-slate-50">
+                          <Phone className="h-4 w-4 text-[#008080]" />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-tight">{phone}</span>
+                      </a>
+                    ))}
+                    {place.email && (
+                      <a href={`mailto:${place.email}`} className="flex items-center gap-3 text-slate-600 hover:text-[#008080] transition-colors">
+                        <div className="p-2 rounded-lg bg-slate-50">
+                          <Mail className="h-4 w-4 text-[#008080]" />
+                        </div>
+                        <span className="text-xs font-bold tracking-tight">{place.email}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+            </div>
           </div>
+        </div>
+
+        {/* Review Section */}
+        <div className="mt-12 bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+          <ReviewSection itemId={place.id} itemType="adventure_place" />
         </div>
 
         {/* Map Section */}
         <DetailMapSection
           currentItem={{
-            id: trip.id,
-            name: trip.name,
-            latitude: null,
-            longitude: null,
-            location: trip.location,
-            country: trip.country,
-            image_url: trip.image_url,
-            price: trip.price,
+            id: place.id,
+            name: place.name,
+            latitude: place.latitude,
+            longitude: place.longitude,
+            location: place.location,
+            country: place.country,
+            image_url: place.image_url,
+            entry_fee: place.entry_fee,
           }}
-          itemType="trip"
+          itemType="adventure"
         />
 
-        {/* Similar Items */}
-        <div className="mt-12 lg:mt-16">
-          <SimilarItems currentItemId={trip.id} itemType="trip" country={trip.country} />
-        </div>
+        <SimilarItems currentItemId={place.id} itemType="adventure" country={place.country} />
       </main>
-
-      <MobileBottomBar />
     </div>
   );
 };
 
+// Utility button matching the hotel style
 const UtilityButton = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
-  <Button variant="ghost" onClick={onClick} className="flex-col h-auto py-3 bg-[#F8F9FA] text-slate-500 rounded-2xl hover:bg-slate-100 transition-colors border border-slate-100 flex-1">
+  <Button
+    variant="ghost"
+    onClick={onClick}
+    className="flex-col h-auto py-4 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors flex-1"
+  >
     <div className="mb-1">{icon}</div>
     <span className="text-[10px] font-black uppercase tracking-tighter">{label}</span>
   </Button>
 );
 
-export default TripDetail;
+export default AdventurePlaceDetail;
