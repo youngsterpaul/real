@@ -2,13 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MobileBottomBar } from "@/components/MobileBottomBar";
-import { ListingCard } from "@/components/ListingCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getUserId } from "@/lib/sessionManager";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Trash2, CheckCircle, Bookmark, ArrowRight, Loader2 } from "lucide-react";
+import { Trash2, Bookmark, MapPin, ChevronRight, Loader2, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   AlertDialog,
@@ -23,21 +22,11 @@ import {
 import { useSavedItems } from "@/hooks/useSavedItems";
 import { useAuth } from "@/contexts/AuthContext";
 
-const COLORS = {
-  TEAL: "#008080",
-  CORAL: "#FF7F50",
-  CORAL_LIGHT: "#FF9E7A",
-  KHAKI: "#F0E68C",
-  KHAKI_DARK: "#857F3E",
-  RED: "#FF0000",
-  SOFT_GRAY: "#F8F9FA"
-};
-
 const ITEMS_PER_PAGE = 20;
 
 const Saved = () => {
   const [savedListings, setSavedListings] = useState<any[]>([]);
-  const { savedItems, handleSave } = useSavedItems();
+  const { savedItems } = useSavedItems();
   const { user, loading: authLoading } = useAuth();
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -48,7 +37,6 @@ const Saved = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const { toast } = useToast();
-  const navigate = useNavigate();
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -95,29 +83,28 @@ const Saved = () => {
 
     const [tripsRes, hotelsRes, adventuresRes] = await Promise.all([
       tripIds.length > 0 
-        ? supabase.from("trips").select("id,name,location,country,image_url,date,price,available_tickets,type,is_hidden").in("id", tripIds)
+        ? supabase.from("trips").select("id,name,location,country,image_url,is_hidden").in("id", tripIds)
         : Promise.resolve({ data: [] }),
       hotelIds.length > 0 
         ? supabase.from("hotels").select("id,name,location,country,image_url,is_hidden").in("id", hotelIds)
         : Promise.resolve({ data: [] }),
       adventureIds.length > 0 
-        ? supabase.from("adventure_places").select("id,name,location,country,image_url,entry_fee,is_hidden").in("id", adventureIds)
+        ? supabase.from("adventure_places").select("id,name,location,country,image_url,is_hidden").in("id", adventureIds)
         : Promise.resolve({ data: [] }),
     ]);
 
     const itemMap = new Map<string, any>();
     (tripsRes.data || []).forEach((item: any) => {
-      if (item.is_hidden) return; // Skip hidden items
-      const savedType = savedData.find(s => s.item_id === item.id)?.item_type || "trip";
-      itemMap.set(item.id, { ...item, savedType });
+      if (item.is_hidden) return;
+      itemMap.set(item.id, { ...item, type: "trip" });
     });
     (hotelsRes.data || []).forEach((item: any) => {
-      if (item.is_hidden) return; // Skip hidden items
-      itemMap.set(item.id, { ...item, savedType: "hotel" });
+      if (item.is_hidden) return;
+      itemMap.set(item.id, { ...item, type: "hotel" });
     });
     (adventuresRes.data || []).forEach((item: any) => {
-      if (item.is_hidden) return; // Skip hidden items
-      itemMap.set(item.id, { ...item, savedType: "adventure_place" });
+      if (item.is_hidden) return;
+      itemMap.set(item.id, { ...item, type: "adventure" });
     });
 
     const items = savedData
@@ -154,216 +141,172 @@ const Saved = () => {
       setSavedListings(prev => prev.filter(item => !selectedItems.has(item.id)));
       setSelectedItems(new Set());
       setIsSelectionMode(false);
-      toast({ title: `Removed ${selectedItems.size} item(s)` });
-    }
-  };
-
-  const handleClearAll = async () => {
-    if (!userId) return;
-    const { error } = await supabase.from("saved_items").delete().eq("user_id", userId);
-    if (!error) {
-      setSavedListings([]);
-      setShowClearAllDialog(false);
-      toast({ title: "Wishlist cleared" });
+      toast({ title: "Updated", description: "Selected items removed." });
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-24">
+    <div className="min-h-screen bg-white pb-24 font-sans text-slate-900">
       <Header />
       
-      <main className="container px-4 py-10 max-w-[1600px] mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 lg:mb-16">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-               <div className="p-2 rounded-xl bg-[#008080]/10">
-                 <Bookmark className="h-5 w-5 text-[#008080]" />
-               </div>
-               <span className="text-[10px] font-black text-[#FF7F50] uppercase tracking-[0.2em]">Personal Collection</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-900">
-              Your <span style={{ color: COLORS.TEAL }}>Wishlist</span>
-            </h1>
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-16 border-b border-slate-100 pb-8">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">Saved places</h1>
+            <p className="text-slate-500 text-sm">You have {savedListings.length} items in your collection.</p>
           </div>
 
-          {savedListings.length > 0 && (
-            <div className="flex gap-3">
-              {!isSelectionMode ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className="rounded-2xl border-slate-200 font-black uppercase text-[10px] tracking-widest h-11 px-6 hover:bg-white"
-                    onClick={() => setIsSelectionMode(true)}
-                  >
-                    Select
-                  </Button>
-                  <Button
-                    className="rounded-2xl font-black uppercase text-[10px] tracking-widest h-11 px-6 shadow-lg transition-all active:scale-95"
-                    style={{ background: COLORS.RED, color: 'white' }}
-                    onClick={() => setShowClearAllDialog(true)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    className="rounded-2xl border-slate-200 font-black uppercase text-[10px] tracking-widest h-11 px-6"
-                    onClick={() => {
-                      setIsSelectionMode(false);
-                      setSelectedItems(new Set());
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    className="rounded-2xl font-black uppercase text-[10px] tracking-widest h-11 px-6 shadow-xl transition-all active:scale-95"
-                    style={{ 
-                      background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)`,
-                      color: 'white'
-                    }}
-                    onClick={handleRemoveSelected}
-                    disabled={selectedItems.size === 0}
-                  >
-                    Remove ({selectedItems.size})
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {savedListings.length > 0 && (
+              <button 
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  setSelectedItems(new Set());
+                }}
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                {isSelectionMode ? "Cancel" : "Manage"}
+              </button>
+            )}
+            {isSelectionMode && selectedItems.size > 0 && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="rounded-full px-4 h-9 text-xs font-bold"
+                onClick={handleRemoveSelected}
+              >
+                Delete Selected ({selectedItems.size})
+              </Button>
+            )}
+          </div>
         </div>
         
-        {isLoading || authLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="space-y-4 w-full">
-                <Skeleton className="h-64 w-full rounded-[28px]" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex gap-4 items-center border-b border-slate-50 pb-4">
+                <Skeleton className="h-20 w-20 rounded-xl shrink-0" />
+                <div className="space-y-2 w-full">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
               </div>
             ))}
           </div>
         ) : !user ? (
-          <div className="bg-white rounded-[40px] p-12 text-center shadow-sm border border-slate-100 flex flex-col items-center max-w-2xl mx-auto">
-            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
-                <Bookmark className="h-10 w-10 text-slate-300" />
+          <div className="text-center py-20">
+            <div className="mb-6 flex justify-center text-slate-200">
+                <Bookmark size={48} strokeWidth={1} />
             </div>
-            <h2 className="text-2xl font-black uppercase tracking-tight mb-2">No Saved Items</h2>
-            <p className="text-slate-500 text-sm mb-8 font-medium">Log in to see your saved items and sync them across devices.</p>
+            <h2 className="text-xl font-medium mb-2">Sign in to save items</h2>
             <Link to="/auth">
-              <Button 
-                className="py-7 px-10 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95"
-                style={{ background: `linear-gradient(135deg, ${COLORS.CORAL_LIGHT} 0%, ${COLORS.CORAL} 100%)` }}
-              >
-                Sign In to View Wishlist
+              <Button className="mt-4 bg-slate-900 text-white hover:bg-slate-800 rounded-full px-8">
+                Login / Register
               </Button>
             </Link>
           </div>
         ) : savedListings.length === 0 ? (
-          <div className="bg-white rounded-[40px] p-12 text-center shadow-sm border border-slate-100 flex flex-col items-center max-w-2xl mx-auto">
-             <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
-                <Bookmark className="h-10 w-10 text-slate-300" />
-            </div>
-            <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Empty Wishlist</h2>
-            <p className="text-slate-500 text-sm mb-8 font-medium">You haven't saved any experiences yet. Start exploring!</p>
+          <div className="text-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+            <p className="text-slate-400 mb-6">Your wishlist is looking a bit lonely.</p>
             <Link to="/">
-              <Button 
-                variant="outline"
-                className="py-7 px-10 rounded-2xl border-2 border-slate-100 font-black uppercase tracking-[0.2em] hover:bg-slate-50"
-              >
-                Discover Experiences <ArrowRight className="ml-2 h-4 w-4" />
+              <Button variant="outline" className="rounded-full border-slate-200">
+                Explore destinations
               </Button>
             </Link>
           </div>
         ) : (
-          <>
-            {/* THE RESPONSIVE GRID 
-                - gap-y-10: mobile vertical spacing
-                - lg:gap-x-12: massive horizontal spacing on big screens
-                - lg:gap-y-16: massive vertical spacing on big screens
-            */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-              {savedListings.map((item) => (
-                <div
-                  key={item.id}
-                  className={`relative transition-all duration-300 w-full ${isSelectionMode ? 'cursor-pointer' : ''}`}
-                  onClick={() => isSelectionMode && toggleItemSelection(item.id)}
-                >
-                  {isSelectionMode && (
-                    <div
-                      className={`absolute top-4 left-4 z-50 h-8 w-8 rounded-xl border-2 flex items-center justify-center backdrop-blur-md transition-all ${
-                        selectedItems.has(item.id)
-                          ? "bg-[#008080] border-[#008080]"
-                          : "bg-black/20 border-white"
-                      }`}
-                    >
-                      {selectedItems.has(item.id) && (
-                        <CheckCircle className="h-5 w-5 text-white" />
-                      )}
-                    </div>
-                  )}
-                  
-                  {isSelectionMode && selectedItems.has(item.id) && (
-                      <div className="absolute inset-0 bg-[#008080]/10 z-40 rounded-[32px] pointer-events-none border-2 border-[#008080]" />
-                  )}
+          <div className="space-y-2">
+            {savedListings.map((item) => (
+              <div
+                key={item.id}
+                className={`group flex items-center gap-4 p-3 rounded-2xl transition-all hover:bg-slate-50 border border-transparent ${
+                  selectedItems.has(item.id) ? "bg-slate-50 border-slate-100" : ""
+                }`}
+              >
+                {isSelectionMode && (
+                  <div 
+                    onClick={() => toggleItemSelection(item.id)}
+                    className={`w-6 h-6 rounded-full border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                      selectedItems.has(item.id) ? "bg-slate-900 border-slate-900" : "border-slate-200"
+                    }`}
+                  >
+                    {selectedItems.has(item.id) && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                )}
 
-                  <div className="w-full transform transition-transform duration-300 hover:-translate-y-2">
-                    <ListingCard
-                      id={item.id}
-                      type={item.savedType.replace("_", " ").toUpperCase() as any}
-                      name={item.name || item.local_name || item.location_name}
-                      imageUrl={item.image_url || item.photo_urls?.[0] || ""}
-                      location={item.location || item.location_name}
-                      country={item.country}
-                      onSave={() => handleSave(item.id, item.savedType)}
-                      isSaved={true}
-                      showBadge={true}
-                    />
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                  <img 
+                    src={item.image_url} 
+                    alt={item.name} 
+                    className="h-full w-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all"
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    {item.type}
+                  </span>
+                  <h3 className="font-semibold text-slate-900 truncate leading-tight mt-0.5">
+                    {item.name}
+                  </h3>
+                  <div className="flex items-center text-slate-500 text-xs mt-1">
+                    <MapPin className="h-3 w-3 mr-1 shrink-0" />
+                    <span className="truncate">{item.location}, {item.country}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-            
+
+                {!isSelectionMode && (
+                  <Link to={`/${item.type}s/${item.id}`} className="text-slate-300 hover:text-slate-900 transition-colors">
+                    <ChevronRight size={20} />
+                  </Link>
+                )}
+              </div>
+            ))}
+
             {hasMore && (
-              <div className="flex justify-center mt-16 lg:mt-24">
+              <div className="pt-10 flex justify-center">
                 <Button
+                  variant="ghost"
                   onClick={() => fetchSavedItems(userId!, offset)}
                   disabled={loadingMore}
-                  className="rounded-2xl font-black uppercase text-[10px] tracking-widest h-12 px-8"
-                  style={{ background: COLORS.TEAL }}
+                  className="text-slate-500 hover:text-slate-900 text-xs font-bold uppercase tracking-widest"
                 >
-                  {loadingMore ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    "Load More"
-                  )}
+                  {loadingMore ? <Loader2 className="animate-spin" /> : "Show More"}
                 </Button>
               </div>
             )}
-          </>
+          </div>
         )}
       </main>
 
+      {/* Simplified Clear All logic - keeping it as a small link footer */}
+      {savedListings.length > 0 && !isSelectionMode && (
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <button 
+            onClick={() => setShowClearAllDialog(true)}
+            className="text-[10px] text-slate-400 hover:text-red-500 uppercase tracking-widest font-bold"
+          >
+            Delete all saved items
+          </button>
+        </div>
+      )}
+
       <AlertDialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
-        <AlertDialogContent className="rounded-[32px] border-none p-8">
+        <AlertDialogContent className="rounded-2xl border-slate-100">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-black uppercase tracking-tight">Clear Wishlist?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-500 font-medium">
-              This will remove all {savedListings.length} items. This action cannot be undone.
+            <AlertDialogTitle className="text-lg">Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your entire saved collection.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-3 mt-6">
-            <AlertDialogCancel className="rounded-xl font-bold uppercase text-[10px] tracking-widest border-slate-100">Cancel</AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction 
-                onClick={handleClearAll} 
-                className="rounded-xl font-black uppercase text-[10px] tracking-widest bg-red-500 hover:bg-red-600"
+              onClick={handleClearAll} 
+              className="bg-red-500 hover:bg-red-600 rounded-full"
             >
-              Confirm Clear
+              Delete everything
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
