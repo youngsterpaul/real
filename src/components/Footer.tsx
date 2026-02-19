@@ -1,15 +1,12 @@
 import { Link } from "react-router-dom";
 import {
   Compass,
-  Download,
   Instagram,
-  X,
   Mail,
   Linkedin,
   Info,
   Facebook
 } from "lucide-react";
-import { useState, useEffect } from "react";
 
 // Official Brand Colors
 const BRAND_COLORS = {
@@ -106,14 +103,15 @@ export const Footer = ({ className = "" }: { className?: string }) => {
           <div className="flex flex-col gap-4">
             <h3 className="font-bold text-slate-900 text-xs uppercase tracking-[0.1em]">Follow Our Journey</h3>
             <div className="grid grid-cols-4 gap-2">
-              <SocialIcon color={BRAND_COLORS.WHATSAPP} icon={<WhatsAppIcon />} />
-              <SocialIcon color={BRAND_COLORS.INSTAGRAM} icon={<Instagram className="h-5 w-5" />} />
-              <SocialIcon color={BRAND_COLORS.TIKTOK} icon={<TikTokIcon />} />
-              <SocialIcon color={BRAND_COLORS.YOUTUBE} icon={<YouTubeIcon />} />
-              <SocialIcon color={BRAND_COLORS.FACEBOOK} icon={<Facebook className="h-5 w-5 fill-current" />} />
-              <SocialIcon color={BRAND_COLORS.LINKEDIN} icon={<Linkedin className="h-5 w-5 fill-current" />} />
-              <SocialIcon color={BRAND_COLORS.PINTEREST} icon={<PinterestIcon />} />
-              <SocialIcon color={BRAND_COLORS.WIKIPEDIA} icon={<WikipediaIcon />} />
+              {/* Note: Update placeholders like 'realtravo' or phone numbers with your actual details */}
+              <SocialIcon href="https://wa.me/0758800117" color={BRAND_COLORS.WHATSAPP} icon={<WhatsAppIcon />} />
+              <SocialIcon href="https://instagram.com/realtravo" color={BRAND_COLORS.INSTAGRAM} icon={<Instagram className="h-5 w-5" />} />
+              <SocialIcon href="https://www.tiktok.com/@real_travo" color={BRAND_COLORS.TIKTOK} icon={<TikTokIcon />} />
+              <SocialIcon href="https://youtube.com/@realtravo" color={BRAND_COLORS.YOUTUBE} icon={<YouTubeIcon />} />
+              <SocialIcon href="https://www.facebook.com/profile.php?id=61588626561026" color={BRAND_COLORS.FACEBOOK} icon={<Facebook className="h-5 w-5 fill-current" />} />
+              <SocialIcon href="https://linkedin.com/company/realtravo" color={BRAND_COLORS.LINKEDIN} icon={<Linkedin className="h-5 w-5 fill-current" />} />
+              <SocialIcon href="https://www.pinterest.com/RealTravo01/" color={BRAND_COLORS.PINTEREST} icon={<PinterestIcon />} />
+              <SocialIcon href="https://wikipedia.org/wiki/RealTravo" color={BRAND_COLORS.WIKIPEDIA} icon={<WikipediaIcon />} />
             </div>
             
             <a href="mailto:support@realtravo.com" className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-[#008080] transition-all">
@@ -144,7 +142,7 @@ export const Footer = ({ className = "" }: { className?: string }) => {
   );
 };
 
-const SocialIcon = ({ color, icon, href = "#" }: any) => (
+const SocialIcon = ({ color, icon, href = "#" }: { color: string, icon: React.ReactNode, href?: string }) => (
   <a 
     href={href}
     target="_blank"
