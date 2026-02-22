@@ -1,9 +1,10 @@
 import { useState, lazy, Suspense } from "react";
 import { Home, Ticket, Heart, User, ChevronLeft } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { AccountSheet } from "@/components/AccountSheet";
-import { Sheet, SheetPortal, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { TealLoader } from "@/components/ui/teal-loader";
 
 const Bookings = lazy(() => import("@/pages/Bookings"));
@@ -15,45 +16,11 @@ const COLORS = {
   CORAL: "#FF7F50",
 };
 
-/**
- * A transparent full-page sheet panel — no dark overlay/backdrop.
- * We skip <SheetOverlay> entirely and render only <SheetPortal> + <SheetContent>.
- */
-const FullPageSheet = ({
-  open,
-  onOpenChange,
-  children,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  children: React.ReactNode;
-}) => {
-  if (!open) return null;
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      {/* SheetPortal without SheetOverlay = no dark backdrop */}
-      <SheetPortal>
-        <SheetContent
-          side="bottom"
-          // [&>button]:hidden  — hides the default X close button added by shadcn
-          className="h-[100dvh] w-full p-0 z-[100] flex flex-col rounded-none border-none shadow-none [&>button]:hidden"
-          style={{ maxHeight: "100dvh" }}
-          // Prevent scroll-lock stealing focus away from inner content
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          {children}
-        </SheetContent>
-      </SheetPortal>
-    </Sheet>
-  );
-};
-
 export const MobileBottomBar = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [bookingsOpen, setBookingsOpen] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
 
   const handleNavClick = (path: string, e: React.MouseEvent) => {
     if (path === "/bookings") {
@@ -75,153 +42,178 @@ export const MobileBottomBar = () => {
 
   return (
     <>
-      {/* ── Bottom Navigation Bar — z-[110] stays above sheets ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-[110] flex items-center justify-around bg-white border-t border-gray-200 shadow-md px-2 pt-2 pb-4">
-        {navItems.map((item) => {
-          const isSheetPath =
-            item.path === "/bookings" || item.path === "/saved";
+      {/* ── Bottom Nav Bar ── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[110] bg-white/80 backdrop-blur-xl border-t border-slate-100 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+        <nav className="flex items-center justify-around h-20 px-6">
+          {navItems.map((item) => {
+            const isSheetPath =
+              item.path === "/bookings" || item.path === "/saved";
 
-          const isActive =
-            (location.pathname === item.path && !bookingsOpen && !savedOpen) ||
-            (item.path === "/bookings" && bookingsOpen) ||
-            (item.path === "/saved" && savedOpen);
+            const isActive =
+              (location.pathname === item.path && !bookingsOpen && !savedOpen) ||
+              (item.path === "/bookings" && bookingsOpen) ||
+              (item.path === "/saved" && savedOpen);
 
-          const iconColor = isActive ? COLORS.TEAL : "#9CA3AF";
+            const NavContent = (
+              <>
+                <div
+                  className={cn(
+                    "absolute -top-3 w-8 h-1 rounded-full transition-all duration-300",
+                    isActive ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                  )}
+                  style={{ backgroundColor: COLORS.TEAL }}
+                />
+                <div
+                  className={cn(
+                    "p-2 rounded-2xl transition-all duration-300 mb-1",
+                    isActive ? "bg-[#008080]/10" : "bg-transparent group-active:scale-90"
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      "h-5 w-5 transition-colors duration-300",
+                      isActive ? "" : "text-slate-400"
+                    )}
+                    style={isActive ? { color: COLORS.TEAL, fill: `${COLORS.TEAL}20` } : undefined}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] font-black uppercase tracking-[0.1em] transition-colors duration-300",
+                    isActive ? "" : "text-slate-400"
+                  )}
+                  style={isActive ? { color: COLORS.TEAL } : undefined}
+                >
+                  {item.label}
+                </span>
+              </>
+            );
 
-          const NavContent = (
-            <>
-              <item.icon
-                size={22}
-                style={{ color: iconColor }}
-                className="transition-colors duration-200"
-              />
-              <span
-                className="mt-0.5 text-[10px] font-medium transition-colors duration-200"
-                style={{ color: iconColor }}
-              >
-                {item.label}
-              </span>
-            </>
-          );
+            if (isSheetPath) {
+              return (
+                <button
+                  key={item.path}
+                  onClick={(e) => handleNavClick(item.path, e)}
+                  className="relative flex flex-col items-center justify-center group"
+                >
+                  {NavContent}
+                </button>
+              );
+            }
 
-          if (isSheetPath) {
             return (
-              <button
+              <Link
                 key={item.path}
-                onClick={(e) => handleNavClick(item.path, e)}
-                className="flex flex-col items-center justify-center px-4 py-1 group"
+                to={item.path}
+                onClick={() => {
+                  setBookingsOpen(false);
+                  setSavedOpen(false);
+                }}
+                className="relative flex flex-col items-center justify-center group"
               >
                 {NavContent}
-              </button>
+              </Link>
             );
-          }
+          })}
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => {
-                setBookingsOpen(false);
-                setSavedOpen(false);
-              }}
-              className="flex flex-col items-center justify-center px-4 py-1 group"
-            >
-              {NavContent}
+          {/* Profile Button */}
+          {user ? (
+            <AccountSheet>
+              <button className="relative flex flex-col items-center justify-center group">
+                <div
+                  className={cn(
+                    "absolute -top-3 w-8 h-1 rounded-full transition-all duration-300",
+                    "opacity-0 scale-0"
+                  )}
+                  style={{ backgroundColor: COLORS.TEAL }}
+                />
+                <div className="p-2 rounded-2xl transition-all duration-300 mb-1 bg-transparent group-active:scale-90">
+                  <User className="h-5 w-5 transition-colors duration-300 text-slate-400" strokeWidth={2} />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.1em] transition-colors duration-300 text-slate-400">
+                  Profile
+                </span>
+              </button>
+            </AccountSheet>
+          ) : (
+            <Link to="/auth" className="relative flex flex-col items-center justify-center group">
+              <div className="p-2 rounded-2xl transition-all duration-300 mb-1 bg-transparent group-active:scale-90">
+                <User className="h-5 w-5 transition-colors duration-300 text-slate-400" strokeWidth={2} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.1em] transition-colors duration-300 text-slate-400">
+                Profile
+              </span>
             </Link>
-          );
-        })}
-
-        {/* Profile Button */}
-        {user ? (
-          <button
-            onClick={() => setAccountOpen(true)}
-            className="flex flex-col items-center justify-center px-4 py-1 group"
-          >
-            <User
-              size={22}
-              style={{ color: accountOpen ? COLORS.TEAL : "#9CA3AF" }}
-              className="transition-colors duration-200"
-            />
-            <span
-              className="mt-0.5 text-[10px] font-medium transition-colors duration-200"
-              style={{ color: accountOpen ? COLORS.TEAL : "#9CA3AF" }}
-            >
-              Profile
-            </span>
-          </button>
-        ) : (
-          <Link
-            to="/login"
-            className="flex flex-col items-center justify-center px-4 py-1 group"
-          >
-            <User size={22} className="text-gray-400" />
-            <span className="mt-0.5 text-[10px] font-medium text-gray-400">
-              Profile
-            </span>
-          </Link>
-        )}
+          )}
+        </nav>
       </div>
 
-      {/* Account Sheet */}
-      {user && (
-        <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
-      )}
+      {/* ── Bookings Full-Page Sheet ── */}
+      <Sheet open={bookingsOpen} onOpenChange={setBookingsOpen}>
+        <SheetContent
+          side="bottom"
+          className="h-[100dvh] rounded-none p-0 border-none flex flex-col z-[100] [&>button]:hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+            <button
+              onClick={() => setBookingsOpen(false)}
+              className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Close bookings"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <h2 className="text-lg font-semibold">My Bookings</h2>
+          </div>
 
-      {/* ── Bookings Full-Page Sheet (no dark overlay) ── */}
-      <FullPageSheet open={bookingsOpen} onOpenChange={setBookingsOpen}>
-        {/* Sticky Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-white sticky top-0 z-10">
-          <button
-            onClick={() => setBookingsOpen(false)}
-            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Close bookings"
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <h2 className="text-lg font-semibold">My Bookings</h2>
-        </div>
+          {/* Scrollable content — pb-24 clears the bottom nav */}
+          <div className="flex-1 overflow-y-auto pb-24 bg-white">
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-20">
+                  <TealLoader />
+                </div>
+              }
+            >
+              <Bookings />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-        {/* Scrollable Content — pb-24 clears the bottom nav bar */}
-        <div className="flex-1 overflow-y-auto pb-24 bg-white">
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-full py-20">
-                <TealLoader />
-              </div>
-            }
-          >
-            <Bookings />
-          </Suspense>
-        </div>
-      </FullPageSheet>
+      {/* ── Saved Full-Page Sheet ── */}
+      <Sheet open={savedOpen} onOpenChange={setSavedOpen}>
+        <SheetContent
+          side="bottom"
+          className="h-[100dvh] rounded-none p-0 border-none flex flex-col z-[100] [&>button]:hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+            <button
+              onClick={() => setSavedOpen(false)}
+              className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Close saved"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <h2 className="text-lg font-semibold">Saved Items</h2>
+          </div>
 
-      {/* ── Saved Full-Page Sheet (no dark overlay) ── */}
-      <FullPageSheet open={savedOpen} onOpenChange={setSavedOpen}>
-        {/* Sticky Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-white sticky top-0 z-10">
-          <button
-            onClick={() => setSavedOpen(false)}
-            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Close saved"
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <h2 className="text-lg font-semibold">Saved Items</h2>
-        </div>
-
-        {/* Scrollable Content — pb-24 clears the bottom nav bar */}
-        <div className="flex-1 overflow-y-auto pb-24 bg-white">
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-full py-20">
-                <TealLoader />
-              </div>
-            }
-          >
-            <Saved />
-          </Suspense>
-        </div>
-      </FullPageSheet>
+          {/* Scrollable content — pb-24 clears the bottom nav */}
+          <div className="flex-1 overflow-y-auto pb-24 bg-white">
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-20">
+                  <TealLoader />
+                </div>
+              }
+            >
+              <Saved />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
