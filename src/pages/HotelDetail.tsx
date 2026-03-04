@@ -24,7 +24,7 @@ import { QuickNavigationBar } from "@/components/detail/QuickNavigationBar";
 // AmenitiesSection removed - using only GeneralFacilitiesDisplay with icons
 import { GeneralFacilitiesDisplay } from "@/components/detail/GeneralFacilitiesDisplay";
 import { DetailMapSection } from "@/components/detail/DetailMapSection";
-import { DetailPageSkeleton } from "@/components/detail/DetailPageSkeleton";
+import { TealLoader } from "@/components/ui/teal-loader";
 import { ExternalBookingButton } from "@/components/detail/ExternalBookingDialog";
 
 const HotelDetail = () => {
@@ -165,7 +165,7 @@ const HotelDetail = () => {
     }
   };
 
-  if (loading) return <DetailPageSkeleton />;
+  if (loading) return <TealLoader />;
 
   if (!hotel) return null;
 

@@ -19,7 +19,7 @@ import { extractIdFromSlug } from "@/lib/slugUtils";
 import { useRealtimeItemAvailability } from "@/hooks/useRealtimeBookings";
 import { Header } from "@/components/Header"; 
 import { DetailMapSection } from "@/components/detail/DetailMapSection";
-import { DetailPageSkeleton } from "@/components/detail/DetailPageSkeleton";
+import { TealLoader } from "@/components/ui/teal-loader";
 import { ImageGalleryModal } from "@/components/detail/ImageGalleryModal";
 
 const COLORS = {
@@ -157,7 +157,7 @@ const EventDetail = () => {
 
   const { remainingSlots, isSoldOut } = useRealtimeItemAvailability(id || undefined, event?.available_tickets || 0);
 
-  if (loading) return <DetailPageSkeleton />;
+  if (loading) return <TealLoader />;
   if (!event) return null;
 
   const today = new Date();

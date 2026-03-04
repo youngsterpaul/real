@@ -23,7 +23,7 @@ import { ImageGalleryModal } from "@/components/detail/ImageGalleryModal";
 import { QuickNavigationBar } from "@/components/detail/QuickNavigationBar";
 import { GeneralFacilitiesDisplay } from "@/components/detail/GeneralFacilitiesDisplay";
 import { DetailMapSection } from "@/components/detail/DetailMapSection";
-import { DetailPageSkeleton } from "@/components/detail/DetailPageSkeleton";
+import { TealLoader } from "@/components/ui/teal-loader";
 
 const AdventurePlaceDetail = () => {
   const { slug } = useParams();
@@ -151,7 +151,7 @@ const AdventurePlaceDetail = () => {
     }
   };
 
-  if (loading) return <DetailPageSkeleton />;
+  if (loading) return <TealLoader />;
   if (!place) return null;
 
   const facilityImages = (Array.isArray(place.facilities) ? place.facilities : [])

@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { SearchBarWithSuggestions } from "@/components/SearchBarWithSuggestions";
 import { ListingCard } from "@/components/ListingCard";
 import { FilterBar, FilterValues } from "@/components/FilterBar";
-import { ListingGridSkeleton } from "@/components/ui/listing-skeleton";
+import { TealLoader } from "@/components/ui/teal-loader";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -251,7 +251,7 @@ const CategoryDetail = () => {
         */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {loading ? (
-            <ListingGridSkeleton count={8} />
+            <div className="col-span-full"><TealLoader text="Loading listings..." /></div>
           ) : (
             filteredItems.map(item => {
               const ratingData = ratings.get(item.id);
