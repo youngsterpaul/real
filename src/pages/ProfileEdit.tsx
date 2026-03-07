@@ -151,6 +151,7 @@ const ProfileEdit = () => {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (profileData.phone_number !== originalPhone && !showVerification) {
       toast({ title: "Verify Phone", description: "Please verify your new phone number first.", variant: "destructive" });
