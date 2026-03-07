@@ -143,6 +143,15 @@ const CreateTripEvent = () => {
 
       const daysOpened = (Object.keys(workingDays) as (keyof WorkingDays)[]).filter(day => workingDays[day]);
 
+      // Calculate flexible_end_date
+      let flexibleEndDate: string | null = null;
+      if (formData.is_custom_date) {
+        const months = parseInt(formData.flexible_duration_months) || 3;
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + months);
+        flexibleEndDate = endDate.toISOString().split('T')[0];
+      }
+
       const { error } = await supabase.from("trips").insert([{
         id: dbId,
         slug: friendlySlug,
@@ -168,6 +177,7 @@ const CreateTripEvent = () => {
         days_opened: daysOpened.length > 0 ? daysOpened : null,
         created_by: user.id,
         approval_status: approvalStatusSchema.parse("pending"),
+        flexible_end_date: flexibleEndDate,
       }]);
 
       if (error) throw error;
