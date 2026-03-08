@@ -64,15 +64,7 @@ const LANGUAGES = [
   { code: "he", name: "עברית" },
 ];
 
-// Map country codes to local currencies
-const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  KE: "KES", TZ: "TZS", UG: "UGX", ZA: "ZAR", NG: "NGN",
-  AE: "AED", SA: "SAR", EG: "EGP", IN: "INR",
-  GB: "GBP", DE: "EUR", FR: "EUR", ES: "EUR", IT: "EUR",
-  US: "USD",
-};
-
-const CurrencyConverter = () => {
+// CurrencyConverter removed
   const [rates, setRates] = useState<Record<string, number>>({});
   const [baseCurrency, setBaseCurrency] = useState("USD");
   const [targetCurrency, setTargetCurrency] = useState("KES");
