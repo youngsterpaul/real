@@ -144,7 +144,7 @@ const ProfileEdit = () => {
     <div className="min-h-screen bg-[#F8F9FA] pb-24">
       <Header />
       
-      <main className="container px-4 py-8 max-w-2xl mx-auto">
+      <main className="container px-4 py-8 mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <Button 
             onClick={() => navigate(-1)} 

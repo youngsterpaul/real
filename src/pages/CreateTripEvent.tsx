@@ -293,14 +293,32 @@ const CreateTripEvent = () => {
 
           {/* Contact & GPS */}
           <Card className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 space-y-6">
-            <h2 className="text-xs font-black uppercase tracking-widest" style={{ color: COLORS.TEAL }}>Contact & GPS Location</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Email</Label><StyledInput type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="contact@example.com" /></div>
-              <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Phone *</Label><div className={validationErrors.includes("phone_number") ? "rounded-xl ring-1 ring-red-500" : ""}><PhoneInput value={formData.phone_number} onChange={(val) => setFormData({...formData, phone_number: val})} country={formData.country} placeholder="712345678" /></div></div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 rounded-xl" style={{ backgroundColor: `${COLORS.TEAL}15` }}>
+                <MapPin className="h-5 w-5" style={{ color: COLORS.TEAL }} />
+              </div>
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Contact & GPS Location</h2>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">How guests can reach you</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 bg-slate-50/80 rounded-2xl p-4">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#008080]" /> Contact Email
+                </Label>
+                <StyledInput type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="contact@example.com" />
+              </div>
+              <div className="space-y-2 bg-slate-50/80 rounded-2xl p-4">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#FF7F50]" /> Contact Phone *
+                </Label>
+                <div className={validationErrors.includes("phone_number") ? "rounded-xl ring-1 ring-red-500" : ""}><PhoneInput value={formData.phone_number} onChange={(val) => setFormData({...formData, phone_number: val})} country={formData.country} placeholder="712345678" /></div>
+              </div>
             </div>
             <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
               <Button type="button" onClick={getCurrentLocation} className="w-full h-14 rounded-2xl shadow-lg font-black uppercase text-[11px] tracking-widest text-white active:scale-95 transition-all" style={{ background: formData.map_link ? COLORS.TEAL : COLORS.CORAL }}>
-                <Navigation className="h-5 w-5 mr-3" />{formData.map_link ? 'Location Captured' : 'Tap to Capture GPS Location'}
+                <Navigation className="h-5 w-5 mr-3" />{formData.map_link ? '✓ Location Captured' : 'Tap to Capture GPS Location'}
               </Button>
             </div>
             {/* Gallery */}

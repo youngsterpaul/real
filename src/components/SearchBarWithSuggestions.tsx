@@ -355,7 +355,7 @@ export const SearchBarWithSuggestions = React.forwardRef<HTMLDivElement, SearchB
                           className="w-full p-3 flex gap-4 hover:bg-slate-50 transition-all group text-left rounded-[24px]"
                         >
                           <div className="flex-1 flex flex-col justify-center min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                                <span className="text-[9px] font-black text-white px-2 py-0.5 rounded-full uppercase tracking-widest" style={{ background: COLORS.TEAL }}>
                                 {getTypeLabel(result.type)}
                               </span>
@@ -364,22 +364,25 @@ export const SearchBarWithSuggestions = React.forwardRef<HTMLDivElement, SearchB
                                   • {new Date(result.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                                 </span>
                               )}
+                              {result.matchedActivity && (
+                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider bg-[#FF7F50]/15 text-[#FF7F50] border border-[#FF7F50]/20">
+                                  🎯 {result.matchedActivity}
+                                </span>
+                              )}
                             </div>
-                            <h4 className="font-black text-slate-800 uppercase tracking-tight text-sm truncate">{result.name}</h4>
-                            <div className="flex items-center gap-1 text-slate-400 group-hover:text-[#008080] transition-colors">
-                              <MapPin className="h-3 w-3" />
-                              <span className="text-[10px] font-bold uppercase truncate">
-                                {result.location || result.country}
+                            <h4 className="font-black text-foreground uppercase tracking-tight text-sm truncate">{result.name}</h4>
+                            <div className="flex items-center gap-1.5 text-muted-foreground group-hover:text-[#008080] transition-colors mt-0.5">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              <span className="text-[10px] font-bold uppercase">
+                                {[result.location, result.place, result.country].filter(Boolean).join(" · ")}
                               </span>
                             </div>
+                            {getActivitiesText(result.activities) && !result.matchedActivity && (
+                              <p className="text-[9px] text-muted-foreground/70 mt-0.5 truncate">
+                                {getActivitiesText(result.activities)}
+                              </p>
+                            )}
                           </div>
-                          {result.matchedActivity && (
-                            <div className="flex items-center shrink-0">
-                              <span className="text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider bg-[#FF7F50]/10 text-[#FF7F50] border border-[#FF7F50]/20">
-                                {result.matchedActivity}
-                              </span>
-                            </div>
-                          )}
                         </button>
                       ))}
                     </>

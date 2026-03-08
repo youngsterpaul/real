@@ -785,9 +785,15 @@ const CreateHotel = () => {
         {/* Location & Contact */}
         <Card className="bg-white rounded-[28px] p-8 shadow-sm border-none"
           data-error={errors.country || errors.place || errors.latitude || errors.email || errors.phoneNumber ? "true" : undefined}>
-          <h2 className="text-xl font-black uppercase tracking-tight mb-6 flex items-center gap-2" style={{ color: COLORS.TEAL }}>
-            <MapPin className="h-5 w-5" /> Location & Contact
-          </h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 rounded-xl" style={{ backgroundColor: `${COLORS.TEAL}15` }}>
+              <MapPin className="h-5 w-5" style={{ color: COLORS.TEAL }} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Location & Contact</h2>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Where guests can find & reach you</p>
+            </div>
+          </div>
           <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -821,13 +827,17 @@ const CreateHotel = () => {
                   </Button>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Business Email *</Label>
-                    <Input className={`rounded-xl h-12 font-bold ${errorClass("email")}`}
+                  <div className="space-y-2 bg-slate-50/80 rounded-2xl p-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#008080]" /> Business Email *
+                    </Label>
+                    <Input className={`rounded-xl h-12 font-bold border-none bg-white shadow-sm ${errorClass("email")}`}
                       value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phone Number *</Label>
+                  <div className="space-y-2 bg-slate-50/80 rounded-2xl p-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FF7F50]" /> Phone Number *
+                    </Label>
                     <div className={errors.phoneNumber ? "rounded-xl ring-2 ring-red-500" : ""}>
                       <PhoneInput value={formData.phoneNumber} onChange={(v) => setFormData({ ...formData, phoneNumber: v })} country={formData.country} />
                     </div>

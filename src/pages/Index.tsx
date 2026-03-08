@@ -3,6 +3,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { useNavigate, Link } from "react-router-dom";
 // Header and MobileBottomBar are rendered in PageLayout
 import { SearchBarWithSuggestions } from "@/components/SearchBarWithSuggestions";
+import { useSearchFocus } from "@/components/PageLayout";
 import { ListingCard } from "@/components/ListingCard";
 import { Card } from "@/components/ui/card";
 import { Calendar, Hotel, Tent, Compass, Map, Grid, MapPin, ChevronLeft, ChevronRight, Loader2, Navigation, Home } from "lucide-react";
@@ -76,7 +77,13 @@ const Index = () => {
   const [nearbyPlacesHotels, setNearbyPlacesHotels] = useState<any[]>([]);
   const [loadingScrollable, setLoadingScrollable] = useState(true);
   const [loadingNearby, setLoadingNearby] = useState(true);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSearchFocused, setIsSearchFocusedLocal] = useState(false);
+  const { setSearchFocused } = useSearchFocus();
+  
+  const setIsSearchFocused = useCallback((v: boolean) => {
+    setIsSearchFocusedLocal(v);
+    setSearchFocused(v);
+  }, [setSearchFocused]);
 
   // Collect all item IDs for ratings
   const allItemIds = useMemo(() => {

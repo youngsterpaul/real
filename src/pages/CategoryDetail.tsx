@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { SearchBarWithSuggestions } from "@/components/SearchBarWithSuggestions";
+import { useSearchFocus } from "@/components/PageLayout";
 import { ListingCard } from "@/components/ListingCard";
 import { FilterBar, FilterValues } from "@/components/FilterBar";
 import { TealLoader } from "@/components/ui/teal-loader";
@@ -33,7 +34,14 @@ const CategoryDetail = () => {
   const { position } = useGeolocation();
   const [showSearchIcon, setShowSearchIcon] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSearchFocusedLocal, setIsSearchFocusedLocal] = useState(false);
+  const { setSearchFocused } = useSearchFocus();
+  
+  const isSearchFocused = isSearchFocusedLocal;
+  const setIsSearchFocused = useCallback((v: boolean) => {
+    setIsSearchFocusedLocal(v);
+    setSearchFocused(v);
+  }, [setSearchFocused]);
 
   const categoryConfig: { [key: string]: any } = {
     trips: { title: "Trips", tables: ["trips"], type: "TRIP", tripType: "trip", filterType: "trips-events" },

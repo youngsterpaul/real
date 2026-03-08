@@ -765,18 +765,27 @@ const CreateAdventure = () => {
         {/* Contact & About */}
         <Card className="bg-white rounded-[28px] p-8 shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-xl bg-[#008080]/10 text-[#008080]"><CheckCircle2 className="h-5 w-5" /></div>
-            <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Contact & About</h2>
+            <div className="p-2.5 rounded-xl" style={{ backgroundColor: `${COLORS.TEAL}15` }}>
+              <CheckCircle2 className="h-5 w-5" style={{ color: COLORS.TEAL }} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black uppercase tracking-tight" style={{ color: COLORS.TEAL }}>Contact & About</h2>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Business contact information</p>
+            </div>
           </div>
           <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Business Email</Label>
+              <div className="space-y-2 bg-slate-50/80 rounded-2xl p-4">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#008080]" /> Business Email
+                </Label>
                 <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="contact@business.com" className="rounded-xl h-12 font-bold" />
+                  placeholder="contact@business.com" className="rounded-xl h-12 font-bold border-none bg-white shadow-sm" />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp / Phone</Label>
+              <div className="space-y-2 bg-slate-50/80 rounded-2xl p-4">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#FF7F50]" /> WhatsApp / Phone
+                </Label>
                 <PhoneInput value={formData.phoneNumber} onChange={(v) => setFormData({ ...formData, phoneNumber: v })} country={formData.country} />
               </div>
             </div>
