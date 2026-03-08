@@ -20,6 +20,11 @@ interface SimilarItemsProps {
   country?: string;
 }
 
+const PriceDisplay = ({ price }: { price: number }) => {
+  const { formatPrice } = useCurrency();
+  return <span className="text-md font-black" style={{ color: COLORS.CORAL }}>{formatPrice(price)}</span>;
+};
+
 export const SimilarItems = ({ currentItemId, itemType, location, country }: SimilarItemsProps) => {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
