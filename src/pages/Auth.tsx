@@ -57,9 +57,9 @@ const Auth = () => {
             {/* Feature pills */}
             <div className="flex flex-col gap-4">
               {[
-                { icon: MapPin, text: "1,000+ curated destinations" },
-                { icon: Shield, text: "Verified hosts & secure payments" },
-                { icon: Star, text: "Trusted by 50K+ travelers" },
+                { icon: MapPin, text: "Handpicked stays, trips & adventures" },
+                { icon: Shield, text: "Book with confidence, pay securely" },
+                { icon: Star, text: "Real reviews from real travelers" },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary-foreground/10 flex items-center justify-center flex-shrink-0">

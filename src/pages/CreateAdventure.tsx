@@ -782,9 +782,17 @@ const CreateAdventure = () => {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description *</Label>
-              <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Tell the community what makes this adventure special..." rows={5}
+              <Textarea value={formData.description} onChange={(e) => {
+                  const words = e.target.value.trim().split(/\s+/);
+                  if (e.target.value.trim() === "" || words.length <= 20) {
+                    setFormData({ ...formData, description: e.target.value });
+                  }
+                }}
+                placeholder="Describe in 20 words or less..." rows={5}
                 className={cn("rounded-2xl font-bold resize-none", isMissing(formData.description) && "border-red-500 bg-red-50")} />
+              <p className="text-xs text-muted-foreground mt-1">
+                {formData.description.trim() ? formData.description.trim().split(/\s+/).length : 0}/20 words
+              </p>
             </div>
           </div>
         </Card>

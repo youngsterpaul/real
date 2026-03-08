@@ -939,10 +939,18 @@ const CreateHotel = () => {
           </h2>
           <Textarea
             className={cn("rounded-[20px] min-h-[200px] font-medium resize-none", errorClass("description"))}
-            placeholder="Describe your property..."
+            placeholder="Describe your property in 20 words or less..."
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e) => {
+              const words = e.target.value.trim().split(/\s+/);
+              if (e.target.value.trim() === "" || words.length <= 20) {
+                setFormData({ ...formData, description: e.target.value });
+              }
+            }}
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            {formData.description.trim() ? formData.description.trim().split(/\s+/).length : 0}/20 words
+          </p>
           {isAccommodationOnly && (
             <div className="space-y-2 pt-4 border-t border-slate-100 mt-6">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">

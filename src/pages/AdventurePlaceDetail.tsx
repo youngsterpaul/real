@@ -329,7 +329,7 @@ const AdventurePlaceDetail = () => {
             <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
               <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 text-slate-400">About This Property</h2>
               {place.description ? (
-                <p className="text-slate-500 text-sm leading-relaxed">{place.description}</p>
+                <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">{place.description}</p>
               ) : (
                 <div className="flex items-center gap-2 text-slate-300 italic py-4"><AlertCircle className="h-4 w-4" /> Description coming soon</div>
               )}

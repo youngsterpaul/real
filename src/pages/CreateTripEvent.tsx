@@ -341,7 +341,15 @@ const CreateTripEvent = () => {
           {/* Description */}
           <Card className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
             <Label className="text-xs font-black uppercase tracking-widest mb-4 block" style={{ color: COLORS.TEAL }}>Experience Description *</Label>
-            <Textarea className={`rounded-[24px] border-slate-100 bg-slate-50 p-6 min-h-[200px] focus:ring-[#008080] text-sm ${validationErrors.includes("description") ? "border-red-500 ring-1 ring-red-500" : ""}`} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Tell travelers what makes this experience special..." />
+            <Textarea className={`rounded-[24px] border-slate-100 bg-slate-50 p-6 min-h-[200px] focus:ring-[#008080] text-sm ${validationErrors.includes("description") ? "border-red-500 ring-1 ring-red-500" : ""}`} value={formData.description} onChange={(e) => {
+              const words = e.target.value.trim().split(/\s+/);
+              if (e.target.value.trim() === "" || words.length <= 20) {
+                setFormData({...formData, description: e.target.value});
+              }
+            }} placeholder="Describe in 20 words or less..." />
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.description.trim() ? formData.description.trim().split(/\s+/).length : 0}/20 words
+            </p>
           </Card>
 
           {/* Submit */}

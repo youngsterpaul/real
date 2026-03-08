@@ -414,7 +414,11 @@ z
             {/* Description */}
             <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
               <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 text-slate-400">About this property</h2>
-              <p className="text-slate-500 text-sm leading-relaxed">{hotel.description}</p>
+              {hotel.description ? (
+                <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">{hotel.description}</p>
+              ) : (
+                <p className="text-muted-foreground text-sm italic">No description provided.</p>
+              )}
             </section>
 
             {/* Operating Hours - Mobile Only (below description) */}

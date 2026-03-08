@@ -286,7 +286,11 @@ const TripDetail = () => {
           <div className="space-y-6">
             <div className="bg-white rounded-[28px] p-7 shadow-sm border border-slate-100">
               <h2 className="text-xl font-black uppercase tracking-tight mb-4" style={{ color: COLORS.TEAL }}>About this Trip</h2>
-              <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">{event.description}</p>
+              {event.description ? (
+                <p className="text-foreground text-sm leading-relaxed whitespace-pre-line">{event.description}</p>
+              ) : (
+                <p className="text-muted-foreground text-sm italic">No description provided.</p>
+              )}
             </div>
 
             {/* Hours & Available Days */}
