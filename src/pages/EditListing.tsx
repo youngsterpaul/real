@@ -1039,6 +1039,7 @@ const EditListing = () => {
                           min={0}
                           className="h-8 border-[#008080]/30"
                         />
+                        {entranceFeeChild > 0 && <p className="text-[9px] text-blue-500 font-bold mt-0.5">{usdHint(entranceFeeChild)}</p>}
                       </div>
                     </>
                   )}
