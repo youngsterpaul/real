@@ -207,7 +207,15 @@ const CurrencyConverter = () => {
 };
 
 export const Footer = ({ className = "" }: { className?: string }) => {
-  const [language, setLanguage] = useState("en");
+  const { t, i18n } = useTranslation();
+  const [language, setLanguage] = useState(i18n.language || "en");
+
+  const handleLanguageChange = (lang: string) => {
+    setLanguage(lang);
+    i18n.changeLanguage(lang);
+    // Set RTL direction for Arabic and Hebrew
+    document.documentElement.dir = (lang === "ar" || lang === "he") ? "rtl" : "ltr";
+  };
 
   return (
     <footer className={`hidden md:block bg-slate-50 border-t mt-16 text-slate-900 ${className}`}>
@@ -223,43 +231,43 @@ export const Footer = ({ className = "" }: { className?: string }) => {
               <span className="font-black text-2xl tracking-tighter italic">RealTravo</span>
             </div>
             <p className="text-sm leading-relaxed text-slate-500">
-              Your gateway to authentic experiences. Explore, book, and share your journey with the world.
+              {t('footer.tagline')}
             </p>
           </div>
           
           {/* Links Columns */}
           <div className="flex flex-col gap-4">
-            <h3 className="font-bold text-slate-900">Explore</h3>
+            <h3 className="font-bold text-slate-900">{t('footer.explore')}</h3>
             <ul className="space-y-3 text-sm font-medium">
-              <li><Link to="/" className="text-slate-500 hover:text-[#008080] transition-colors">Destinations</Link></li>
-              <li><Link to="/category/events" className="text-slate-500 hover:text-[#008080] transition-colors">Local Events</Link></li>
-              <li><Link to="/category/hotels" className="text-slate-500 hover:text-[#008080] transition-colors">Hotels</Link></li>
+              <li><Link to="/" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.destinations')}</Link></li>
+              <li><Link to="/category/events" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.localEvents')}</Link></li>
+              <li><Link to="/category/hotels" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.hotels')}</Link></li>
             </ul>
           </div>
 
           <div className="flex flex-col gap-4">
-            <h3 className="font-bold text-slate-900">Support</h3>
+            <h3 className="font-bold text-slate-900">{t('footer.support')}</h3>
             <ul className="space-y-3 text-sm font-medium">
-              <li><Link to="/about" className="text-slate-500 hover:text-[#008080] transition-colors">About Us</Link></li>
-              <li><Link to="/contact" className="text-slate-500 hover:text-[#008080] transition-colors">Contact</Link></li>
-              <li><Link to="/become-host" className="text-slate-500 hover:text-[#008080] transition-colors">Become a Host</Link></li>
+              <li><Link to="/about" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.aboutUs')}</Link></li>
+              <li><Link to="/contact" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.contact')}</Link></li>
+              <li><Link to="/become-host" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.becomeHost')}</Link></li>
             </ul>
           </div>
 
           <div className="flex flex-col gap-4">
-            <h3 className="font-bold text-slate-900">Legal</h3>
+            <h3 className="font-bold text-slate-900">{t('footer.legal')}</h3>
             <ul className="space-y-3 text-sm font-medium">
-              <li><Link to="/privacy-policy" className="text-slate-500 hover:text-[#008080] transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms-of-service" className="text-slate-500 hover:text-[#008080] transition-colors">Terms of Service</Link></li>
-              <li><Link to="/trip-event-guide" className="text-slate-500 hover:text-[#008080] transition-colors">Trip & Event Guide</Link></li>
-              <li><Link to="/campsite-guide" className="text-slate-500 hover:text-[#008080] transition-colors">Campsite Guide</Link></li>
-              <li><Link to="/hotel-guide" className="text-slate-500 hover:text-[#008080] transition-colors">Hotel & Lodge Guide</Link></li>
+              <li><Link to="/privacy-policy" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.privacyPolicy')}</Link></li>
+              <li><Link to="/terms-of-service" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.termsOfService')}</Link></li>
+              <li><Link to="/trip-event-guide" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.tripEventGuide')}</Link></li>
+              <li><Link to="/campsite-guide" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.campsiteGuide')}</Link></li>
+              <li><Link to="/hotel-guide" className="text-slate-500 hover:text-[#008080] transition-colors">{t('footer.hotelGuide')}</Link></li>
             </ul>
           </div>
 
           {/* Social Media Grid */}
           <div className="flex flex-col gap-4">
-            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-[0.1em]">Follow Our Journey</h3>
+            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-[0.1em]">{t('footer.followJourney')}</h3>
             <div className="grid grid-cols-4 gap-2">
               <SocialIcon href="https://wa.me/0758800117" color={BRAND_COLORS.WHATSAPP} icon={<WhatsAppIcon />} />
               <SocialIcon href="https://www.instagram.com/realtravo_/" color={BRAND_COLORS.INSTAGRAM} icon={<Instagram className="h-5 w-5" />} />
@@ -282,7 +290,7 @@ export const Footer = ({ className = "" }: { className?: string }) => {
         <div className="mt-12 bg-white border border-slate-200 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
           <Info className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
           <p className="text-xs leading-relaxed text-slate-500">
-            <strong>Transparency:</strong> RealTravo may earn a commission for some accommodation bookings. This commission is paid by the property and <strong>is never added to your final booking cost</strong>. This allows us to keep our platform free for travelers.
+            <strong>{t('footer.transparency')}</strong> {t('footer.transparencyText')} <strong>{t('footer.transparencyHighlight')}</strong>. {t('footer.transparencyEnd')}
           </p>
         </div>
 
@@ -294,11 +302,11 @@ export const Footer = ({ className = "" }: { className?: string }) => {
             <div className="space-y-3">
               <h3 className="font-bold text-white text-xs uppercase tracking-[0.1em] flex items-center gap-2">
                 <Globe className="h-4 w-4 text-teal-400" />
-                Language
+                {t('footer.language')}
               </h3>
               <select
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                onChange={(e) => handleLanguageChange(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg bg-white text-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
               >
                 {LANGUAGES.map((l) => (
@@ -308,7 +316,7 @@ export const Footer = ({ className = "" }: { className?: string }) => {
                 ))}
               </select>
               <p className="text-white/40 text-[10px]">
-                More languages coming soon
+                {t('footer.moreLangSoon')}
               </p>
             </div>
 
@@ -317,7 +325,7 @@ export const Footer = ({ className = "" }: { className?: string }) => {
 
             {/* Mobile App Badges */}
             <div className="space-y-3">
-              <h3 className="font-bold text-white text-xs uppercase tracking-[0.1em]">Mobile</h3>
+              <h3 className="font-bold text-white text-xs uppercase tracking-[0.1em]">{t('footer.mobile')}</h3>
               <div className="flex flex-col gap-3">
                 <a
                   href="#"
@@ -329,8 +337,8 @@ export const Footer = ({ className = "" }: { className?: string }) => {
                     <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-1.296l2.76 1.597-2.76 1.597-2.244-2.244 2.244-1.95zM5.864 2.658L16.8 8.991l-2.302 2.302-8.635-8.635z" />
                   </svg>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider opacity-70">Get it on</div>
-                    <div className="font-bold text-sm -mt-0.5">Google Play</div>
+                    <div className="text-[10px] uppercase tracking-wider opacity-70">{t('footer.getItOn')}</div>
+                    <div className="font-bold text-sm -mt-0.5">{t('footer.googlePlay')}</div>
                   </div>
                 </a>
                 <a
@@ -343,13 +351,13 @@ export const Footer = ({ className = "" }: { className?: string }) => {
                     <path d="M13.545 10.239c-.022-2.358 1.933-3.5 2.021-3.556-1.103-1.611-2.816-1.832-3.422-1.853-1.449-.152-2.848.868-3.587.868-.752 0-1.898-.852-3.127-.828-1.593.024-3.082.949-3.9 2.39-1.685 2.912-.43 7.198 1.187 9.557.806 1.156 1.751 2.447 2.99 2.401 1.21-.05 1.663-.773 3.122-.773 1.447 0 1.87.773 3.13.746 1.296-.02 2.113-1.162 2.891-2.327.929-1.33 1.303-2.636 1.318-2.703-.03-.01-2.508-.96-2.533-3.822h-.09zM11.16 3.18c.639-.794 1.078-1.879.955-2.98-.923.04-2.074.636-2.736 1.413-.588.691-1.114 1.815-.978 2.874 1.039.078 2.104-.525 2.759-1.307z" />
                   </svg>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider opacity-70">Download on the</div>
-                    <div className="font-bold text-sm -mt-0.5">App Store</div>
+                    <div className="text-[10px] uppercase tracking-wider opacity-70">{t('footer.downloadOn')}</div>
+                    <div className="font-bold text-sm -mt-0.5">{t('footer.appStore')}</div>
                   </div>
                 </a>
               </div>
               <p className="text-white/40 text-[10px]">
-                Coming soon to both stores
+                {t('footer.comingSoon')}
               </p>
             </div>
           </div>
@@ -357,10 +365,10 @@ export const Footer = ({ className = "" }: { className?: string }) => {
 
         {/* Bottom Bar */}
         <div className="border-t border-slate-200 mt-10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
-          <p>© 2026 RealTravo. All rights reserved.</p>
+          <p>{t('footer.allRights')}</p>
           <div className="flex gap-4 items-center">
             <span className="h-1 w-1 rounded-full bg-slate-300"></span>
-            <p>Made for Modern Travelers</p>
+            <p>{t('footer.madeFor')}</p>
           </div>
         </div>
       </div>

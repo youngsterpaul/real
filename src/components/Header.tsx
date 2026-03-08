@@ -90,12 +90,12 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, __from
           {user ? (
             <AccountSheet>
               <button className="hidden sm:flex h-10 px-4 rounded-xl items-center gap-2 transition-all font-semibold text-xs text-primary-foreground bg-primary hover:brightness-110">
-                <User className="h-4 w-4" /><span>Profile</span>
+                <User className="h-4 w-4" /><span>{t('nav.profile')}</span>
               </button>
             </AccountSheet>
           ) : (
             <button onClick={() => navigate('/auth')} className="hidden sm:flex h-10 px-4 rounded-xl items-center gap-2 transition-all font-semibold text-xs text-primary-foreground bg-primary hover:brightness-110">
-              <User className="h-4 w-4" /><span>Login</span>
+              <User className="h-4 w-4" /><span>{t('nav.login')}</span>
             </button>
           )}
         </div>
