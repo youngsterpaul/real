@@ -189,28 +189,14 @@ const AdventurePlaceDetail = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-24">
-      <Header showSearchIcon={false} className={`transition-transform duration-300 ${scrolled ? '-translate-y-full' : 'translate-y-0'}`} />
-
-      <div
-        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-3 mx-auto max-w-6xl inset-x-0 bg-background/95 backdrop-blur-md border-b border-border shadow-sm transition-all duration-300 md:rounded-b-2xl"
-        style={{
-          transform: scrolled ? "translateY(0)" : "translateY(-100%)",
-          opacity: scrolled ? 1 : 0,
-          pointerEvents: scrolled ? "auto" : "none",
-        }}
-      >
-        <Button onClick={goBack} className="rounded-full w-9 h-9 p-0 border-none bg-slate-100 text-slate-900 hover:bg-slate-200 shadow-none transition-all flex-shrink-0">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-black uppercase tracking-tight text-slate-800 truncate mx-3 flex-1 text-center">{place.name}</span>
-        <Button
-          onClick={() => id && handleSaveItem(id, "adventure_place")}
-          className={`rounded-full w-9 h-9 p-0 border-none shadow-none transition-all flex-shrink-0 ${isSaved ? "bg-red-500 hover:bg-red-600" : "bg-slate-100 text-slate-900 hover:bg-slate-200"}`}
-        >
-          <Heart className={`h-4 w-4 ${isSaved ? "fill-white text-white" : "text-slate-900"}`} />
-        </Button>
-      </div>
+    <div className="min-h-screen bg-background pb-24">
+      <DetailNavBar
+        scrolled={scrolled}
+        itemName={place.name}
+        isSaved={isSaved}
+        onSave={() => id && handleSaveItem(id, "adventure_place")}
+        onBack={goBack}
+      />
 
       <div className="max-w-6xl mx-auto md:px-4 md:pt-3">
         <div className="relative w-full h-[45vh] bg-slate-900 overflow-hidden md:rounded-3xl md:hidden">
