@@ -530,6 +530,7 @@ const CreateHotel = () => {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [showErrors, setShowErrors] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showReview, setShowReview] = useState(false);
 
   const [formData, setFormData] = useState({
     registrationName: "", registrationNumber: "", place: "", country: "",

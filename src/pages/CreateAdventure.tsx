@@ -504,6 +504,7 @@ const CreateAdventure = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [showReview, setShowReview] = useState(false);
 
   const [formData, setFormData] = useState({
     registrationName: "", registrationNumber: "", locationName: "", place: "",

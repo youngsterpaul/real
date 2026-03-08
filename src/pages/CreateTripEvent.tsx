@@ -59,6 +59,7 @@ const CreateTripEvent = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showReview, setShowReview] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "", description: "", location: "", place: "", country: "", date: "",
