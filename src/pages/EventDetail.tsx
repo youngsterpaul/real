@@ -321,7 +321,7 @@ const EventDetail = () => {
                       <CheckCircle2 className="h-4 w-4 text-[#857F3E]" />
                       <div className="flex flex-col">
                         <span className="text-[11px] font-black text-[#857F3E] uppercase tracking-wide">{act.name}</span>
-                        <span className="text-[10px] font-bold text-[#857F3E]/70">{act.price === 0 || act.is_free ? "Included" : `KSh ${Number(act.price).toLocaleString()}`}</span>
+                        <span className="text-[10px] font-bold text-[#857F3E]/70">{act.price === 0 || act.is_free ? "Included" : formatPrice(Number(act.price))}</span>
                       </div>
                     </div>
                   ))}
