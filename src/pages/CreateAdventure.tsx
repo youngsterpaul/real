@@ -507,6 +507,7 @@ const CreateAdventure = () => {
   const goBack = useSafeBack("/become-host");
   const { toast } = useToast();
   const { user } = useAuth();
+  const { usdHint } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [showReview, setShowReview] = useState(false);
