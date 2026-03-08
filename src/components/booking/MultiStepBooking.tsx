@@ -575,7 +575,7 @@ import { useSearchParams } from "react-router-dom";
              <div>
                <p className="font-semibold">Children</p>
                <p className="text-sm text-muted-foreground">
-                 KES {priceChild.toLocaleString()} each
+                 {formatPrice(priceChild)} each
                </p>
              </div>
              <div className="flex items-center gap-3">
