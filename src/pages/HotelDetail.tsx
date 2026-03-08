@@ -27,6 +27,7 @@ import { DetailMapSection } from "@/components/detail/DetailMapSection";
 import { TealLoader } from "@/components/ui/teal-loader";
 import { ExternalBookingButton } from "@/components/detail/ExternalBookingDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { Footer } from "@/components/Footer";
 
 const HotelDetail = () => {
   const { slug } = useParams();

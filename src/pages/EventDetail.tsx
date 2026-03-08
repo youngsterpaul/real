@@ -22,6 +22,7 @@ import { DetailMapSection } from "@/components/detail/DetailMapSection";
 import { TealLoader } from "@/components/ui/teal-loader";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ImageGalleryModal } from "@/components/detail/ImageGalleryModal";
+import { Footer } from "@/components/Footer";
 
 const COLORS = {
   TEAL: "#008080",
