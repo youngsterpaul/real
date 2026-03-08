@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { SEOHead } from "@/components/SEOHead";
 import { useNavigate, Link } from "react-router-dom";
 // Header and MobileBottomBar are rendered in PageLayout
 import { SearchBarWithSuggestions } from "@/components/SearchBarWithSuggestions";
