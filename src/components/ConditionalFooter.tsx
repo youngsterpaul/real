@@ -6,30 +6,48 @@ interface ConditionalFooterProps {
 }
 
 /**
- * Footer that only displays on Home and Category pages
- * Hidden on detail pages, account pages, checkout pages, etc.
+ * Footer shown on all pages EXCEPT:
+ * - Admin pages (/admin/*)
+ * - Host/hosting tool pages (/host/*, /my-listing, /create-*, /edit-listing/*, /host-bookings*, /host-verification, /verification-status, /qr-scanner)
+ * - Auth page (/auth, /reset-password, /forgot-password, /verify-email)
+ * - Profile pages (/profile, /profile/edit, /complete-profile)
+ * - Booking/payment flow pages (/booking/*, /payment*, /book/*)
  */
 export const ConditionalFooter = ({ className }: ConditionalFooterProps) => {
   const location = useLocation();
   const pathname = location.pathname;
 
-  // Pages where footer should be visible
-  const footerVisiblePaths = [
-    "/", // Home page
-    "/contact", // Contact page
-    "/about", // About page
+  const hiddenExactPaths = [
+    "/auth",
+    "/reset-password",
+    "/forgot-password",
+    "/verify-email",
+    "/profile",
+    "/complete-profile",
+    "/my-listing",
+    "/become-host",
+    "/host-verification",
+    "/verification-status",
+    "/qr-scanner",
   ];
 
-  // Path prefixes where footer should be visible
-  const footerVisiblePrefixes = [
-    "/category/", // Category pages
+  const hiddenPrefixes = [
+    "/admin",
+    "/host/",
+    "/host-bookings",
+    "/create-",
+    "/edit-listing/",
+    "/profile/",
+    "/booking/",
+    "/payment",
+    "/book/",
   ];
 
-  const shouldShowFooter = 
-    footerVisiblePaths.includes(pathname) ||
-    footerVisiblePrefixes.some(prefix => pathname.startsWith(prefix));
+  const shouldHide =
+    hiddenExactPaths.includes(pathname) ||
+    hiddenPrefixes.some(prefix => pathname.startsWith(prefix));
 
-  if (!shouldShowFooter) {
+  if (shouldHide) {
     return null;
   }
 
