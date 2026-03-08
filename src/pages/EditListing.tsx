@@ -953,10 +953,12 @@ const EditListing = () => {
                   <div>
                     <Label className="text-xs text-slate-500">Adult (KSh)</Label>
                     <Input type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} min={0} className="h-8 border-[#008080]/30" />
+                    {price > 0 && <p className="text-[9px] text-blue-500 font-bold mt-0.5">{usdHint(price)}</p>}
                   </div>
                   <div>
                     <Label className="text-xs text-slate-500">Child (KSh)</Label>
                     <Input type="number" value={priceChild} onChange={(e) => setPriceChild(parseFloat(e.target.value) || 0)} min={0} className="h-8 border-[#008080]/30" />
+                    {priceChild > 0 && <p className="text-[9px] text-blue-500 font-bold mt-0.5">{usdHint(priceChild)}</p>}
                   </div>
                 </div>
               ) : (
