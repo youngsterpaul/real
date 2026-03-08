@@ -96,7 +96,7 @@ const AdminVerification = () => {
         <Header />
         <main className="flex-1 container mx-auto px-4 py-12">
           <Skeleton className="h-12 w-64 mb-8 rounded-2xl" />
-          <div className="space-y-4 max-w-2xl mx-auto">
+          <div className="space-y-4 mx-auto">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-24 w-full rounded-[28px]" />
             ))}
