@@ -74,7 +74,8 @@ export const SimilarItems = ({ currentItemId, itemType, location, country }: Sim
     }
   };
 
-  if (loading || items.length === 0) return null;
+  if (loading) return <SimilarItemsSkeleton />;
+  if (items.length === 0) return null;
 
   const getTitleByType = () => {
     switch(itemType) {
