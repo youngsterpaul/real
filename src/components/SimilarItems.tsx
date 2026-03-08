@@ -37,43 +37,58 @@ export const SimilarItems = ({ currentItemId, itemType, location, country }: Sim
   const fetchSimilarItems = async () => {
     try {
       let route = "";
-      if (itemType === "trip") {
+      let fetchedItems: any[] = [];
+
+      if (itemType === "trip" || itemType === "event") {
         route = "/trip";
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("trips")
           .select("id, name, location, place, country, image_url, description, price")
-          .eq("approval_status", "approved")
-          .eq("is_hidden", false)
+          .eq("approval_status", "approved").eq("is_hidden", false)
           .neq("id", currentItemId)
           .eq("country", country || "")
           .limit(5);
-        if (error) throw error;
-        setItems((data || []).map(item => ({ ...item, route })));
+        fetchedItems = (data || []).map(item => ({ ...item, route }));
       } else if (itemType === "hotel") {
         route = "/hotel";
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("hotels")
           .select("id, name, location, place, country, image_url, description")
-          .eq("approval_status", "approved")
-          .eq("is_hidden", false)
+          .eq("approval_status", "approved").eq("is_hidden", false)
           .neq("id", currentItemId)
           .eq("country", country || "")
           .limit(5);
-        if (error) throw error;
-        setItems((data || []).map(item => ({ ...item, route, price: null })));
-      } else if (itemType === "adventure") {
+        fetchedItems = (data || []).map(item => ({ ...item, route, price: null }));
+      } else if (itemType === "adventure" || itemType === "attraction") {
         route = "/adventure";
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("adventure_places")
           .select("id, name, location, place, country, image_url, description, entry_fee")
-          .eq("approval_status", "approved")
-          .eq("is_hidden", false)
+          .eq("approval_status", "approved").eq("is_hidden", false)
           .neq("id", currentItemId)
           .eq("country", country || "")
           .limit(5);
-        if (error) throw error;
-        setItems((data || []).map(item => ({ ...item, route, price: item.entry_fee })));
+        fetchedItems = (data || []).map(item => ({ ...item, route, price: item.entry_fee }));
       }
+
+      // If no similar items found, fetch a mix from all categories as fallback
+      if (fetchedItems.length === 0) {
+        const [trips, hotels, adventures] = await Promise.all([
+          supabase.from("trips").select("id, name, location, place, country, image_url, description, price")
+            .eq("approval_status", "approved").eq("is_hidden", false).neq("id", currentItemId).limit(3),
+          supabase.from("hotels").select("id, name, location, place, country, image_url, description")
+            .eq("approval_status", "approved").eq("is_hidden", false).neq("id", currentItemId).limit(3),
+          supabase.from("adventure_places").select("id, name, location, place, country, image_url, description, entry_fee")
+            .eq("approval_status", "approved").eq("is_hidden", false).neq("id", currentItemId).limit(3),
+        ]);
+        fetchedItems = [
+          ...(trips.data || []).map(i => ({ ...i, route: "/trip" })),
+          ...(hotels.data || []).map(i => ({ ...i, route: "/hotel", price: null })),
+          ...(adventures.data || []).map(i => ({ ...i, route: "/adventure", price: i.entry_fee })),
+        ].slice(0, 6);
+      }
+
+      setItems(fetchedItems);
     } catch (error) {
       console.error("Error fetching similar items:", error);
     } finally {
