@@ -831,7 +831,7 @@ import { useSearchParams } from "react-router-dom";
                       </span>
                     )}
                   </span>
-                  <span>KES {(f.price * days).toLocaleString()}</span>
+                  <span>{formatPrice(f.price * days)}</span>
                 </div>
               );
             })}
