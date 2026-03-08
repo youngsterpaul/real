@@ -173,6 +173,7 @@ const App = () => {
                     <Route path="/booking/:type/:id" element={<BookingPage />} />
                     <Route path="/trip-event-guide" element={<TripEventGuide />} />
                     <Route path="/campsite-guide" element={<CampsiteGuide />} />
+                    <Route path="/hotel-guide" element={<HotelGuide />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
