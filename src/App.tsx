@@ -70,6 +70,7 @@ const CompleteProfile = lazy(() => import("./pages/CompleteProfile"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const PaymentVerify = lazy(() => import("./pages/PaymentVerify"));
 const TripEventGuide = lazy(() => import("./pages/TripEventGuide"));
+const CampsiteGuide = lazy(() => import("./pages/CampsiteGuide"));
 
 
 const queryClient = new QueryClient({
