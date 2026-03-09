@@ -45,7 +45,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, __from
           <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <SheetTrigger asChild>
               <button className={headerIconStyles} aria-label="Open Menu">
-                <Menu className="h-5 w-5" />
+                <Menu className="h-7 w-7 stroke-[2.5]" />
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 h-screen border-none">
