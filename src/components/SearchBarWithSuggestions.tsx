@@ -226,8 +226,8 @@ export const SearchBarWithSuggestions = React.forwardRef<HTMLDivElement, SearchB
 
   return (
     <div className="w-full">
-      <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div ref={wrapperRef} className="relative w-full max-w-4xl mx-auto px-3 md:px-0" style={{ isolation: 'isolate' }}>
+      <div className="w-full px-3 md:container md:mx-auto md:px-6 lg:px-8">
+        <div ref={wrapperRef} className="relative w-full max-w-4xl mx-auto" style={{ isolation: 'isolate' }}>
           <div className="flex items-center gap-3">
             {showBackButton && (
               <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full bg-white shadow-sm border border-slate-100 hover:text-[#008080]">
