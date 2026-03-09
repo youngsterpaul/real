@@ -371,7 +371,7 @@ const Index = () => {
   const displayEvents = useMemo(() => getDisplayItems(scrollableRows.events, sortedEvents, true), [scrollableRows.events, sortedEvents, getDisplayItems]);
 
   // ─── Render helpers ────────────────────────────────────────────────────────
-  const renderCard = useCallback((item: any, type: string, index: number, opts: { hidePrice?: boolean; isTrip?: boolean } = {}) => {
+  const renderCard = useCallback((item: any, type: string, index: number, opts: { hidePrice?: boolean; isTrip?: boolean; categoryColor?: string } = {}) => {
     const itemDistance = position && item.latitude && item.longitude ? calculateDistance(position.latitude, position.longitude, item.latitude, item.longitude) : undefined;
     const ratingData = ratings.get(item.id);
     const today = new Date().toISOString().split('T')[0];
@@ -393,6 +393,7 @@ const Index = () => {
           availableTickets={opts.isTrip ? item.available_tickets : undefined}
           bookedTickets={opts.isTrip ? bookingStats[item.id] || 0 : undefined}
           description={item.description}
+          categoryColor={opts.categoryColor}
         />
       </div>
     );
