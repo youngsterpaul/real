@@ -11,12 +11,12 @@ interface ListingSkeletonProps {
 const ListingSkeletonComponent = ({ compact = false, className }: ListingSkeletonProps) => {
   return (
     <Card className={cn(
-      "group relative flex flex-row overflow-hidden rounded-xl border border-border bg-card shadow-sm",
+      "group relative flex flex-row md:flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm",
       compact ? "h-auto" : "h-full",
       className
     )}>
-      {/* Image - matches ListingCard horizontal image */}
-      <div className="relative w-[100px] sm:w-[120px] md:w-[140px] lg:w-[180px] flex-shrink-0 min-h-[120px] md:min-h-[150px] lg:min-h-[180px]">
+      {/* Image */}
+      <div className="relative w-[100px] sm:w-[120px] md:w-full flex-shrink-0 min-h-[120px] md:aspect-[16/9] md:min-h-0">
         <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
         {/* Heart */}
         <Skeleton className="absolute top-2 right-2 h-8 w-8 rounded-full" />

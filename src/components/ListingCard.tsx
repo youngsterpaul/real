@@ -125,7 +125,7 @@ const ListingCardComponent = ({
     <Card
       onClick={handleCardClick}
       className={cn(
-        "group relative flex flex-row overflow-hidden cursor-pointer bg-card transition-all duration-300",
+        "group relative flex flex-row md:flex-col overflow-hidden cursor-pointer bg-card transition-all duration-300",
         "rounded-xl border border-border shadow-sm",
         "hover:shadow-md hover:border-primary/20",
         compact ? "h-auto" : "h-full",
@@ -135,7 +135,7 @@ const ListingCardComponent = ({
       {/* Image */}
       <div
         ref={imageContainerRef}
-        className="relative w-[100px] sm:w-[120px] md:w-[140px] lg:w-[180px] flex-shrink-0 overflow-hidden min-h-[120px] md:min-h-[150px] lg:min-h-[180px]"
+        className="relative w-[100px] sm:w-[120px] md:w-full flex-shrink-0 overflow-hidden min-h-[120px] md:aspect-[16/9] md:min-h-0"
       >
         {!imageLoaded && !imageError && (
           <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
