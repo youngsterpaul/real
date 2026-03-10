@@ -15,6 +15,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { ReviewSection } from "@/components/ReviewSection";
 import { FacilitiesGrid, ActivitiesGrid } from "@/components/detail/FacilityActivityCards";
 import { useSavedItems } from "@/hooks/useSavedItems";
+import { extractIdFromSlug } from "@/lib/slugUtils";
 import { useGeolocation, calculateDistance } from "@/hooks/useGeolocation";
 import { trackReferralClick } from "@/lib/referralUtils";
 import { getShareLink } from "@/lib/shareUtils";
@@ -29,8 +30,7 @@ import { Footer } from "@/components/Footer";
 
 const AdventurePlaceDetail = () => {
   const { slug } = useParams();
-  // ✅ slug IS the id — no extractIdFromSlug needed
-  const id = slug ?? null;
+  const id = slug ? extractIdFromSlug(slug) : null;
   const navigate = useNavigate();
   const goBack = useSafeBack();
   const { toast } = useToast();
@@ -403,7 +403,7 @@ const AdventurePlaceDetail = () => {
           <div className="hidden lg:block">
             <div className="sticky top-24 bg-white rounded-[40px] p-8 shadow-2xl border border-slate-100 space-y-6">
               <div className="text-center">
-                <p className="text-xs font-black uppercase text-slate-400 mb-1">Starting from / Entrance Fee</p>
+                <p className="text-xs font-black uppercase text-slate-400 mb-1">Starting from/Entrtace Fee</p>
                 {place.entry_fee && place.entry_fee > 0 ? (
                   <div className="space-y-1">
                     <h3 className="text-xl font-bold text-destructive">{formatPrice(Number(place.entry_fee))}</h3>
