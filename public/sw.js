@@ -1,51 +1,43 @@
-const CACHE_NAME = 'oblique-excavator-v1';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'oblique-excavator-v2';
+const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/fulllogo.png',
-  '/favicon.ico'
+  '/favicon.ico', // Maintaining your main shape
+  '/fulllogo.png'
 ];
 
-// Install: Open cache and store static assets
+// Install: Cache icons and core UI immediately
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
   );
   self.skipWaiting();
 });
 
-// Activate: Remove old caches when version updates
+// Activate: Cleanup old versions
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      );
-    })
+    caches.keys().then((keys) => Promise.all(
+      keys.map((key) => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      })
+    ))
   );
   self.clients.claim();
 });
 
-// Fetch: Stale-While-Revalidate Strategy
-// Serves from cache immediately, updates cache from network in background
+// Fetch: Network-First with Cache Fallback
+// This ensures your text-art logic stays updated while remaining offline-capable
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-
   event.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(event.request).then((cachedResponse) => {
-        const fetchedResponse = fetch(event.request).then((networkResponse) => {
-          cache.put(event.request, networkResponse.clone());
-          return networkResponse;
-        });
-
-        return cachedResponse || fetchedResponse;
-      });
-    })
+    fetch(event.request)
+      .then((response) => {
+        // Update cache with the latest version from network
+        const resClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
