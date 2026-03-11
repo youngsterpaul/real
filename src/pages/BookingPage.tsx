@@ -99,10 +99,21 @@ const BookingPage = () => {
         error = result.error;
       }
       
-      if (error) throw error;
+      if (error) {
+        console.error("Booking fetchItem error:", error);
+        toast({ title: "Item not found", description: "Could not load booking details.", variant: "destructive" });
+        navigate(-1);
+        return;
+      }
+      
+      if (!data) {
+        toast({ title: "Item not found", description: "The item you're trying to book doesn't exist.", variant: "destructive" });
+        navigate(-1);
+        return;
+      }
       
       // Block booking if item is hidden or not approved
-      if (data && (data.is_hidden || (data.approval_status && data.approval_status !== 'approved'))) {
+      if (data.is_hidden || (data.approval_status && data.approval_status !== 'approved')) {
         toast({ title: "Unavailable", description: "This item is not currently available for booking.", variant: "destructive" });
         navigate('/');
         return;
@@ -110,6 +121,7 @@ const BookingPage = () => {
       
       setItem(data);
     } catch (error) {
+      console.error("Booking fetchItem catch:", error);
       toast({ title: "Item not found", variant: "destructive" });
       navigate(-1);
     } finally {
