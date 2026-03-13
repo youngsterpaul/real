@@ -52,4 +52,10 @@ declare module '@yudiel/react-qr-scanner' {
 }
 declare module 'vite-plugin-pwa' {
   export function VitePWA(options?: any): any;
+declare module '@capacitor/browser' {
+  export const Browser: {
+    open(options: { url: string; windowName?: string }): Promise<void>;
+    close(): Promise<void>;
+    addListener(event: string, callback: (info: any) => void): Promise<any>;
+  };
 }
