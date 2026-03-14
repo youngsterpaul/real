@@ -706,14 +706,19 @@ import { useSearchParams } from "react-router-dom";
                        }}
                        onClick={() => toggleFacility(facility)}
                      >
-                       <div className="flex justify-between items-center">
-                         <div>
-                           <p className="font-medium">{facility.name}</p>
-                           <p className="text-sm text-muted-foreground">
-                             {formatPrice(facility.price)} per day
-                           </p>
-                         </div>
-                       </div>
+                        <div className="flex items-center gap-3">
+                          {facility.images?.[0] && (
+                            <img src={facility.images[0]} alt={facility.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          )}
+                          <div className="flex-1 flex justify-between items-center">
+                            <div>
+                              <p className="font-medium">{facility.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatPrice(facility.price)} per day
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                        {isSelected && (
                          <div
                            className="mt-3 grid grid-cols-2 gap-2"
