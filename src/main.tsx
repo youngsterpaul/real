@@ -16,6 +16,14 @@ root.render(
   </React.StrictMode>
 );
 
+// Remove Capacitor splash screen once React has rendered
+const splash = document.getElementById('capacitor-splash');
+if (splash) {
+  splash.style.transition = 'opacity 0.3s ease';
+  splash.style.opacity = '0';
+  setTimeout(() => splash.remove(), 300);
+}
+
 /**
  * Service Worker Registration - deferred until after first render
  * This prevents SW registration from blocking the initial paint.
