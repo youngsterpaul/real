@@ -1,21 +1,23 @@
 import { useLocation } from "react-router-dom";
 import { Footer } from "@/components/Footer";
+import { Capacitor } from '@capacitor/core';
 
 interface ConditionalFooterProps {
   className?: string;
 }
 
 /**
- * Footer shown on all pages EXCEPT:
- * - Admin pages (/admin/*)
- * - Host/hosting tool pages (/host/*, /my-listing, /create-*, /edit-listing/*, /host-bookings*, /host-verification, /verification-status, /qr-scanner)
- * - Auth page (/auth, /reset-password, /forgot-password, /verify-email)
- * - Profile pages (/profile, /profile/edit, /complete-profile)
- * - Booking/payment flow pages (/booking/*, /payment*, /book/*)
+ * Footer hidden on Capacitor native apps entirely.
+ * Also hidden on admin, auth, profile, booking/payment, and host pages.
  */
 export const ConditionalFooter = ({ className }: ConditionalFooterProps) => {
   const location = useLocation();
   const pathname = location.pathname;
+
+  // Hide footer entirely in Capacitor native apps
+  if (Capacitor.isNativePlatform()) {
+    return null;
+  }
 
   const hiddenExactPaths = [
     "/auth",

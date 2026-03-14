@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Download, X } from "lucide-react";
+import { CheckCircle2, Download } from "lucide-react";
 import { BookingDownloadButton } from "./BookingDownloadButton";
 import { BookingPDFData } from "@/lib/pdfBookingExport";
 import { useNavigate } from "react-router-dom";
@@ -50,14 +50,7 @@ export const PaymentSuccessDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-[24px] p-6">
-        <button 
-          onClick={handleClose}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
-        >
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </button>
+      <DialogContent className="sm:max-w-md rounded-[24px] p-6 [&>button:last-child]:hidden">
         
         <div className="text-center py-4">
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">

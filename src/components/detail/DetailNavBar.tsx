@@ -100,13 +100,15 @@ export const DetailNavBar = ({
           </div>
         </div>
 
-        {/* Desktop nav - always visible */}
+        {/* Desktop nav - always visible, constrained to gallery width */}
         <div
           className="
             hidden md:flex items-center justify-between
+            max-w-6xl mx-auto
             px-6 py-3
             bg-white/80 backdrop-blur-xl
-            border-b border-slate-200/60
+            rounded-b-2xl
+            border-x border-b border-slate-200/60
             shadow-sm
           "
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
