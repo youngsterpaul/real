@@ -345,7 +345,12 @@ const HotelDetail = () => {
 
             {/* Operating hours moved into mobile booking card below */}
 
-            {/* Mobile booking card - above amenities/activities */}
+            {/* General amenities - above booking card on mobile */}
+            <div className="lg:hidden">
+              <GeneralFacilitiesDisplay facilityIds={hotel.amenities || []} />
+            </div>
+
+            {/* Mobile booking card - above activities */}
             <div className="bg-white rounded-[32px] p-6 shadow-xl border border-slate-100 lg:hidden">
               <div className="flex justify-between items-start mb-6">
                 <div>
