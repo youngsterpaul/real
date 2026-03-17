@@ -513,10 +513,30 @@ const QRScanner = () => {
                 </div>
 
                 <div className="space-y-5 border-y border-slate-50 py-6 mb-6">
-                    <InfoRow icon={<Calendar className="h-4 w-4" />} label="Visit Date" value={format(new Date(verifiedBooking.visit_date), "dd MMM yyyy")} />
-                    <InfoRow icon={<Users className="h-4 w-4" />} label="Group Size" value={`${verifiedBooking.slots_booked || 1} People`} />
-                    <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={verifiedBooking.guest_email} />
+                    {itemDetails?.category && <InfoRow icon={<ChevronRight className="h-4 w-4" />} label="Category" value={itemDetails.category} />}
                     {itemName && <InfoRow icon={<ChevronRight className="h-4 w-4" />} label="Item" value={itemName} />}
+                    <InfoRow icon={<Calendar className="h-4 w-4" />} label="Visit Date" value={verifiedBooking.visit_date ? format(new Date(verifiedBooking.visit_date), "dd MMM yyyy") : 'N/A'} />
+                    <InfoRow icon={<Users className="h-4 w-4" />} label="Group Size" value={`${verifiedBooking.slots_booked || 1} People`} />
+                    <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={verifiedBooking.guest_email || 'N/A'} />
+                    {verifiedBooking.guest_phone && <InfoRow icon={<Phone className="h-4 w-4" />} label="Phone" value={verifiedBooking.guest_phone} />}
+                    {verifiedBooking.booking_type && <InfoRow icon={<ChevronRight className="h-4 w-4" />} label="Type" value={verifiedBooking.booking_type.charAt(0).toUpperCase() + verifiedBooking.booking_type.slice(1)} />}
+                    {(() => {
+                      const activities = itemDetails?.activities || verifiedBooking.booking_details?.activities;
+                      if (activities && Array.isArray(activities) && activities.length > 0) {
+                        const names = activities.map((a: any) => typeof a === 'string' ? a : a?.name || a?.title).filter(Boolean);
+                        if (names.length > 0) return <InfoRow icon={<ChevronRight className="h-4 w-4" />} label="Activities" value={names.join(', ')} />;
+                      }
+                      return null;
+                    })()}
+                    {(() => {
+                      const facilities = itemDetails?.facilities || verifiedBooking.booking_details?.facilities;
+                      if (facilities && Array.isArray(facilities) && facilities.length > 0) {
+                        const names = facilities.map((f: any) => typeof f === 'string' ? f : f?.name || f?.title).filter(Boolean);
+                        if (names.length > 0) return <InfoRow icon={<ChevronRight className="h-4 w-4" />} label="Facilities" value={names.join(', ')} />;
+                      }
+                      return null;
+                    })()}
+                    {itemDetails?.location && <InfoRow icon={<ChevronRight className="h-4 w-4" />} label="Location" value={itemDetails.location} />}
                 </div>
 
                 <div className="flex justify-between items-end mb-8">

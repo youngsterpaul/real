@@ -42,15 +42,28 @@ export const SimilarItems = ({ currentItemId, itemType, location, country, tripT
       let fetchedItems: any[] = [];
 
       if (itemType === "trip" || itemType === "event") {
-        route = "/trip";
-        const { data } = await supabase
+        route = itemType === "event" ? "/event" : "/trip";
+        let query = supabase
           .from("trips")
-          .select("id, name, location, place, country, image_url, description, price")
+          .select("id, name, location, place, country, image_url, description, price, type")
           .eq("approval_status", "approved").eq("is_hidden", false)
           .neq("id", currentItemId)
-          .eq("country", country || "")
-          .limit(5);
-        fetchedItems = (data || []).map(item => ({ ...item, route }));
+          .eq("country", country || "");
+        
+        // Filter by trip type so events don't appear in trip detail and vice versa
+        if (tripType) {
+          query = query.eq("type", tripType);
+        } else if (itemType === "event") {
+          query = query.eq("type", "event");
+        } else {
+          query = query.eq("type", "trip");
+        }
+        
+        const { data } = await query.limit(5);
+        fetchedItems = (data || []).map(item => ({ 
+          ...item, 
+          route: item.type === 'event' ? '/event' : '/trip' 
+        }));
       } else if (itemType === "hotel") {
         route = "/hotel";
         const { data } = await supabase
