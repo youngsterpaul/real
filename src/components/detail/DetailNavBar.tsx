@@ -24,8 +24,8 @@ export const DetailNavBar = ({
       <div
         className="fixed top-0 left-0 right-0 z-[100]"
       >
-        {/* Mobile frosted glass pill - always visible, respects safe area */}
-        <div className="md:hidden mx-3 mt-3" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        {/* Mobile frosted glass pill - always visible */}
+        <div className="md:hidden mx-3 mt-3">
           <div
             className="
               flex items-center justify-between
@@ -109,7 +109,6 @@ export const DetailNavBar = ({
             border-b border-slate-200/60
             shadow-sm
           "
-          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
           <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3">
             <button

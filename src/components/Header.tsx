@@ -35,7 +35,7 @@ export const Header = ({ onSearchClick, showSearchIcon = true, className, __from
   // Skip rendering if this is a page-level Header (PageLayout already renders one)
   if (!__fromLayout) return null;
 
-  const mobileHeaderClasses = "fixed top-0 left-0 right-0 flex bg-transparent md:bg-background md:border-b md:border-border md:shadow-sm py-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:pt-3";
+  const mobileHeaderClasses = "fixed top-0 left-0 right-0 flex bg-transparent md:bg-background md:border-b md:border-border md:shadow-sm py-3 pt-3";
   const headerIconStyles = "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 text-white md:text-foreground bg-black/20 md:bg-transparent hover:bg-white/20 md:hover:bg-muted";
 
   return (
