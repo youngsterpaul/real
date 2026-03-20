@@ -6,19 +6,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getUserId } from "@/lib/sessionManager";
 import { useLocation } from "react-router-dom";
-import { Trash2, MapPin, ChevronRight, Loader2 } from "lucide-react";
+import { Trash2, MapPin, ChevronRight, Loader2, Lock } from "lucide-react";
 import { createDetailPath } from "@/lib/slugUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useSavedItems } from "@/hooks/useSavedItems";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLocalSavedItems, removeItemLocally } from "@/hooks/useLocalSavedItems";
 
 const ITEMS_PER_PAGE = 20;
 
 const Saved = () => {
   const [savedListings, setSavedListings] = useState<any[]>([]);
   const { savedItems } = useSavedItems();
-  const { loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -36,39 +37,26 @@ const Saved = () => {
   useEffect(() => {
     const initializeData = async () => {
       if (authLoading) return;
+
+      if (!user) {
+        await fetchGuestSavedItems();
+        return;
+      }
+
       const uid = await getUserId();
       if (!uid) { setIsLoading(false); return; }
       setUserId(uid);
       fetchSavedItems(uid, 0);
     };
     initializeData();
-  }, [authLoading]);
+  }, [authLoading, user]);
 
   useEffect(() => {
-    if (userId && hasFetched.current) fetchSavedItems(userId, 0);
-  }, [savedItems]);
+    if (user && userId && hasFetched.current) fetchSavedItems(userId, 0);
+    if (!user && hasFetched.current) fetchGuestSavedItems();
+  }, [savedItems, user, userId]);
 
-  const fetchSavedItems = async (uid: string, fetchOffset: number) => {
-    if (fetchOffset === 0) setIsLoading(true);
-    else setLoadingMore(true);
-
-    const { data: savedData } = await supabase
-      .from("saved_items")
-      .select("item_id, item_type")
-      .eq("user_id", uid)
-      .range(fetchOffset, fetchOffset + ITEMS_PER_PAGE - 1)
-      .order('created_at', { ascending: false });
-
-    if (!savedData || savedData.length === 0) {
-      if (fetchOffset === 0) setSavedListings([]);
-      setHasMore(false);
-      setIsLoading(false);
-      setLoadingMore(false);
-      return;
-    }
-
-    setHasMore(savedData.length >= ITEMS_PER_PAGE);
-
+  const fetchItemsByType = async (savedData: Array<{ item_id: string; item_type: string }>) => {
     const tripIds = savedData
       .filter(s => s.item_type === "trip" || s.item_type === "event")
       .map(s => s.item_id);
@@ -76,7 +64,7 @@ const Saved = () => {
       .filter(s => s.item_type === "hotel")
       .map(s => s.item_id);
     const adventureIds = savedData
-      .filter(s => s.item_type === "adventure_place" || s.item_type === "attraction")
+      .filter(s => s.item_type === "adventure_place" || s.item_type === "attraction" || s.item_type === "adventure")
       .map(s => s.item_id);
 
     const [tripsRes, hotelsRes, adventuresRes] = await Promise.all([
@@ -102,7 +90,52 @@ const Saved = () => {
       itemMap.set(item.id, { ...item, savedType: original?.item_type });
     });
 
-    const newItems = savedData.map(s => itemMap.get(s.item_id)).filter(Boolean);
+    return savedData.map(s => itemMap.get(s.item_id)).filter(Boolean);
+  };
+
+  const fetchGuestSavedItems = async () => {
+    setIsLoading(true);
+    const localSaved = getLocalSavedItems();
+
+    if (localSaved.length === 0) {
+      setSavedListings([]);
+      setHasMore(false);
+      setIsLoading(false);
+      hasFetched.current = true;
+      return;
+    }
+
+    const localData = localSaved.map(item => ({ item_id: item.item_id, item_type: item.item_type }));
+    const items = await fetchItemsByType(localData);
+    setSavedListings(items);
+    setHasMore(false);
+    setOffset(items.length);
+    setIsLoading(false);
+    hasFetched.current = true;
+  };
+
+  const fetchSavedItems = async (uid: string, fetchOffset: number) => {
+    if (fetchOffset === 0) setIsLoading(true);
+    else setLoadingMore(true);
+
+    const { data: savedData } = await supabase
+      .from("saved_items")
+      .select("item_id, item_type")
+      .eq("user_id", uid)
+      .range(fetchOffset, fetchOffset + ITEMS_PER_PAGE - 1)
+      .order('created_at', { ascending: false });
+
+    if (!savedData || savedData.length === 0) {
+      if (fetchOffset === 0) setSavedListings([]);
+      setHasMore(false);
+      setIsLoading(false);
+      setLoadingMore(false);
+      return;
+    }
+
+    setHasMore(savedData.length >= ITEMS_PER_PAGE);
+
+    const newItems = await fetchItemsByType(savedData);
     if (fetchOffset === 0) {
       setSavedListings(newItems);
     } else {
@@ -123,10 +156,19 @@ const Saved = () => {
     // Stop the click from bubbling to the anchor card
     e.preventDefault();
     e.stopPropagation();
-    if (!userId || deletingRef.current === itemId) return;
+    if ((!user && deletingRef.current === itemId) || (user && !userId) || deletingRef.current === itemId) return;
 
     deletingRef.current = itemId;
     setDeletingId(itemId);
+
+    if (!user) {
+      removeItemLocally(itemId);
+      setSavedListings(prev => prev.filter(item => item.id !== itemId));
+      toast({ title: "Removed", description: "Item removed from offline saved items." });
+      deletingRef.current = null;
+      setDeletingId(null);
+      return;
+    }
 
     const { error } = await supabase
       .from("saved_items")
@@ -175,6 +217,13 @@ const Saved = () => {
             </div>
           ) : (
             <div className="grid gap-3">
+              {!user && (
+                <div className="mb-1 rounded-[24px] border border-primary/15 bg-primary/5 px-4 py-3 flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-primary" />
+                  <p className="text-[10px] font-black uppercase tracking-wider text-primary">Saved offline until login — open is locked</p>
+                </div>
+              )}
+
               {savedListings.map((item) => {
                 const href = createDetailPath(item.savedType, item.id, item.name, item.location);
 
@@ -219,11 +268,19 @@ const Saved = () => {
                         the app's router because it's a SPA with a catch-all route.
                     ────────────────────────────────────────────────────────────── */}
                     <a
-                      href={href}
+                      href={user ? href : "#"}
                       onClick={(e) => {
-                        // If a delete is in progress, block navigation
                         if (deletingRef.current === item.id) {
                           e.preventDefault();
+                          return;
+                        }
+
+                        if (!user) {
+                          e.preventDefault();
+                          toast({
+                            title: "Login required",
+                            description: "Saved items stay offline on this device, but you need to log in before opening them.",
+                          });
                         }
                       }}
                       className="flex-1 flex items-center gap-4 bg-white p-3 sm:p-4 rounded-[24px] border border-slate-100 hover:shadow-md transition-all active:scale-[0.98] min-w-0 group no-underline"
@@ -233,6 +290,7 @@ const Saved = () => {
                         textDecoration: 'none',
                       }}
                       draggable={false}
+                      aria-disabled={!user}
                     >
                       <img
                         src={item.image_url}
@@ -242,7 +300,7 @@ const Saved = () => {
                       />
 
                       <div className="flex-1 min-w-0">
-                        <p className="text-[9px] font-bold text-[#007AFF] uppercase mb-0.5">
+                         <p className="text-[9px] font-bold text-primary uppercase mb-0.5">
                           {item.savedType?.replace('_', ' ')}
                         </p>
                         <h3 className="text-sm sm:text-base font-bold text-slate-800 truncate">
@@ -254,8 +312,8 @@ const Saved = () => {
                         </div>
                       </div>
 
-                      <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-[#007AFF] group-hover:text-white transition-all shrink-0">
-                        <ChevronRight size={16} />
+                       <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-primary-foreground transition-all shrink-0">
+                         {!user ? <Lock size={14} /> : <ChevronRight size={16} />}
                       </div>
                     </a>
 
@@ -264,7 +322,7 @@ const Saved = () => {
               })}
             </div>
           )}
-            {hasMore && savedListings.length > 0 && (
+            {user && hasMore && savedListings.length > 0 && (
               <div className="flex justify-center mt-6">
                 <Button
                   onClick={loadMore}

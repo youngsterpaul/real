@@ -5,17 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarClock, ChevronDown, ChevronUp, Loader2, WifiOff } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronUp, Loader2, Lock, WifiOff } from "lucide-react";
 import { RescheduleBookingDialog } from "@/components/booking/RescheduleBookingDialog";
 import { BookingDownloadButton } from "@/components/booking/BookingDownloadButton";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { useOfflineBookings } from "@/hooks/useOfflineBookings";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { 
-  Collapsible, 
-  CollapsibleContent, 
-  CollapsibleTrigger 
-} from "@/components/ui/collapsible";
 
 const bookingsCache = { data: null as any[] | null, timestamp: 0 };
 
@@ -25,7 +20,7 @@ const Bookings = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isOnline = useOnlineStatus();
-  const { cachedBookings } = useOfflineBookings();
+  const { cachedBookings, cacheBookings } = useOfflineBookings();
   const isEmbeddedInSheet = location.pathname !== "/bookings";
   
   const [bookings, setBookings] = useState<any[]>([]);
@@ -40,11 +35,9 @@ const Bookings = () => {
   const ITEMS_PER_PAGE = 20;
   const hasFetched = useRef(false);
 
-  useEffect(() => { 
-    if (!authLoading && !user) navigate("/auth"); 
-  }, [user, authLoading, navigate]);
-
   useEffect(() => {
+    if (authLoading) return;
+
     if (user && isOnline) {
       if (bookingsCache.data && !hasFetched.current) {
         setBookings(bookingsCache.data);
@@ -56,8 +49,11 @@ const Bookings = () => {
     } else if (user && !isOnline) {
       setBookings(cachedBookings);
       setLoading(false);
+    } else if (!user) {
+      setBookings(cachedBookings);
+      setLoading(false);
     }
-  }, [user, isOnline]);
+  }, [user, isOnline, authLoading, cachedBookings]);
 
   const fetchBookings = async (fetchOffset: number = 0) => {
     try {
@@ -74,8 +70,10 @@ const Bookings = () => {
       if (fetchOffset === 0) {
         setBookings(data || []);
         bookingsCache.data = data;
+        cacheBookings(data || []);
       } else {
         setBookings(prev => [...prev, ...(data || [])]);
+        cacheBookings([...(fetchOffset === 0 ? [] : bookings), ...(data || [])]);
       }
       setHasMore((data || []).length >= ITEMS_PER_PAGE);
     } catch (e) { 
@@ -135,6 +133,13 @@ const Bookings = () => {
             <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-2">
               <WifiOff size={14} className="text-amber-600" />
               <p className="text-[10px] font-black uppercase text-amber-700">Offline: Showing cached data</p>
+            </div>
+          )}
+
+          {!user && bookings.length > 0 && (
+            <div className="mb-6 p-3 bg-primary/5 border border-primary/15 rounded-2xl flex items-center gap-2">
+              <Lock size={14} className="text-primary" />
+              <p className="text-[10px] font-black uppercase text-primary">Offline bookings saved on this device</p>
             </div>
           )}
 
@@ -253,7 +258,7 @@ const Bookings = () => {
                                 }} />
                               </div>
                               
-                              {b.booking_type !== 'event' && (
+                              {user && b.booking_type !== 'event' && (
                                 <Button 
                                   variant="outline" 
                                   size="sm" 

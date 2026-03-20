@@ -4,6 +4,7 @@ import { CheckCircle2, ArrowLeft } from "lucide-react";
 import { BookingDownloadButton } from "./BookingDownloadButton";
 import { BookingPDFData } from "@/lib/pdfBookingExport";
 import { useNavigate } from "react-router-dom";
+import { saveBookingLocally } from "@/hooks/useOfflineBookings";
 
 interface PaymentSuccessDialogProps {
   open: boolean;
@@ -58,6 +59,25 @@ export const PaymentSuccessDialog = ({
         activities,
       }
     : null;
+
+  if (bookingData && pdfData) {
+    saveBookingLocally({
+      id: bookingData?.bookingId ?? bookingData?.id ?? reference,
+      booking_type: bookingData?.bookingType ?? bookingData?.booking_type ?? details?.booking_type ?? 'booking',
+      total_amount: bookingData?.amount ?? bookingData?.total_amount ?? 0,
+      booking_details: details,
+      payment_status: bookingData?.paymentStatus ?? bookingData?.payment_status ?? 'completed',
+      status: bookingData?.status ?? 'confirmed',
+      created_at: bookingData?.paid_at ?? bookingData?.created_at ?? new Date().toISOString(),
+      guest_name: pdfData.guestName,
+      guest_email: pdfData.guestEmail,
+      guest_phone: pdfData.guestPhone ?? null,
+      slots_booked: pdfData.slotsBooked ?? null,
+      visit_date: pdfData.visitDate,
+      item_id: bookingData?.item_id ?? bookingData?.itemId ?? 'offline-booking',
+      item_name: pdfData.itemName,
+    });
+  }
 
   const handleViewBookings = () => {
     onOpenChange(false);

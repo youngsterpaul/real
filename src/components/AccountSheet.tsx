@@ -12,7 +12,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ChevronRight, User, Briefcase, CreditCard, Shield, 
-  LogOut, UserCog, 
+  LogOut, UserCog, KeyRound,
   CalendarCheck, Settings, LayoutDashboard 
 } from "lucide-react";
 
@@ -86,6 +86,7 @@ export const AccountSheet = ({ children }: AccountSheetProps) => {
     ]},
     { section: "Personal", items: [
       { icon: User, label: "Edit Profile", path: "/profile/edit", show: true },
+      { icon: KeyRound, label: "Change Password", path: "/forgot-password", show: true },
       { icon: CreditCard, label: "Payments & Earnings", path: "/payment", show: true },
     ]},
     { section: "Admin Control", items: [

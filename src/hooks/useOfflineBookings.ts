@@ -22,6 +22,30 @@ interface CachedBooking {
   item_name?: string;
 }
 
+export type OfflineBookingRecord = CachedBooking;
+
+const readCachedBookings = (): CachedBooking[] => {
+  try {
+    const raw = localStorage.getItem(BOOKINGS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveBookingLocally = (booking: CachedBooking) => {
+  try {
+    const existing = readCachedBookings();
+    const filtered = existing.filter((item) => item.id !== booking.id);
+    const next = [booking, ...filtered].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    localStorage.setItem(BOOKINGS_CACHE_KEY, JSON.stringify(next));
+  } catch (error) {
+    console.error('Error saving booking locally:', error);
+  }
+};
+
 interface OfflineScan {
   bookingId: string;
   scannedAt: string;
